@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>tech-learn · Diagramas explicativos animados</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="engine/explainer.css" />
+  <style>
+    body { display: grid; place-items: center; min-height: 100vh; }
+    .home { max-width: 880px; padding: 48px 28px; text-align: center; }
+    .home h1 { font-size: 38px; margin: 0 0 10px; letter-spacing: -.5px; }
+    .home p.lead { color: var(--ink-soft); font-size: 17px; margin: 0 auto 40px; max-width: 560px; line-height: 1.6; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; text-align: left; }
+    .card {
+      display: block; text-decoration: none; color: inherit;
+      background: linear-gradient(160deg, var(--panel-2), var(--panel));
+      border: 1px solid var(--line); border-radius: var(--radius);
+      padding: 22px 22px 20px; transition: all var(--t-fast) var(--ease);
+    }
+    .card:hover { border-color: var(--accent); transform: translateY(-3px); box-shadow: var(--shadow); }
+    .card .tag { font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--accent); }
+    .card h3 { margin: 8px 0 6px; font-size: 20px; }
+    .card p { margin: 0; color: var(--ink-soft); font-size: 14px; line-height: 1.5; }
+    .card.soon { opacity: .55; pointer-events: none; }
+    .foot { margin-top: 40px; color: var(--muted); font-size: 13px; }
+    .foot code { background: var(--panel); padding: 2px 7px; border-radius: 6px; color: var(--ink-soft); }
+  </style>
+</head>
+<body>
+  <main class="home">
+    <h1>🧠 tech-learn</h1>
+    <p class="lead">Diagramas interativos que explicam conceitos de tecnologia passo a passo, com animação e balões — construídos sobre um motor reutilizável.</p>
+
+    <div class="cards">
+      <a class="card" href="explainers/transformer.html">
+        <span class="tag">IA · LLMs</span>
+        <h3>Rede Transformer →</h3>
+        <p>Do texto cru à próxima palavra: tokenização, embeddings, positional encoding, self-attention (Q/K/V), multi-head, residual, feed-forward e a cabeça de saída.</p>
+      </a>
+
+      <div class="card soon">
+        <span class="tag">Em breve</span>
+        <h3>Seu próximo diagrama</h3>
+        <p>Copie <code>transformer.data.js</code>, troque <code>elements</code> e <code>steps</code>, e o motor cuida do resto. Veja o README.</p>
+      </div>
+    </div>
+
+    <p class="foot">Tudo em HTML/CSS/JS puro · sem build · abre direto no navegador.</p>
+  </main>
+</body>
+</html>
