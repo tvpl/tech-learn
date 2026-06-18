@@ -5,8 +5,17 @@ passo a passo, com animação, realces e **balões** que aparecem em cada etapa.
 Tudo em **HTML + CSS + JavaScript puro** — sem build, sem dependências. É só
 abrir no navegador.
 
-O primeiro diagrama explica **como funciona uma rede Transformer**, do texto cru
-até a próxima palavra prevista.
+Explicadores disponíveis:
+
+- 🧠 **Rede Transformer** — do texto cru à próxima palavra (tokenização, embeddings,
+  positional encoding, self-attention Q/K/V, multi-head, residual, feed-forward, saída).
+- 🌐 **Requisição HTTP** — DNS → TCP → TLS → request → resposta → render (sequência).
+- 🔌 **TCP/IP** — three-way handshake, segmentos/ACKs, janela, perda+retransmissão, FIN.
+- 🌿 **Git** — as quatro áreas e o caminho de `add` → `commit` → `push` → `pull`.
+- #️⃣ **Hash Map** — chave → hash → índice → bucket, colisões, encadeamento e resize.
+
+Todos compartilham o **mesmo motor** (`engine/`): cada um é apenas um arquivo de
+dados. Isso é a prova de que a estrutura se reaproveita.
 
 ## ▶️ Como rodar
 
@@ -30,9 +39,12 @@ tech-learn/
 ├── engine/
 │   ├── explainer.css           # tema e animações (genérico)
 │   └── explainer.js            # motor: timeline, render SVG, balões, controles
-└── explainers/
-    ├── transformer.html        # página: carrega o motor + os dados
-    └── transformer.data.js     # CONTEÚDO: elementos + cenas do Transformer
+└── explainers/                 # um par .html + .data.js por tema
+    ├── transformer.html / transformer.data.js   # CONTEÚDO: elementos + cenas
+    ├── http.html        / http.data.js
+    ├── tcp.html         / tcp.data.js
+    ├── git.html         / git.data.js
+    └── hashmap.html     / hashmap.data.js
 ```
 
 O **motor** (`engine/`) é genérico e nunca precisa ser editado para criar um
