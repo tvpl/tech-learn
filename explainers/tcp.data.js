@@ -91,7 +91,7 @@
       title: "Janela deslizante",
       show: ["win"], highlight: ["win"],
       balloon: { anchor: "win", placement: "top",
-        text: "O emissor não espera o ACK de cada segmento: manda vários de uma vez, até o limite da <strong>janela</strong> anunciada pelo receptor.",
+        text: "O emissor não espera o <span class=\"xp-term\" tabindex=\"0\" data-tip=\"Acknowledgement: confirmação de que os bytes até certo número chegaram.\">ACK</span> de cada segmento: manda vários de uma vez, até o limite da <strong>janela</strong> anunciada pelo receptor.",
         why: "Isso enche o “cano” e dá vazão. A janela também serve de <strong>controle de fluxo</strong>: o receptor freia o emissor se estiver sobrecarregado." },
     },
     {
@@ -109,6 +109,22 @@
         text: "Para fechar, cada lado manda um <strong>FIN</strong> e recebe o <strong>ACK</strong> correspondente — encerrando os dois sentidos de forma ordenada.",
         why: "O fechamento também é negociado para garantir que nenhum dado em trânsito seja perdido na hora de desligar." },
       enter: (ctx) => ctx.drawArrow("m_fin"),
+    },
+    {
+      title: "Teste rápido",
+      balloon: { anchor: "est", placement: "bottom",
+        text: "Fixe a ideia central do TCP 👇" },
+      quiz: {
+        question: "O que o TCP faz quando um segmento se perde (não chega o ACK)?",
+        options: [
+          "Ignora o segmento e segue em frente",
+          "Retransmite o segmento após o timeout",
+          "Fecha a conexão imediatamente",
+          "Troca automaticamente para UDP",
+        ],
+        answer: 1,
+        explain: "Sem ACK dentro do tempo esperado, o emissor reenvia o segmento. É isso que torna o TCP confiável sobre um IP que pode perder pacotes.",
+      },
     },
     {
       title: "Resumo",

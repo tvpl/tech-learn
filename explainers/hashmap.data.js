@@ -103,8 +103,24 @@
       title: "Resize & rehash",
       show: ["resize"], highlight: ["resize"],
       balloon: { anchor: "resize", placement: "top",
-        text: "Quando o <strong>fator de carga</strong> (itens ÷ buckets) passa de um limite (~0,75), o map <strong>dobra o array</strong> e <strong>recalcula o índice</strong> de tudo (rehash).",
+        text: "Quando o <span class=\"xp-term\" tabindex=\"0\" data-tip=\"Razão itens ÷ buckets. Acima de ~0,75 as colisões aumentam e o desempenho cai.\">fator de carga</span> (itens ÷ buckets) passa de um limite (~0,75), o map <strong>dobra o array</strong> e <strong>recalcula o índice</strong> de tudo (rehash).",
         why: "Mais buckets = menos colisões = listas curtas. É isso que mantém o O(1) médio mesmo com o mapa crescendo." },
+    },
+    {
+      title: "Teste rápido",
+      balloon: { anchor: "hash", placement: "bottom",
+        text: "Fixe o conceito de colisão 👇" },
+      quiz: {
+        question: "O que é uma “colisão” num hash map?",
+        options: [
+          "Quando duas chaves diferentes geram o mesmo índice",
+          "Quando o array de buckets fica completamente cheio",
+          "Quando uma chave procurada não existe",
+          "Quando o valor armazenado é nulo",
+        ],
+        answer: 0,
+        explain: "Há infinitas chaves para um número finito de buckets, então colisões são inevitáveis. Resolvem-se, por exemplo, encadeando as entradas numa lista.",
+      },
     },
     {
       title: "Resumo",

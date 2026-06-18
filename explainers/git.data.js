@@ -83,7 +83,7 @@
       title: "O histórico cresce",
       show: ["c2", "lnk12", "head"], highlight: ["c2", "head"],
       balloon: { anchor: "c2", placement: "left",
-        text: "Mais commits formam uma <strong>corrente</strong>: cada commit aponta para o seu <strong>pai</strong>. O ponteiro <strong>HEAD</strong> diz em qual commit/branch você está (aqui, <strong>main</strong>).",
+        text: "Mais commits formam uma <strong>corrente</strong>: cada commit aponta para o seu <strong>pai</strong>. O ponteiro <span class=\"xp-term\" tabindex=\"0\" data-tip=\"Aponta para o commit/branch atual — é onde você está no histórico.\">HEAD</span> diz em qual commit/branch você está (aqui, <strong>main</strong>).",
         why: "Um branch é só um ponteiro móvel para um commit. Criar branches é barato porque nada é copiado — só um novo ponteiro." },
       enter: (ctx) => { ctx.drawArrow("lnk12"); },
     },
@@ -102,6 +102,22 @@
         text: "Quando alguém publica commits novos, <code>git pull</code> faz <strong>fetch</strong> (baixa) + <strong>merge</strong> (integra) no seu histórico local — aqui chega o commit <strong>c3</strong>.",
         why: "Assim os históricos convergem. Se as mudanças tocarem as mesmas linhas, o Git pede uma resolução de <strong>conflito</strong>." },
       enter: (ctx) => { ctx.drawArrow("cmd_pull"); setTimeout(() => ctx.drawArrow("lnk23"), 200); },
+    },
+    {
+      title: "Teste rápido",
+      balloon: { anchor: "c1", placement: "right",
+        text: "Confirme o que cada comando faz 👇" },
+      quiz: {
+        question: "O que o comando git commit faz?",
+        options: [
+          "Envia as mudanças para o servidor remoto",
+          "Grava o conteúdo do Staging como um ponto permanente no repositório local",
+          "Descarta as mudanças do Working Directory",
+          "Cria automaticamente um novo branch",
+        ],
+        answer: 1,
+        explain: "commit registra o que está no Staging no histórico local (.git). Enviar ao remoto é tarefa do git push.",
+      },
     },
     {
       title: "Resumo do fluxo",

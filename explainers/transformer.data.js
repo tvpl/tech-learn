@@ -84,7 +84,7 @@
     // cena 2/3: chips de token + ids
     ...TOKENS.map((t, i) => ({
       id: "tk_" + i, type: "token", x: CX[i] - CHIP_W / 2, y: CHIP_Y, w: CHIP_W, h: CHIP_H,
-      label: t, className: i >= 4 ? "tk-sub" : "",
+      label: t, className: i >= 4 ? "tk-sub" : "", group: "toks",
     })),
     { id: "tk_brace", type: "label", x: 1075, y: 230, sub: true, anchor: "middle",
       label: "“tapete” → sub-palavras" },
@@ -95,7 +95,7 @@
     // cena 4/5: vetores de embedding (um por token)
     ...TOKENS.map((t, i) => ({
       id: "ve_" + i, type: "vector", x: CX[i] - VEC_W / 2, y: VEC_Y, w: VEC_W, h: VEC_H,
-      values: vec(7 + i * 13), color: "var(--good)",
+      values: vec(7 + i * 13), color: "var(--good)", group: "vecs",
     })),
     { id: "r5_wave", type: "arrow", noHead: true, dashed: true, color: "var(--warn)",
       path: wavePath(540, 1170, 530, 26, 26) },
@@ -186,6 +186,15 @@
       label: "texto → números → vetores → atenção → contexto → próxima palavra" },
     { id: "sum_sub", type: "label", x: 850, y: 420, sub: true, anchor: "middle",
       label: "…e repete, palavra após palavra (geração autoregressiva)" },
+
+    // decoder: máscara causal + loop de geração
+    { id: "cm_box", type: "matrix", x: 840, y: 220, rows: 5, cols: 5, cell: 52, color: "var(--accent-2)" },
+    { id: "cm_t", type: "label", x: 970, y: 195, anchor: "middle", label: "máscara causal (triangular)" },
+    { id: "cm_n", type: "label", x: 970, y: 520, sub: true, anchor: "middle",
+      label: "cada token só enxerga os anteriores — nunca o “futuro”" },
+    { id: "gen_box", type: "box", x: 560, y: 300, w: 540, h: 96, fill: "#0e1730",
+      label: ["O gato sentou no  →  “tapete”", "↺ “tapete” vira entrada e prevê a próxima palavra"] },
+    { id: "gen_loop", type: "arrow", color: "var(--hot)", path: "M64,694 C14,694 14,62 64,62" },
   ];
 
   /* =============================  CENAS  =============================== */
@@ -236,9 +245,10 @@
         text: "Cada ID consulta uma <strong>tabela de embeddings</strong> e vira um vetor denso de números (ex.: 512 ou 768 dimensões), mostrado aqui como barras.",
         why: "No espaço vetorial, palavras de sentido parecido ficam próximas — é assim que o modelo guarda significado, aprendido no treino.",
       },
+      // demonstra os GRUPOS: revela todos os ids do grupo de uma vez
       enter: (ctx) => {
-        reveal(ctx, ["tk_0", "tk_1", "tk_2", "tk_3", "tk_4", "tk_5"], 30);
-        setTimeout(() => reveal(ctx, ["ve_0", "ve_1", "ve_2", "ve_3", "ve_4", "ve_5"], 90), 200);
+        ctx.reveal("toks", 30);
+        setTimeout(() => ctx.reveal("vecs", 90), 200);
       },
     },
     { // 5
@@ -287,7 +297,7 @@
       highlight: ["le_mha", "r6_mha"],
       balloon: {
         anchor: "m_box", placement: "left",
-        text: "Multiplica-se cada <strong>Q</strong> por todos os <strong>K</strong> (Q·Kᵀ), escala por √dₖ e aplica <strong>softmax</strong>. Resulta numa matriz de <strong>pesos</strong>: quanto cada token atende aos demais (cada linha soma 1).",
+        text: "Multiplica-se cada <strong>Q</strong> por todos os <strong>K</strong> (Q·Kᵀ), escala por √dₖ e aplica <span class=\"xp-term\" tabindex=\"0\" data-tip=\"Transforma números quaisquer em probabilidades positivas que somam 1.\">softmax</span>. Resulta numa matriz de <strong>pesos</strong>: quanto cada token atende aos demais (cada linha soma 1).",
         why: "Assim “sentou” pode pesar forte em “gato” (o sujeito) e fraco em “no”. O resultado é a soma dos V ponderada por esses pesos.",
       },
       enter: (ctx) => {
@@ -365,6 +375,42 @@
       },
     },
     { // 14
+      title: "Atenção causal (no decoder)",
+      balloon: { anchor: "cm_box", placement: "left",
+        text: "Em modelos geradores (decoder, estilo GPT), a self-attention é <span class=\"xp-term\" tabindex=\"0\" data-tip=\"As posições futuras recebem -infinito antes do softmax, então seu peso vira zero.\">mascarada</span>: cada posição só atende às <strong>anteriores</strong> e a si mesma (triângulo inferior).",
+        why: "Durante a geração, o modelo não pode “espiar” a palavra que ainda vai prever. A máscara triangular garante isso." },
+      enter: (ctx) => {
+        ctx.reveal(["cm_box", "cm_t", "cm_n"], 90);
+        const cells = [];
+        for (let r = 0; r < 5; r++) for (let c = 0; c <= r; c++) cells.push([r, c, c === r ? 0.9 : 0.5]);
+        setTimeout(() => ctx.lightCells("cm_box", cells), 350);
+      },
+    },
+    { // 15
+      title: "Geração autoregressiva",
+      show: ["gen_loop"], highlight: ["li_input", "li_out"],
+      balloon: { anchor: "gen_box", placement: "bottom",
+        text: "A palavra escolhida é <strong>anexada à entrada</strong> e todo o fluxo recomeça para prever a próxima — e assim sucessivamente.",
+        why: "Por isso o texto sai palavra a palavra. O mesmo passo se repete até sair um token de parada (fim de texto)." },
+      enter: (ctx) => { ctx.show("gen_box"); ctx.drawArrow("gen_loop"); ctx.pulse("gen_loop", true); },
+    },
+    { // 16
+      title: "Teste rápido",
+      balloon: { anchor: { x: 380, y: 360 }, placement: "right",
+        text: "Antes do resumo, fixe o conceito mais importante 👇" },
+      quiz: {
+        question: "Por que o Transformer precisa do positional encoding?",
+        options: [
+          "Para comprimir os embeddings e economizar memória",
+          "Porque a self-attention, sozinha, não tem noção da ordem das palavras",
+          "Para acelerar o cálculo do softmax",
+          "Para evitar overfitting durante o treino",
+        ],
+        answer: 1,
+        explain: "A atenção processa todos os tokens em paralelo; sem um sinal de posição, “gato mordeu cão” e “cão mordeu gato” ficariam idênticos.",
+      },
+    },
+    { // 17
       title: "Resumo do fluxo",
       highlight: ["li_input", "li_token", "li_embed", "li_pos", "li_enc", "li_head", "li_out"],
       balloon: {

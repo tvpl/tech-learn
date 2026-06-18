@@ -17,6 +17,19 @@ Explicadores disponíveis:
 Todos compartilham o **mesmo motor** (`engine/`): cada um é apenas um arquivo de
 dados. Isso é a prova de que a estrutura se reaproveita.
 
+### Recursos do motor
+
+- ▶️ **Autoplay** com barra de tempo por cena, além de Próximo/Anterior e índice.
+- 🔗 **Deep-link**: a cena atual vai para a URL (`#cena=7`) — dá para compartilhar
+  e sobrevive ao refresh.
+- 🌓 **Tema claro/escuro** (persiste) · ⛶ **modo apresentação** (fullscreen) ·
+  🗺️ **minimapa**.
+- ❓ **Quiz** opcional ao fim de cada explicador.
+- 💬 **Glossário**: termos com definição em tooltip dentro dos balões.
+- ♿ **Acessível**: navegação por teclado, foco visível, `aria-live` e
+  `prefers-reduced-motion`.
+- ✅ **Testado**: `npm test` percorre todas as cenas de todos os diagramas (jsdom).
+
 ## ▶️ Como rodar
 
 Abra `index.html` direto no navegador (`file://`), ou suba um servidor local
@@ -28,8 +41,33 @@ python3 -m http.server 8000
 ```
 
 Navegue com os botões **Anterior / Próximo**, o botão **Reproduzir** (autoplay),
-o índice lateral de etapas, ou o teclado: **← →** trocam de cena e **espaço**
-dá play/pause.
+o índice lateral de etapas, ou o teclado:
+
+| Tecla | Ação |
+|-------|------|
+| **← / →** | cena anterior / próxima |
+| **espaço** | play / pause do autoplay |
+| **f** | modo apresentação (fullscreen) |
+| **m** | mostra/oculta o minimapa |
+
+No cabeçalho há botões para **tema** (🌓), **minimapa** (🗺️), **copiar link da
+cena** (🔗) e **apresentação** (⛶).
+
+## 🧪 Testes
+
+```bash
+npm install   # instala o jsdom (única dependência de dev)
+npm test      # percorre todas as cenas de todos os diagramas e valida
+```
+
+O smoke test (`tools/smoke.mjs`) monta cada explicador num DOM headless, percorre
+as cenas (ida e volta, disparando os `enter()`) e falha se houver erro de runtime,
+âncora/referência inexistente ou quiz malformado. Roda também no **CI**
+(`.github/workflows/ci.yml`) a cada push.
+
+> **Publicar:** o workflow `pages.yml` faz deploy no GitHub Pages (Settings →
+> Pages → Source: GitHub Actions). Previews PNG podem ser gerados com
+> `npm run screenshots` (Playwright) ou pelo workflow `screenshots.yml`.
 
 ## 🗂 Estrutura
 
@@ -39,12 +77,15 @@ tech-learn/
 ├── engine/
 │   ├── explainer.css           # tema e animações (genérico)
 │   └── explainer.js            # motor: timeline, render SVG, balões, controles
-└── explainers/                 # um par .html + .data.js por tema
-    ├── transformer.html / transformer.data.js   # CONTEÚDO: elementos + cenas
-    ├── http.html        / http.data.js
-    ├── tcp.html         / tcp.data.js
-    ├── git.html         / git.data.js
-    └── hashmap.html     / hashmap.data.js
+├── explainers/                 # um par .html + .data.js por tema
+│   ├── transformer.html / transformer.data.js   # CONTEÚDO: elementos + cenas
+│   ├── http.html        / http.data.js
+│   ├── tcp.html         / tcp.data.js
+│   ├── git.html         / git.data.js
+│   └── hashmap.html     / hashmap.data.js
+├── tools/                      # smoke.mjs (testes) e screenshots.mjs (previews)
+├── .github/workflows/          # ci.yml, pages.yml, screenshots.yml
+└── package.json                # scripts: test, screenshots, serve
 ```
 
 O **motor** (`engine/`) é genérico e nunca precisa ser editado para criar um
@@ -85,7 +126,8 @@ window.MEU_DIAGRAMA = {
 | `matrix` | grade de células (ex.: atenção) | `x, y, rows, cols, cell, color` |
 
 Por padrão todo elemento começa **oculto**. Use `base: true` para já nascer
-visível.
+visível. Todo elemento aceita também `group: "nome"` para ser revelado em
+lote (ver `ctx.reveal` e o uso de `@nome` abaixo).
 
 **Cenas** (`steps`). Campos de cada cena:
 
@@ -104,6 +146,7 @@ visível.
   dim:       ["id4"],               // esmaece
   pulse:     ["id2"],               // pulsa continuamente
   enter(ctx) { /* opcional */ },    // animação sob medida (ver abaixo)
+  quiz: { /* opcional, ver abaixo */ },
 }
 ```
 
@@ -111,6 +154,36 @@ visível.
 seguintes (bom para um diagrama que "cresce"). Elementos que você quer
 exclusivos de uma cena (zoom/detalhe) **não** entram em `show`/`hide` — revele-os
 dentro de `enter(ctx)` e o motor os esconde sozinho ao trocar de cena.
+
+Qualquer lista (`show`, `hide`, `highlight`…) aceita `"@nome"` para expandir um
+**grupo** de elementos de uma vez — ex.: `show: ["@tokens"]`.
+
+### Quiz (cena interativa)
+
+Uma cena pode terminar com uma pergunta de múltipla escolha:
+
+```js
+{
+  title: "Teste rápido",
+  balloon: { anchor: "x", placement: "right", text: "Fixe o conceito 👇" },
+  quiz: {
+    question: "Por que existe positional encoding?",
+    options: ["…", "Porque a atenção não tem noção de ordem", "…"],
+    answer: 1,                       // índice da opção correta
+    explain: "Mostrado após responder.",
+  },
+}
+```
+
+### Glossário (tooltip em termos)
+
+Dentro de qualquer `text`/`why`, marque termos com a classe `xp-term`:
+
+```html
+aplica <span class="xp-term" tabindex="0" data-tip="Definição do termo.">softmax</span>
+```
+
+O `tabindex="0"` deixa o tooltip acessível por teclado.
 
 ### `enter(ctx)` — animações sob medida
 
@@ -125,6 +198,7 @@ oferece helpers prontos:
 | `ctx.lightCells(id, [[r,c,op], …])` | acende células de uma `matrix` em cascata |
 | `ctx.moveTo(id, x, y)` | desloca um elemento (px) |
 | `ctx.pulse(id, on)` | liga/desliga o pulso |
+| `ctx.reveal(grupo \| [ids], stagger)` | revela vários elementos em cascata |
 | `ctx.el(id)` / `ctx.svgEl(tag, attrs)` | acesso direto ao SVG p/ casos avançados |
 
 Exemplo (revelar barras em cascata e acender uma matriz):
@@ -138,10 +212,14 @@ enter: (ctx) => {
 
 ## ♿ Acessibilidade & desempenho
 
-- Respeita `prefers-reduced-motion`: com a preferência ligada, as animações são
+- Navegação completa por **teclado** (setas, espaço, f, m) e índice de etapas
+  focável; **foco visível** em todos os controles.
+- Região **`aria-live`** anuncia o texto da cena para leitores de tela; o SVG tem
+  `role="img"` com rótulo.
+- Respeita **`prefers-reduced-motion`**: com a preferência ligada, as animações são
   reduzidas a quase nada.
-- SVG escala sozinho para a tela; layout responsivo simples (o índice lateral
-  recolhe em telas estreitas).
+- **Tema claro/escuro** com bom contraste; SVG escala sozinho e o layout é
+  responsivo (o índice recolhe em telas estreitas).
 
 ## 📄 Licença
 

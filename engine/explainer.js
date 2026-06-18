@@ -3,8 +3,10 @@
  * ----------------------------------------------------------------------------
  * Recebe um objeto "diagram" (dados puros) e monta:
  *   - um palco SVG com os elementos declarados;
- *   - uma linha do tempo de "cenas" (steps) com balões explicativos;
- *   - controles (próximo/anterior/play/teclado), índice lateral e progresso.
+ *   - uma linha do tempo de "cenas" (steps) com balões explicativos e quizzes;
+ *   - controles (próximo/anterior/play/teclado), índice lateral e progresso;
+ *   - extras: deep-link na URL, modo apresentação, tema claro/escuro, minimapa,
+ *     leitura por leitor de tela (aria-live) e validação dos dados.
  *
  * NENHUM explicador precisa editar este arquivo. Para criar um novo diagrama
  * basta escrever um arquivo de dados (ex.: explainers/transformer.data.js) e
@@ -32,13 +34,19 @@
     return n;
   };
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const stripHtml = (s) => String(s).replace(/<[^>]*>/g, "");
+  const store = {
+    get: (k, d) => { try { return localStorage.getItem(k) ?? d; } catch { return d; } },
+    set: (k, v) => { try { localStorage.setItem(k, v); } catch {} },
+  };
 
   class Explainer {
     constructor(diagram) {
       this.d = diagram;
       this.steps = diagram.steps || [];
       this.i = -1;
-      this.nodes = new Map();   // id -> { def, group }
+      this.nodes = new Map();    // id -> { def, group }
+      this.groups = new Map();   // nome de grupo -> [ids]
       this.playing = false;
       this.timer = null;
       this.autoplayMs = diagram.autoplayMs || 6500;
@@ -49,24 +57,39 @@
       this.root = typeof sel === "string" ? document.querySelector(sel) : sel;
       this.root.classList.add("xp-app");
       this.root.innerHTML = "";
+      this._applyTheme(store.get("xp-theme", "dark"));
 
-      // cabeçalho
+      // cabeçalho + ferramentas (tema, link, apresentação)
       const head = el("header", { class: "xp-header" });
       head.appendChild(el("h1", null, this.d.title || "Explicador"));
       if (this.d.subtitle) head.appendChild(el("span", { class: "xp-sub" }, this.d.subtitle));
-      const home = el("a", { class: "xp-home", href: this.d.homeHref || "../index.html" }, "↩ Todos os diagramas");
-      head.appendChild(home);
+      const tools = el("div", { class: "xp-tools" });
+      this.btnTheme = el("button", { class: "xp-icon", title: "Alternar tema", "aria-label": "Alternar tema claro/escuro" }, "🌓");
+      this.btnMap = el("button", { class: "xp-icon", title: "Minimapa (m)", "aria-label": "Mostrar ou ocultar o minimapa" }, "🗺️");
+      this.btnLink = el("button", { class: "xp-icon", title: "Copiar link desta cena", "aria-label": "Copiar link desta cena" }, "🔗");
+      this.btnFull = el("button", { class: "xp-icon", title: "Modo apresentação (f)", "aria-label": "Entrar no modo apresentação" }, "⛶");
+      const home = el("a", { class: "xp-home", href: this.d.homeHref || "../index.html" }, "↩ Todos");
+      this.btnTheme.addEventListener("click", () => this._toggleTheme());
+      this.btnMap.addEventListener("click", () => this._toggleMinimap());
+      this.btnLink.addEventListener("click", () => this._copyLink());
+      this.btnFull.addEventListener("click", () => this._togglePresent());
+      tools.append(this.btnTheme, this.btnMap, this.btnLink, this.btnFull, home);
+      head.appendChild(tools);
       this.root.appendChild(head);
 
-      // índice lateral
+      // índice lateral (acessível por teclado)
       const side = el("aside", { class: "xp-side" });
       side.appendChild(el("h2", null, "Etapas"));
       this.list = el("ol", { class: "xp-steplist" });
       this.steps.forEach((s, idx) => {
-        const li = el("li", { "data-idx": idx });
+        const li = el("li", { "data-idx": idx, role: "button", tabindex: "0" });
         li.appendChild(el("span", { class: "xp-dot" }, String(idx + 1)));
         li.appendChild(el("span", { class: "xp-label" }, s.title || `Etapa ${idx + 1}`));
-        li.addEventListener("click", () => this.go(idx));
+        const goThere = () => this.go(idx);
+        li.addEventListener("click", goThere);
+        li.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); goThere(); }
+        });
         this.list.appendChild(li);
       });
       side.appendChild(this.list);
@@ -74,9 +97,13 @@
 
       // palco
       this.stage = el("main", { class: "xp-stage" });
+      this.autobar = el("div", { class: "xp-autobar" });
+      this.autobar.appendChild(el("span"));
+      this.stage.appendChild(this.autobar);
       this.svg = svg("svg", {
         viewBox: `0 0 ${this.d.width || 1200} ${this.d.height || 700}`,
         preserveAspectRatio: "xMidYMid meet",
+        role: "img", "aria-label": this.d.title || "Diagrama",
       });
       this.svg.appendChild(this._defs());
       this.layer = svg("g", { class: "xp-canvas" });
@@ -84,13 +111,18 @@
       this.stage.appendChild(this.svg);
       this.balloons = el("div", { class: "xp-balloon-layer" });
       this.stage.appendChild(this.balloons);
+      // minimapa
+      this.minimap = el("div", { class: "xp-minimap", "aria-hidden": "true" });
+      this.minimapSvg = svg("svg", { viewBox: `0 0 ${this.d.width || 1200} ${this.d.height || 700}` });
+      this.minimap.appendChild(this.minimapSvg);
+      this.stage.appendChild(this.minimap);
       this.root.appendChild(this.stage);
 
       // controles
       const ctr = el("footer", { class: "xp-controls" });
-      this.btnPrev = el("button", { class: "xp-btn" }, "← Anterior");
-      this.btnPlay = el("button", { class: "xp-btn" }, "▶ Reproduzir");
-      this.btnNext = el("button", { class: "xp-btn xp-btn--primary" }, "Próximo →");
+      this.btnPrev = el("button", { class: "xp-btn", "aria-label": "Cena anterior" }, "← Anterior");
+      this.btnPlay = el("button", { class: "xp-btn", "aria-label": "Reproduzir automaticamente" }, "▶ Reproduzir");
+      this.btnNext = el("button", { class: "xp-btn xp-btn--primary", "aria-label": "Próxima cena" }, "Próximo →");
       this.progress = el("div", { class: "xp-progress" });
       this.progress.appendChild(el("span"));
       this.counter = el("div", { class: "xp-counter" });
@@ -100,16 +132,34 @@
       ctr.append(this.btnPrev, this.btnPlay, this.progress, this.counter, this.btnNext);
       this.root.appendChild(ctr);
 
-      // elementos do diagrama (começam ocultos, exceto base:true)
-      (this.d.elements || []).forEach((def) => this._renderElement(def));
+      // região para leitor de tela
+      this.live = el("div", { class: "xp-sr", "aria-live": "polite", role: "status" });
+      this.root.appendChild(this.live);
+
+      // elementos do diagrama + índice de grupos
+      (this.d.elements || []).forEach((def) => {
+        this._renderElement(def);
+        if (def.group) {
+          if (!this.groups.has(def.group)) this.groups.set(def.group, []);
+          this.groups.get(def.group).push(def.id);
+        }
+      });
+      this._validate();
 
       // teclado
       this._onKey = (e) => {
-        if (e.key === "ArrowRight") { this.next(); }
-        else if (e.key === "ArrowLeft") { this.prev(); }
+        if (e.target && /^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;
+        if (e.key === "ArrowRight") this.next();
+        else if (e.key === "ArrowLeft") this.prev();
         else if (e.key === " ") { e.preventDefault(); this.togglePlay(); }
+        else if (e.key === "f") this._togglePresent();
+        else if (e.key === "m") this._toggleMinimap();
       };
       window.addEventListener("keydown", this._onKey);
+
+      // deep-link: navegação por #cena=N
+      this._onHash = () => { const idx = this._readHash(); if (idx !== this.i) this.go(idx, true); };
+      window.addEventListener("hashchange", this._onHash);
 
       // contexto exposto aos hooks enter() das cenas
       this.ctx = {
@@ -118,6 +168,7 @@
         shape: (id) => this.nodes.get(id)?.group.querySelector(".xp-shape"),
         show: (id) => this._toggle(id, true),
         hide: (id) => this._toggle(id, false),
+        reveal: (target, stagger = 80) => this.reveal(target, stagger),
         moveTo: (id, x, y) => this.moveTo(id, x, y),
         drawArrow: (id) => this.drawArrow(id),
         setBars: (id, vals) => this.setBars(id, vals),
@@ -126,7 +177,10 @@
         svgEl: svg,
       };
 
-      this.go(0);
+      // restaura minimapa salvo
+      if (store.get("xp-minimap", "0") === "1") this.stage.classList.add("show-minimap");
+
+      this.go(this._readHash());
       return this;
     }
 
@@ -139,6 +193,32 @@
       m.appendChild(svg("path", { d: "M0,0 L10,5 L0,10 z", fill: "var(--accent)" }));
       defs.appendChild(m);
       return defs;
+    }
+
+    /* ---- expande "@grupo" para a lista de ids -------------------------- */
+    _ids(list) {
+      const out = [];
+      (list || []).forEach((id) => {
+        if (typeof id === "string" && id[0] === "@") (this.groups.get(id.slice(1)) || []).forEach((x) => out.push(x));
+        else out.push(id);
+      });
+      return out;
+    }
+
+    /* ---- validação dos dados (avisa no console) ------------------------ */
+    _validate() {
+      const ids = new Set(this.nodes.keys());
+      const warn = [];
+      this.steps.forEach((s, i) => {
+        const a = s.balloon && s.balloon.anchor;
+        if (typeof a === "string" && !ids.has(a)) warn.push(`cena ${i + 1}: âncora "${a}" não existe`);
+        ["show", "hide", "highlight", "dim", "pulse"].forEach((k) =>
+          this._ids(s[k]).forEach((id) => { if (!ids.has(id)) warn.push(`cena ${i + 1}: ${k} → "${id}" não existe`); }));
+        if (s.quiz && (!Array.isArray(s.quiz.options) || s.quiz.answer == null))
+          warn.push(`cena ${i + 1}: quiz precisa de options[] e answer`);
+      });
+      if (warn.length) console.warn(`[Explainer] "${this.d.title || ""}" tem ${warn.length} aviso(s):\n  - ` + warn.join("\n  - "));
+      return warn;
     }
 
     /* ---- renderização declarativa de cada elemento --------------------- */
@@ -198,19 +278,16 @@
       if (def.color) path.style.stroke = def.color;
       if (def.noHead) path.style.markerEnd = "none";
       if (def.dashed) {
-        // linha tracejada decorativa: não usa o traçado animado (stroke-dashoffset)
         path.classList.remove("is-draw");
         path.style.strokeDasharray = "6 7";
       }
       g.appendChild(path);
-      // mede comprimento p/ animar o traçado das setas normais
       if (!def.dashed) requestAnimationFrame(() => {
         const len = Math.ceil(path.getTotalLength());
         path.style.setProperty("--len", len);
       });
     }
 
-    // vetor = coluna de barras coloridas (embeddings, Q/K/V ...)
     _buildVector(g, def) {
       const w = def.w || 26, n = (def.values || []).length || 6;
       const bh = def.h || 90, x = def.x, y = def.y;
@@ -232,7 +309,6 @@
       }
     }
 
-    // matriz de atenção (grade de células)
     _buildMatrix(g, def) {
       const rows = def.rows, cols = def.cols, cell = def.cell || 34;
       const x = def.x, y = def.y;
@@ -257,8 +333,13 @@
       node.group.style.transform = `translate(${x}px, ${y}px)`;
     }
     drawArrow(id) {
-      const node = this.nodes.get(id);
-      node?.group.querySelector(".xp-arrow")?.classList.add("is-shown");
+      this.nodes.get(id)?.group.querySelector(".xp-arrow")?.classList.add("is-shown");
+    }
+    reveal(target, stagger = 80) {
+      const ids = (typeof target === "string" && this.groups.has(target))
+        ? this.groups.get(target)
+        : (Array.isArray(target) ? target : [target]);
+      ids.forEach((id, k) => setTimeout(() => this._toggle(id, true), k * stagger));
     }
     setBars(id, vals) {
       const node = this.nodes.get(id);
@@ -276,8 +357,7 @@
     lightCells(id, cells) {
       const node = this.nodes.get(id);
       if (!node) return;
-      const all = node.group.querySelectorAll(".xp-cell");
-      all.forEach((c) => (c.style.fillOpacity = 0));
+      node.group.querySelectorAll(".xp-cell").forEach((c) => (c.style.fillOpacity = 0));
       cells.forEach(([r, c, o], idx) => {
         const cell = node.group.querySelector(`.xp-cell[data-r="${r}"][data-c="${c}"]`);
         if (cell) setTimeout(() => { cell.style.fillOpacity = o != null ? o : .9; }, idx * 90);
@@ -289,57 +369,59 @@
     }
 
     /* ---- aplica o estado declarativo de uma cena ----------------------- */
-    _applyStep(idx, dir) {
+    _applyStep(idx) {
       const s = this.steps[idx];
-
-      // resolve o conjunto acumulado de elementos visíveis: tudo marcado
-      // base:true + tudo que cenas <= idx pediram show, menos hide posteriores.
       const visible = new Set();
       (this.d.elements || []).forEach((d) => { if (d.base) visible.add(d.id); });
       for (let k = 0; k <= idx; k++) {
-        (this.steps[k].show || []).forEach((id) => visible.add(id));
-        (this.steps[k].hide || []).forEach((id) => visible.delete(id));
+        this._ids(this.steps[k].show).forEach((id) => visible.add(id));
+        this._ids(this.steps[k].hide).forEach((id) => visible.delete(id));
       }
       this.nodes.forEach((node, id) => {
         node.group.classList.toggle("is-shown", visible.has(id));
         node.group.classList.remove("is-highlight", "is-dim", "is-pulse");
         node.group.querySelector(".xp-arrow")?.classList.remove("is-shown");
       });
-      // desenha setas visíveis
       visible.forEach((id) => {
         const n = this.nodes.get(id);
         if (n?.def.type === "arrow") this.drawArrow(id);
       });
 
-      (s.highlight || []).forEach((id) => this.nodes.get(id)?.group.classList.add("is-highlight"));
-      (s.dim || []).forEach((id) => this.nodes.get(id)?.group.classList.add("is-dim"));
-      (s.pulse || []).forEach((id) => this.nodes.get(id)?.group.classList.add("is-pulse"));
+      this._ids(s.highlight).forEach((id) => this.nodes.get(id)?.group.classList.add("is-highlight"));
+      this._ids(s.dim).forEach((id) => this.nodes.get(id)?.group.classList.add("is-dim"));
+      this._ids(s.pulse).forEach((id) => this.nodes.get(id)?.group.classList.add("is-pulse"));
 
       this._showBalloon(s);
+      this._announce(s);
 
-      // hook sob medida da cena
       if (typeof s.enter === "function") {
-        // pequeno atraso p/ as transições de visibilidade assentarem
         setTimeout(() => { try { s.enter(this.ctx); } catch (e) { console.error(e); } }, 120);
       }
     }
 
-    /* ---- balão ancorado a um elemento ---------------------------------- */
+    _announce(s) {
+      const parts = [s.title, s.balloon && s.balloon.text, s.quiz && s.quiz.question].filter(Boolean);
+      this.live.textContent = parts.map(stripHtml).join(". ");
+    }
+
+    /* ---- balão ancorado a um elemento (+ quiz opcional) ---------------- */
     _showBalloon(s) {
-      this.balloons.innerHTML = "";
-      if (!s.balloon) return;
-      const b = s.balloon;
-      const node = el("div", { class: "xp-balloon" });
+      // saída suave do balão anterior
+      const old = this.balloons.firstChild;
+      if (old) { old.classList.remove("is-visible"); setTimeout(() => old.remove(), 260); }
+      if (!s.balloon && !s.quiz) return;
+      const b = s.balloon || {};
+      const node = el("div", { class: "xp-balloon" + (s.quiz ? " is-quiz" : "") });
       let html = "";
       if (s.title) html += `<h3><span class="xp-badge">${this.i + 1}</span>${s.title}</h3>`;
-      html += `<p>${b.text}</p>`;
+      if (b.text) html += `<p>${b.text}</p>`;
       if (b.why) html += `<div class="xp-why">${b.why}</div>`;
       node.innerHTML = html;
-      const place = b.placement || "right";
+      if (s.quiz) this._buildQuiz(node, s.quiz);
+      const place = (b.anchor && b.placement) || b.placement || "right";
       node.dataset.place = place;
       this.balloons.appendChild(node);
 
-      // posiciona usando as coordenadas do SVG mapeadas p/ a tela
       requestAnimationFrame(() => {
         const pt = this._anchorPoint(b.anchor);
         const bw = node.offsetWidth, bh = node.offsetHeight;
@@ -355,14 +437,39 @@
         top = clamp(top, 12, rect.height - bh - 12);
         node.style.left = left + "px";
         node.style.top = top + "px";
-        // alinha o ponteiro com a âncora
         if (place === "top" || place === "bottom") node.style.setProperty("--tail", clamp(pt.x - left - 8, 14, bw - 30) + "px");
         else node.style.setProperty("--tail", clamp(pt.y - top - 8, 14, bh - 30) + "px");
         requestAnimationFrame(() => node.classList.add("is-visible"));
       });
     }
 
-    // converte âncora (id de elemento ou {x,y} em coords do SVG) -> px na tela
+    _buildQuiz(node, q) {
+      const wrap = el("div", { class: "xp-quiz" });
+      if (q.question) wrap.appendChild(el("div", { class: "xp-quiz-q" }, q.question));
+      const opts = el("div", { class: "xp-quiz-opts" });
+      q.options.forEach((opt, oi) => {
+        const btn = el("button", { class: "xp-quiz-opt" }, opt);
+        btn.addEventListener("click", () => {
+          if (wrap.dataset.done) return;
+          wrap.dataset.done = "1";
+          [...opts.children].forEach((b, bi) => {
+            b.disabled = true;
+            if (bi === q.answer) b.classList.add("is-correct");
+            else if (bi === oi) b.classList.add("is-wrong");
+            else b.classList.add("is-mute");
+          });
+          if (q.explain) {
+            const ex = el("div", { class: "xp-quiz-explain" }, (oi === q.answer ? "✅ " : "❌ ") + q.explain);
+            wrap.appendChild(ex);
+            requestAnimationFrame(() => ex.classList.add("is-visible"));
+          }
+        });
+        opts.appendChild(btn);
+      });
+      wrap.appendChild(opts);
+      node.appendChild(wrap);
+    }
+
     _anchorPoint(anchor) {
       const rect = this.stage.getBoundingClientRect();
       let sx, sy;
@@ -375,7 +482,6 @@
       } else {
         sx = (this.d.width || 1200) / 2; sy = (this.d.height || 700) / 2;
       }
-      // mapeia coords do viewBox p/ pixels (preserveAspectRatio xMidYMid meet)
       const vw = this.d.width || 1200, vh = this.d.height || 700;
       const scale = Math.min(rect.width / vw, rect.height / vh);
       const ox = (rect.width - vw * scale) / 2;
@@ -384,12 +490,17 @@
     }
 
     /* ---- navegação ----------------------------------------------------- */
-    go(idx) {
+    go(idx, fromHash) {
       idx = clamp(idx, 0, this.steps.length - 1);
-      const dir = idx >= this.i ? 1 : -1;
       this.i = idx;
-      this._applyStep(idx, dir);
+      this._applyStep(idx);
       this._syncUI();
+      this._updateMinimap();
+      if (this.playing) this._runAutobar();
+      if (!fromHash) {
+        const h = "#cena=" + (idx + 1);
+        try { if (location.hash !== h) history.replaceState(null, "", h); } catch {}
+      }
     }
     next() { if (this.i < this.steps.length - 1) this.go(this.i + 1); else this.pause(); }
     prev() { if (this.i > 0) this.go(this.i - 1); }
@@ -398,21 +509,67 @@
       this.btnPrev.disabled = this.i === 0;
       this.btnNext.disabled = this.i === this.steps.length - 1;
       this.counter.textContent = `${this.i + 1} / ${this.steps.length}`;
-      this.progress.firstChild.style.width =
-        ((this.i + 1) / this.steps.length) * 100 + "%";
+      this.progress.firstChild.style.width = ((this.i + 1) / this.steps.length) * 100 + "%";
       [...this.list.children].forEach((li, k) => {
         li.classList.toggle("is-active", k === this.i);
         li.classList.toggle("is-done", k < this.i);
+        if (k === this.i) li.setAttribute("aria-current", "step");
+        else li.removeAttribute("aria-current");
       });
       this.list.children[this.i]?.scrollIntoView({ block: "nearest", behavior: "smooth" });
     }
 
-    /* ---- autoplay ------------------------------------------------------ */
+    _updateMinimap() {
+      if (!this.stage.classList.contains("show-minimap")) return;
+      try { this.minimapSvg.innerHTML = this.layer.outerHTML; } catch {}
+    }
+
+    /* ---- ferramentas: tema, minimapa, link, apresentação --------------- */
+    _applyTheme(t) { document.documentElement.dataset.theme = t; }
+    _toggleTheme() {
+      const t = (document.documentElement.dataset.theme === "light") ? "dark" : "light";
+      this._applyTheme(t); store.set("xp-theme", t);
+    }
+    _toggleMinimap() {
+      const on = this.stage.classList.toggle("show-minimap");
+      store.set("xp-minimap", on ? "1" : "0");
+      if (on) this._updateMinimap();
+    }
+    _togglePresent() {
+      const on = this.root.classList.toggle("is-presenting");
+      try {
+        if (on && this.root.requestFullscreen) this.root.requestFullscreen();
+        else if (!on && document.fullscreenElement && document.exitFullscreen) document.exitFullscreen();
+      } catch {}
+    }
+    _copyLink() {
+      const url = location.href;
+      const done = () => { this.btnLink.textContent = "✓"; setTimeout(() => (this.btnLink.textContent = "🔗"), 1200); };
+      try { navigator.clipboard ? navigator.clipboard.writeText(url).then(done, done) : done(); } catch { done(); }
+    }
+
+    /* ---- autoplay + barra de tempo da cena ----------------------------- */
+    _runAutobar() {
+      const fill = this.autobar.firstChild;
+      this.autobar.classList.add("is-running");
+      fill.style.transition = "none";
+      fill.style.width = "0%";
+      void fill.offsetWidth;                      // força reflow
+      fill.style.transition = `width ${this.autoplayMs}ms linear`;
+      fill.style.width = "100%";
+    }
+    _stopAutobar() {
+      const fill = this.autobar.firstChild;
+      this.autobar.classList.remove("is-running");
+      fill.style.transition = "none";
+      fill.style.width = "0%";
+    }
     togglePlay() { this.playing ? this.pause() : this.play(); }
     play() {
       if (this.i >= this.steps.length - 1) this.go(0);
       this.playing = true;
       this.btnPlay.textContent = "⏸ Pausar";
+      this._runAutobar();
       const tick = () => {
         if (!this.playing) return;
         if (this.i >= this.steps.length - 1) { this.pause(); return; }
@@ -425,6 +582,12 @@
       this.playing = false;
       this.btnPlay.textContent = "▶ Reproduzir";
       clearTimeout(this.timer);
+      this._stopAutobar();
+    }
+
+    _readHash() {
+      const m = /cena=(\d+)/.exec(location.hash || "");
+      return m ? clamp(+m[1] - 1, 0, this.steps.length - 1) : 0;
     }
   }
 

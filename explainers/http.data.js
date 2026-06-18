@@ -66,7 +66,7 @@
       title: "DNS responde o IP",
       show: ["m_dnsr", "m_dnsr_l"],
       balloon: { anchor: "m_dnsr_l", placement: "bottom",
-        text: "O DNS devolve o <strong>IP</strong> (ex.: 93.184.216.34). O resultado fica em <strong>cache</strong> por um tempo (TTL).",
+        text: "O DNS devolve o <strong>IP</strong> (ex.: 93.184.216.34). O resultado fica em <strong>cache</strong> por um tempo (<span class=\"xp-term\" tabindex=\"0\" data-tip=\"Time To Live: por quantos segundos a resposta do DNS pode ser reutilizada antes de perguntar de novo.\">TTL</span>).",
         why: "Com o IP em mãos, o navegador já pode abrir uma conexão até o servidor." },
       enter: (ctx) => ctx.drawArrow("m_dnsr"),
     },
@@ -108,6 +108,22 @@
         text: "Volta a resposta: uma <strong>linha de status</strong> (200 OK, 404, 500…), <strong>headers</strong> (Content-Type, Cache-Control…) e o <strong>corpo</strong> (o HTML).",
         why: "O código de status resume o resultado; os headers dizem como tratar o corpo (tipo, tamanho, cache)." },
       enter: (ctx) => { ctx.moveTo("d_resp", 0, 0); ctx.show("d_resp"); ctx.drawArrow("m_resp"); setTimeout(() => ctx.moveTo("d_resp", -(S - C), 0), 60); },
+    },
+    {
+      title: "Teste rápido",
+      balloon: { anchor: "dnss", placement: "bottom",
+        text: "Antes de fechar, confira um ponto-chave 👇" },
+      quiz: {
+        question: "Para que serve a etapa de DNS numa requisição?",
+        options: [
+          "Criptografar a conexão com o servidor",
+          "Traduzir o nome (www.exemplo.com) para um endereço IP",
+          "Comprimir o HTML antes de enviar",
+          "Guardar os cookies do usuário",
+        ],
+        answer: 1,
+        explain: "A internet roteia por IP, não por nome. O DNS resolve o nome para o IP antes de qualquer conexão acontecer.",
+      },
     },
     {
       title: "Renderiza e (talvez) cacheia",
