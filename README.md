@@ -17,6 +17,9 @@ Explicadores disponíveis:
 Todos compartilham o **mesmo motor** (`engine/`): cada um é apenas um arquivo de
 dados. Isso é a prova de que a estrutura se reaproveita.
 
+> 🤖 Vai trabalhar no código (humano ou IA)? Comece pelo **[`AGENTS.md`](AGENTS.md)**:
+> arquitetura, o modelo de visibilidade das cenas e os principais cuidados.
+
 ### Recursos do motor
 
 - ▶️ **Autoplay** com barra de tempo por cena, além de Próximo/Anterior e índice.
