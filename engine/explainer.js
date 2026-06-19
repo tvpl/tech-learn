@@ -514,9 +514,14 @@
 
     /* ---- balão ancorado a um elemento (+ quiz opcional) ---------------- */
     _showBalloon(s) {
-      // saída suave do balão anterior
-      const old = this.balloons.firstChild;
-      if (old) { old.classList.remove("is-visible"); setTimeout(() => old.remove(), 260); }
+      // saída suave de TODOS os balões anteriores (não só do primeiro), senão,
+      // ao avançar rápido, balões intermediários ficariam órfãos e empilhados.
+      [...this.balloons.children].forEach((old) => {
+        if (old.dataset.leaving) return;
+        old.dataset.leaving = "1";
+        old.classList.remove("is-visible");
+        setTimeout(() => old.remove(), 280);
+      });
       if (!s.balloon && !s.quiz) return;
       const b = s.balloon || {};
       const node = el("div", { class: "xp-balloon" + (s.quiz ? " is-quiz" : "") });
@@ -556,7 +561,7 @@
       else node.style.setProperty("--tail", clamp(pt.y - top - 8, 14, bh - 30) + "px");
     }
     _repositionBalloon() {
-      const node = this.balloons.querySelector(".xp-balloon");
+      const node = this.balloons.querySelector(".xp-balloon:not([data-leaving])");
       if (node) this._placeBalloon(node);
     }
 

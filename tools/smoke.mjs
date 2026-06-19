@@ -62,6 +62,12 @@ for (const file of files) {
   for (let i = 0; i < xp.steps.length; i++) xp.go(i);
   for (let i = xp.steps.length - 1; i >= 0; i--) xp.go(i);
 
+  // regressão: avançar rápido (sem esperar o fade) não pode empilhar balões —
+  // após várias trocas síncronas deve haver no máximo 1 balão "vivo".
+  xp.go(0); xp.go(Math.min(1, xp.steps.length - 1)); xp.go(Math.min(2, xp.steps.length - 1));
+  const liveBalloons = xp.balloons.querySelectorAll(".xp-balloon:not([data-leaving])").length;
+  if (liveBalloons > 1) errors.push(`balões empilhados: ${liveBalloons} visíveis ao mesmo tempo`);
+
   // valida referências
   const ids = new Set([...xp.nodes.keys()]);
   const expand = (list) => xp._ids(list);
