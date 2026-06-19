@@ -50,6 +50,9 @@
       this.playing = false;
       this.timer = null;
       this.autoplayMs = diagram.autoplayMs || 6500;
+      this.view = { k: 1, tx: 0, ty: 0 };   // zoom/pan do palco
+      this.debug = false;
+      this.quizState = new Map();            // idx da cena -> opção escolhida
     }
 
     /* ---- montagem do esqueleto da UI ----------------------------------- */
@@ -107,6 +110,8 @@
       });
       this.svg.appendChild(this._defs());
       this.layer = svg("g", { class: "xp-canvas" });
+      this.layer.style.transformOrigin = `${(this.d.width || 1200) / 2}px ${(this.d.height || 700) / 2}px`;
+      this.layer.style.transition = "transform .18s ease";
       this.svg.appendChild(this.layer);
       this.stage.appendChild(this.svg);
       this.balloons = el("div", { class: "xp-balloon-layer" });
@@ -154,8 +159,13 @@
         else if (e.key === " ") { e.preventDefault(); this.togglePlay(); }
         else if (e.key === "f") this._togglePresent();
         else if (e.key === "m") this._toggleMinimap();
+        else if (e.key === "d") this._toggleDebug();
+        else if (e.key === "+" || e.key === "=") this._zoomBy(1.2);
+        else if (e.key === "-" || e.key === "_") this._zoomBy(1 / 1.2);
+        else if (e.key === "0") this._resetView();
       };
       window.addEventListener("keydown", this._onKey);
+      this._bindPointer();
 
       // deep-link: navegação por #cena=N
       this._onHash = () => { const idx = this._readHash(); if (idx !== this.i) this.go(idx, true); };
@@ -180,8 +190,106 @@
       // restaura minimapa salvo
       if (store.get("xp-minimap", "0") === "1") this.stage.classList.add("show-minimap");
 
-      this.go(this._readHash());
+      this.go(this._initialIndex());
       return this;
+    }
+
+    /* ---- zoom / pan / gestos ------------------------------------------- */
+    _rootScale() {
+      const rect = this.stage.getBoundingClientRect();
+      return (rect.width || 1) / (this.d.width || 1200);
+    }
+    _applyView() {
+      const v = this.view;
+      this.layer.style.transform = `translate(${v.tx}px, ${v.ty}px) scale(${v.k})`;
+      this._repositionBalloon();
+    }
+    _zoomBy(f) {
+      this.view.k = clamp(this.view.k * f, 1, 4);
+      if (this.view.k === 1) { this.view.tx = 0; this.view.ty = 0; }
+      this._applyView();
+    }
+    _resetView() { this.view = { k: 1, tx: 0, ty: 0 }; this._applyView(); }
+    _bindPointer() {
+      const st = this.stage;
+      let pan = null;
+      st.addEventListener("wheel", (e) => {
+        e.preventDefault();
+        this._zoomBy(e.deltaY < 0 ? 1.12 : 1 / 1.12);
+      }, { passive: false });
+      st.addEventListener("dblclick", () => this._resetView());
+      st.addEventListener("pointerdown", (e) => {
+        if (e.pointerType === "mouse" && e.button === 0 && this.view.k > 1) {
+          pan = { x: e.clientX, y: e.clientY, tx: this.view.tx, ty: this.view.ty };
+          try { st.setPointerCapture(e.pointerId); } catch {}
+        }
+      });
+      st.addEventListener("pointermove", (e) => {
+        if (!pan) return;
+        const r = this._rootScale();
+        this.view.tx = pan.tx + (e.clientX - pan.x) / r;
+        this.view.ty = pan.ty + (e.clientY - pan.y) / r;
+        this.layer.style.transform = `translate(${this.view.tx}px, ${this.view.ty}px) scale(${this.view.k})`;
+      });
+      st.addEventListener("pointerup", () => { if (pan) { pan = null; this._repositionBalloon(); } });
+
+      // toque: swipe p/ navegar (sem zoom), pinça p/ zoom, arrasto p/ pan (com zoom)
+      const dist = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+      let tS = null, pinch = null;
+      st.addEventListener("touchstart", (e) => {
+        if (e.touches.length === 1) { tS = { x: e.touches[0].clientX, y: e.touches[0].clientY, tx: this.view.tx, ty: this.view.ty }; pinch = null; }
+        else if (e.touches.length === 2) { pinch = { d: dist(e.touches) || 1, k: this.view.k }; tS = null; }
+      }, { passive: true });
+      st.addEventListener("touchmove", (e) => {
+        if (pinch && e.touches.length === 2) {
+          this.view.k = clamp(pinch.k * dist(e.touches) / pinch.d, 1, 4);
+          this._applyView(); e.preventDefault();
+        } else if (tS && e.touches.length === 1 && this.view.k > 1) {
+          const r = this._rootScale();
+          this.view.tx = tS.tx + (e.touches[0].clientX - tS.x) / r;
+          this.view.ty = tS.ty + (e.touches[0].clientY - tS.y) / r;
+          this.layer.style.transform = `translate(${this.view.tx}px, ${this.view.ty}px) scale(${this.view.k})`;
+          e.preventDefault();
+        }
+      }, { passive: false });
+      st.addEventListener("touchend", (e) => {
+        if (tS && this.view.k === 1 && e.changedTouches.length) {
+          const dx = e.changedTouches[0].clientX - tS.x, dy = e.changedTouches[0].clientY - tS.y;
+          if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)) (dx < 0 ? this.next() : this.prev());
+        }
+        tS = null; pinch = null;
+        this._repositionBalloon();
+      });
+    }
+
+    /* ---- modo debug (tecla d): grade de coordenadas + ids -------------- */
+    _toggleDebug() {
+      this.debug = !this.debug;
+      if (this.debug && !this.dbgLayer) this._buildDebug();
+      if (this.dbgLayer) this.dbgLayer.style.display = this.debug ? "" : "none";
+    }
+    _buildDebug() {
+      const W = this.d.width || 1200, H = this.d.height || 700, S = 100;
+      const g = svg("g", { class: "xp-debug" });
+      for (let x = 0; x <= W; x += S) {
+        g.appendChild(svg("line", { class: "xp-grid", x1: x, y1: 0, x2: x, y2: H }));
+        g.appendChild(svg("text", { class: "xp-grid-t", x: x + 2, y: 12 })).textContent = x;
+      }
+      for (let y = 0; y <= H; y += S) {
+        g.appendChild(svg("line", { class: "xp-grid", x1: 0, y1: y, x2: W, y2: y }));
+        if (y > 0) g.appendChild(svg("text", { class: "xp-grid-t", x: 2, y: y - 2 })).textContent = y;
+      }
+      this.nodes.forEach((node, id) => {
+        const d = node.def;
+        const m = !d.x && d.path ? /M\s*([\d.]+)[ ,]([\d.]+)/.exec(d.path) : null;
+        const px = d.x != null ? d.x : (d.x1 != null ? d.x1 : (m ? +m[1] : 0));
+        const py = d.y != null ? d.y : (d.y1 != null ? d.y1 : (m ? +m[2] : 0));
+        const t = svg("text", { class: "xp-dbg-id", x: px + 3, y: py - 3 });
+        t.textContent = id;
+        g.appendChild(t);
+      });
+      this.dbgLayer = g;
+      this.layer.appendChild(g);
     }
 
     _defs() {
@@ -417,76 +525,105 @@
       if (b.text) html += `<p>${b.text}</p>`;
       if (b.why) html += `<div class="xp-why">${b.why}</div>`;
       node.innerHTML = html;
-      if (s.quiz) this._buildQuiz(node, s.quiz);
+      if (s.quiz) this._buildQuiz(node, s.quiz, this.i);
       const place = (b.anchor && b.placement) || b.placement || "right";
       node.dataset.place = place;
+      node._anchor = b.anchor;
       this.balloons.appendChild(node);
 
       requestAnimationFrame(() => {
-        const pt = this._anchorPoint(b.anchor);
-        const bw = node.offsetWidth, bh = node.offsetHeight;
-        const gap = 22;
-        let left = pt.x, top = pt.y;
-        if (place === "right") { left = pt.x + gap; top = pt.y - bh / 2; }
-        else if (place === "left") { left = pt.x - bw - gap; top = pt.y - bh / 2; }
-        else if (place === "top") { left = pt.x - bw / 2; top = pt.y - bh - gap; }
-        else if (place === "bottom") { left = pt.x - bw / 2; top = pt.y + gap; }
-
-        const rect = this.stage.getBoundingClientRect();
-        left = clamp(left, 12, rect.width - bw - 12);
-        top = clamp(top, 12, rect.height - bh - 12);
-        node.style.left = left + "px";
-        node.style.top = top + "px";
-        if (place === "top" || place === "bottom") node.style.setProperty("--tail", clamp(pt.x - left - 8, 14, bw - 30) + "px");
-        else node.style.setProperty("--tail", clamp(pt.y - top - 8, 14, bh - 30) + "px");
+        this._placeBalloon(node);
         requestAnimationFrame(() => node.classList.add("is-visible"));
       });
     }
 
-    _buildQuiz(node, q) {
+    // posiciona (ou reposiciona) um balão já criado, ancorando-o ao elemento/ponto
+    _placeBalloon(node) {
+      const place = node.dataset.place || "right";
+      const pt = this._anchorPoint(node._anchor);
+      const bw = node.offsetWidth, bh = node.offsetHeight, gap = 22;
+      let left = pt.x, top = pt.y;
+      if (place === "right") { left = pt.x + gap; top = pt.y - bh / 2; }
+      else if (place === "left") { left = pt.x - bw - gap; top = pt.y - bh / 2; }
+      else if (place === "top") { left = pt.x - bw / 2; top = pt.y - bh - gap; }
+      else if (place === "bottom") { left = pt.x - bw / 2; top = pt.y + gap; }
+      const rect = this.stage.getBoundingClientRect();
+      left = clamp(left, 12, rect.width - bw - 12);
+      top = clamp(top, 12, rect.height - bh - 12);
+      node.style.left = left + "px";
+      node.style.top = top + "px";
+      if (place === "top" || place === "bottom") node.style.setProperty("--tail", clamp(pt.x - left - 8, 14, bw - 30) + "px");
+      else node.style.setProperty("--tail", clamp(pt.y - top - 8, 14, bh - 30) + "px");
+    }
+    _repositionBalloon() {
+      const node = this.balloons.querySelector(".xp-balloon");
+      if (node) this._placeBalloon(node);
+    }
+
+    _buildQuiz(node, q, stepIdx) {
       const wrap = el("div", { class: "xp-quiz" });
       if (q.question) wrap.appendChild(el("div", { class: "xp-quiz-q" }, q.question));
       const opts = el("div", { class: "xp-quiz-opts" });
+      const settle = (chosen) => {
+        wrap.dataset.done = "1";
+        [...opts.children].forEach((b, bi) => {
+          b.disabled = true;
+          if (bi === q.answer) b.classList.add("is-correct");
+          else if (bi === chosen) b.classList.add("is-wrong");
+          else b.classList.add("is-mute");
+        });
+        if (q.explain) {
+          const ex = el("div", { class: "xp-quiz-explain" }, (chosen === q.answer ? "✅ " : "❌ ") + q.explain);
+          wrap.appendChild(ex);
+          requestAnimationFrame(() => ex.classList.add("is-visible"));
+        }
+      };
       q.options.forEach((opt, oi) => {
         const btn = el("button", { class: "xp-quiz-opt" }, opt);
         btn.addEventListener("click", () => {
           if (wrap.dataset.done) return;
-          wrap.dataset.done = "1";
-          [...opts.children].forEach((b, bi) => {
-            b.disabled = true;
-            if (bi === q.answer) b.classList.add("is-correct");
-            else if (bi === oi) b.classList.add("is-wrong");
-            else b.classList.add("is-mute");
-          });
-          if (q.explain) {
-            const ex = el("div", { class: "xp-quiz-explain" }, (oi === q.answer ? "✅ " : "❌ ") + q.explain);
-            wrap.appendChild(ex);
-            requestAnimationFrame(() => ex.classList.add("is-visible"));
-          }
+          this.quizState.set(stepIdx, oi);   // lembra a resposta nesta sessão
+          settle(oi);
         });
         opts.appendChild(btn);
       });
       wrap.appendChild(opts);
       node.appendChild(wrap);
+      // se já respondeu antes (navegou e voltou), mostra o resultado de novo
+      if (this.quizState.has(stepIdx)) settle(this.quizState.get(stepIdx));
     }
 
     _anchorPoint(anchor) {
       const rect = this.stage.getBoundingClientRect();
-      let sx, sy;
+      // âncora por id: mede o elemento real na tela (reflete viewBox, zoom e pan)
       if (typeof anchor === "string") {
         const node = this.nodes.get(anchor);
-        const bb = node ? node.group.getBBox() : { x: 0, y: 0, width: 0, height: 0 };
-        sx = bb.x + bb.width / 2; sy = bb.y + bb.height / 2;
-      } else if (anchor && typeof anchor === "object") {
-        sx = anchor.x; sy = anchor.y;
-      } else {
-        sx = (this.d.width || 1200) / 2; sy = (this.d.height || 700) / 2;
+        if (node) {
+          const b = node.group.getBoundingClientRect();
+          return { x: b.left - rect.left + b.width / 2, y: b.top - rect.top + b.height / 2 };
+        }
       }
+      const p = (anchor && typeof anchor === "object")
+        ? anchor : { x: (this.d.width || 1200) / 2, y: (this.d.height || 700) / 2 };
+      return this._svgToScreen(p);
+    }
+
+    // converte um ponto em coords do SVG (após zoom/pan) para px relativos ao palco
+    _svgToScreen(p) {
+      const rect = this.stage.getBoundingClientRect();
+      try {
+        const m = this.layer.getScreenCTM();
+        if (m && this.svg.createSVGPoint) {
+          const sp = this.svg.createSVGPoint(); sp.x = p.x; sp.y = p.y;
+          const r = sp.matrixTransform(m);
+          return { x: r.x - rect.left, y: r.y - rect.top };
+        }
+      } catch {}
+      // fallback (sem zoom): mapeamento manual do viewBox (preserveAspectRatio meet)
       const vw = this.d.width || 1200, vh = this.d.height || 700;
       const scale = Math.min(rect.width / vw, rect.height / vh);
-      const ox = (rect.width - vw * scale) / 2;
-      const oy = (rect.height - vh * scale) / 2;
-      return { x: ox + sx * scale, y: oy + sy * scale };
+      const ox = (rect.width - vw * scale) / 2, oy = (rect.height - vh * scale) / 2;
+      return { x: ox + p.x * scale, y: oy + p.y * scale };
     }
 
     /* ---- navegação ----------------------------------------------------- */
@@ -501,6 +638,15 @@
         const h = "#cena=" + (idx + 1);
         try { if (location.hash !== h) history.replaceState(null, "", h); } catch {}
       }
+      store.set("xp-last:" + (this.d.title || ""), String(idx));   // p/ retomar depois
+    }
+
+    // cena inicial: URL (#cena=N) tem prioridade; senão retoma a última vista
+    _initialIndex() {
+      const m = /cena=(\d+)/.exec(location.hash || "");
+      if (m) return clamp(+m[1] - 1, 0, this.steps.length - 1);
+      const last = store.get("xp-last:" + (this.d.title || ""), null);
+      return last != null ? clamp(+last, 0, this.steps.length - 1) : 0;
     }
     next() { if (this.i < this.steps.length - 1) this.go(this.i + 1); else this.pause(); }
     prev() { if (this.i > 0) this.go(this.i - 1); }

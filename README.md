@@ -26,8 +26,9 @@ dados. Isso é a prova de que a estrutura se reaproveita.
 - 🔗 **Deep-link**: a cena atual vai para a URL (`#cena=7`) — dá para compartilhar
   e sobrevive ao refresh.
 - 🌓 **Tema claro/escuro** (persiste) · ⛶ **modo apresentação** (fullscreen) ·
-  🗺️ **minimapa**.
-- ❓ **Quiz** opcional ao fim de cada explicador.
+  🗺️ **minimapa** · 🔎 **zoom/pan** (roda, pinça, teclado) e **swipe** no toque.
+- 🧭 **Retoma** a última cena vista e tem **modo debug** (tecla `d`) com grade e ids.
+- ❓ **Quiz** opcional ao fim de cada explicador (lembra a resposta na sessão).
 - 💬 **Glossário**: termos com definição em tooltip dentro dos balões.
 - ♿ **Acessível**: navegação por teclado, foco visível, `aria-live` e
   `prefers-reduced-motion`.
@@ -52,9 +53,13 @@ o índice lateral de etapas, ou o teclado:
 | **espaço** | play / pause do autoplay |
 | **f** | modo apresentação (fullscreen) |
 | **m** | mostra/oculta o minimapa |
+| **+ / − / 0** | zoom: aproxima / afasta / reseta |
+| **d** | modo debug (grade de coordenadas + ids) — ajuda a posicionar elementos |
 
-No cabeçalho há botões para **tema** (🌓), **minimapa** (🗺️), **copiar link da
-cena** (🔗) e **apresentação** (⛶).
+Com **mouse**: roda do mouse dá zoom, arrastar (com zoom) faz *pan*, duplo-clique
+reseta. No **toque**: *swipe* horizontal troca de cena, pinça dá zoom e arrastar faz
+*pan*. No cabeçalho há botões para **tema** (🌓), **minimapa** (🗺️), **copiar link
+da cena** (🔗) e **apresentação** (⛶). A última cena vista é **retomada** ao reabrir.
 
 ## 🧪 Testes
 
@@ -63,14 +68,23 @@ npm install   # instala o jsdom (única dependência de dev)
 npm test      # percorre todas as cenas de todos os diagramas e valida
 ```
 
-O smoke test (`tools/smoke.mjs`) monta cada explicador num DOM headless, percorre
-as cenas (ida e volta, disparando os `enter()`) e falha se houver erro de runtime,
-âncora/referência inexistente ou quiz malformado. Roda também no **CI**
-(`.github/workflows/ci.yml`) a cada push.
+`npm test` roda duas verificações (e também no **CI**, `.github/workflows/ci.yml`):
+
+- **`tools/smoke.mjs`** — monta cada explicador num DOM headless (jsdom), percorre as
+  cenas (ida e volta, disparando os `enter()`) e falha se houver erro de runtime,
+  âncora/referência inexistente ou quiz malformado.
+- **`tools/checklinks.mjs`** — confere a consistência estrutural: todo `*.data.js`
+  tem seu `*.html`, cada página referencia o motor/CSS/seus dados, e todo card do
+  `index.html` aponta para um arquivo existente.
 
 > **Publicar:** o workflow `pages.yml` faz deploy no GitHub Pages (Settings →
-> Pages → Source: GitHub Actions). Previews PNG podem ser gerados com
-> `npm run screenshots` (Playwright) ou pelo workflow `screenshots.yml`.
+> Pages → Source: GitHub Actions).
+>
+> **Previews & social:** as páginas têm meta tags **Open Graph** apontando para
+> `assets/preview/<nome>.png`. Rode o workflow **Screenshots** (`screenshots.yml`,
+> via *Run workflow*) para gerar esses PNGs com o Playwright e commitá-los
+> automaticamente — aí os links desdobram com imagem e dá para embuti-los no README.
+> Localmente: `npm run screenshots` (requer `npx playwright install chromium`).
 
 ## 🗂 Estrutura
 
@@ -79,14 +93,16 @@ tech-learn/
 ├── index.html                  # vitrine: lista os explicadores
 ├── engine/
 │   ├── explainer.css           # tema e animações (genérico)
-│   └── explainer.js            # motor: timeline, render SVG, balões, controles
+│   ├── explainer.js            # motor: timeline, render SVG, balões, controles
+│   └── explainer.types.js      # typedefs JSDoc do contrato de dados (autocomplete)
 ├── explainers/                 # um par .html + .data.js por tema
 │   ├── transformer.html / transformer.data.js   # CONTEÚDO: elementos + cenas
 │   ├── http.html        / http.data.js
 │   ├── tcp.html         / tcp.data.js
 │   ├── git.html         / git.data.js
 │   └── hashmap.html     / hashmap.data.js
-├── tools/                      # smoke.mjs (testes) e screenshots.mjs (previews)
+├── tools/                      # smoke.mjs, checklinks.mjs (testes), screenshots.mjs
+├── assets/preview/             # PNGs de preview (gerados pelo workflow Screenshots)
 ├── .github/workflows/          # ci.yml, pages.yml, screenshots.yml
 └── package.json                # scripts: test, screenshots, serve
 ```
@@ -104,6 +120,16 @@ fininha que instancia o motor.
 3. No `.html`, troque a referência do script e a linha de instanciação para
    `new Explainer(window.SEU_DIAGRAMA).mount("#app")`.
 4. Adicione um card apontando para a nova página em `index.html`.
+5. Rode `npm test` (o smoke descobre o novo `.data.js` sozinho; o checklinks valida
+   os links). **Dica:** pressione **d** no navegador para ver a grade de coordenadas
+   e os ids enquanto posiciona os elementos.
+
+Para autocomplete/checagem no editor (sem TypeScript), comece o `.data.js` com:
+
+```js
+/** @type {import("../engine/explainer.types.js").Diagram} */
+window.SEU_DIAGRAMA = { title: "…", elements: [ /* … */ ], steps: [ /* … */ ] };
+```
 
 ### Contrato dos dados
 

@@ -12,24 +12,28 @@ import path from "node:path";
 import { chromium } from "playwright";
 
 const ROOT = process.cwd();
-const OUT = path.join(ROOT, "screenshots");
+const OUT = path.join(ROOT, "assets", "preview");   // pasta versionada (usada por OG/README)
 fs.mkdirSync(OUT, { recursive: true });
 
-const pages = fs.readdirSync(path.join(ROOT, "explainers")).filter((f) => f.endsWith(".html")).sort();
+// lista: a vitrine (home) + cada explicador
+const targets = [
+  { name: "home", file: "index.html" },
+  ...fs.readdirSync(path.join(ROOT, "explainers"))
+    .filter((f) => f.endsWith(".html")).sort()
+    .map((f) => ({ name: f.replace(/\.html$/, ""), file: path.join("explainers", f) })),
+];
 
 const browser = await chromium.launch();
 const ctx = await browser.newContext({ viewport: { width: 1440, height: 860 }, deviceScaleFactor: 2 });
 
-for (const p of pages) {
-  const name = p.replace(/\.html$/, "");
+for (const t of targets) {
   const page = await ctx.newPage();
-  const url = "file://" + path.join(ROOT, "explainers", p) + "#cena=1";
-  await page.goto(url);
+  await page.goto("file://" + path.join(ROOT, t.file) + (t.name === "home" ? "" : "#cena=1"));
   await page.waitForTimeout(1400);             // deixa a 1ª cena animar
-  await page.screenshot({ path: path.join(OUT, name + ".png") });
+  await page.screenshot({ path: path.join(OUT, t.name + ".png") });
   await page.close();
-  console.log("📸", name + ".png");
+  console.log("📸", t.name + ".png");
 }
 
 await browser.close();
-console.log("\n✔ screenshots em ./screenshots/");
+console.log("\n✔ screenshots em ./assets/preview/");

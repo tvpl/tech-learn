@@ -87,9 +87,20 @@ Um elemento com `group:"nome"` entra no grupo `nome`. Em listas de cena use
 
 ### 3.6 Recursos prontos (não reimplemente)
 Deep-link `#cena=N`, autoplay + barra, tema claro/escuro, modo apresentação,
-minimapa, **quiz** (`step.quiz`), **glossário** (`<span class="xp-term"
-data-tip="...">`), teclado (← → espaço f m), `aria-live`, `prefers-reduced-motion`,
-validador que avisa no console sobre ids inexistentes.
+minimapa, **zoom/pan** (roda/pinça/teclado `+ - 0`, arrasto) e **swipe** no toque,
+**retomar** última cena (localStorage), **modo debug** (tecla `d`: grade + ids),
+**quiz** (`step.quiz`, lembra a resposta na sessão), **glossário** (`<span
+class="xp-term" data-tip="...">`), teclado (← → espaço f m d + − 0), `aria-live`,
+`prefers-reduced-motion`, validador que avisa no console sobre ids inexistentes.
+
+Cuidado ao mexer em balões: a posição é calculada em `_placeBalloon` via
+`getBoundingClientRect`/`getScreenCTM` (reflete zoom/pan). Não recrie o balão para
+reposicionar — use `_repositionBalloon()`.
+
+### 3.7 Tipos (autocomplete sem TypeScript)
+`engine/explainer.types.js` traz `@typedef`s do contrato. Comece um `.data.js` com
+`/** @type {import("../engine/explainer.types.js").Diagram} */` para ganhar
+autocomplete/checagem no editor (ver `transformer.data.js`).
 
 ---
 
@@ -112,15 +123,16 @@ CSS de cor (`--accent`, `--good`, `--warn`, `--hot`, `--accent-2`) em vez de hex
 ## 5. Testes, build e comandos
 
 ```bash
-npm install     # jsdom (única devDependency)
-npm test        # tools/smoke.mjs — percorre TODAS as cenas de TODOS os diagramas
+npm install     # jsdom + playwright (devDependencies)
+npm test        # smoke.mjs (jsdom) + checklinks.mjs (consistência de links)
 npm run serve   # python3 -m http.server 8000
 ```
 
-O smoke test (jsdom, sem navegador real) monta cada diagrama, navega ida e volta
-disparando os `enter()`, e falha se houver: erro de runtime, âncora/ref a id
-inexistente, ou quiz malformado. **Sempre rode `npm test` antes de commitar.** Ele
-também roda no CI (`.github/workflows/ci.yml`).
+`npm test` roda **dois** scripts (e também no CI, `.github/workflows/ci.yml`):
+`tools/smoke.mjs` (monta cada diagrama em jsdom, navega ida e volta disparando os
+`enter()`, falha em erro de runtime/âncora-ref inexistente/quiz malformado) e
+`tools/checklinks.mjs` (pares html↔data, refs no html, cards do index).
+**Sempre rode `npm test` antes de commitar.**
 
 Não há lint configurado. Não há passo de build (o site é os próprios arquivos).
 Screenshots reais exigem Playwright (não instalado por padrão; ver `screenshots.yml`).

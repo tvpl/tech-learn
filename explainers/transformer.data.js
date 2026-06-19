@@ -425,6 +425,7 @@
     },
   ];
 
+  /** @type {import("../engine/explainer.types.js").Diagram} */
   window.TRANSFORMER_DIAGRAM = {
     title: "Como funciona uma rede Transformer",
     subtitle: "Do texto cru à próxima palavra — passo a passo",

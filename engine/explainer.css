@@ -463,6 +463,17 @@ body {
 }
 .xp-term:hover::after, .xp-term:focus::after { opacity: 1; transform: translateX(-50%) translateY(0); }
 
+/* ============================================================================
+   Modo debug (tecla d): grade de coordenadas + ids dos elementos
+   ========================================================================== */
+.xp-debug { pointer-events: none; }
+.xp-debug .xp-grid { stroke: var(--accent); stroke-width: .5; opacity: .16; }
+.xp-debug .xp-grid-t { fill: var(--accent); opacity: .5; font-size: 9px; font-family: ui-monospace, monospace; }
+.xp-debug .xp-dbg-id {
+  fill: var(--hot); font-size: 9px; font-family: ui-monospace, monospace;
+  paint-order: stroke; stroke: var(--bg); stroke-width: 2.5px;
+}
+
 /* ---- responsivo --------------------------------------------------------- */
 @media (max-width: 880px) {
   .xp-app { grid-template-columns: 1fr; grid-template-areas: "head" "stage" "controls"; }
