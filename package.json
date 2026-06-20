@@ -1,0 +1,16 @@
+{
+  "name": "tech-learn",
+  "version": "1.0.0",
+  "description": "Diagramas explicativos animados (HTML/CSS/JS) sobre um motor reutilizável",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node tools/smoke.mjs && node tools/checklinks.mjs",
+    "screenshots": "node tools/screenshots.mjs",
+    "serve": "python3 -m http.server 8000"
+  },
+  "devDependencies": {
+    "jsdom": "^24.1.0",
+    "playwright": "^1.61.0"
+  }
+}

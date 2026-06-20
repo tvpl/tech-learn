@@ -1,0 +1,37 @@
+name: Screenshots
+
+# Gera previews PNG de cada explicador e os sobe como artefato.
+# Rode manualmente em Actions → Screenshots → Run workflow.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  shots:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - run: npm run screenshots
+      - uses: actions/upload-artifact@v4
+        with:
+          name: previews
+          path: assets/preview/
+      # commita os PNGs de volta para que OG e README mostrem os previews
+      - name: Commit previews
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add assets/preview
+          if git diff --staged --quiet; then
+            echo "Sem mudanças nos previews."
+          else
+            git commit -m "chore: atualiza previews (assets/preview)"
+            git push
+          fi
