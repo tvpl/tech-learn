@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Síncrono sobre assíncrono (Java + Micronaut) — Explicador animado</title>
+  <meta name="description" content="Como segurar uma conexão HTTP síncrona enquanto o processamento corre assíncrono: Micronaut sobre Netty, Mono + Sinks.One, correlationId e broker (Kafka/Redis)." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Síncrono sobre assíncrono · Java + Micronaut" />
+  <meta property="og:description" content="Segurar a conexão e escutar a resposta: event loop não-bloqueante, Sinks.One, correlationId e broker (Kafka/Redis), com robustez e volumetria." />
+  <meta property="og:image" content="../assets/preview/sync-async.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../engine/explainer.css" />
+</head>
+<body>
+  <div id="app"></div>
+  <script src="../engine/explainer.js"></script>
+  <script src="sync-async.data.js"></script>
+  <script>new Explainer(window.SYNC_ASYNC_DIAGRAM).mount("#app");</script>
+</body>
+</html>

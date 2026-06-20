@@ -13,6 +13,8 @@ Explicadores disponíveis:
 - 🔌 **TCP/IP** — three-way handshake, segmentos/ACKs, janela, perda+retransmissão, FIN.
 - 🌿 **Git** — as quatro áreas e o caminho de `add` → `commit` → `push` → `pull`.
 - #️⃣ **Hash Map** — chave → hash → índice → bucket, colisões, encadeamento e resize.
+- ⏳ **Síncrono sobre assíncrono** — segurar a conexão HTTP enquanto o trabalho corre
+  assíncrono (Java + Micronaut/Netty, `Mono` + `Sinks.One`, correlationId, Kafka/Redis).
 
 Todos compartilham o **mesmo motor** (`engine/`): cada um é apenas um arquivo de
 dados. Isso é a prova de que a estrutura se reaproveita.
