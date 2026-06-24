@@ -60,6 +60,7 @@
       this.root = typeof sel === "string" ? document.querySelector(sel) : sel;
       this.root.classList.add("xp-app");
       this.root.innerHTML = "";
+      try { this._baseTitle = document.title; } catch {}
       this._applyTheme(store.get("xp-theme", "dark"));
 
       // cabeçalho + ferramentas (tema, link, apresentação)
@@ -134,7 +135,10 @@
       this.progress.appendChild(el("span"));
       this.counter = el("div", { class: "xp-counter" });
       this.btnPrev.addEventListener("click", () => this.prev());
-      this.btnNext.addEventListener("click", () => this.next());
+      // no fim, "Próximo" vira "Reiniciar" e volta à primeira cena
+      this.btnNext.addEventListener("click", () => {
+        if (this.i >= this.steps.length - 1) { this.pause(); this.go(0); } else this.next();
+      });
       this.btnPlay.addEventListener("click", () => this.togglePlay());
       ctr.append(this.btnPrev, this.btnPlay, this.progress, this.counter, this.btnNext);
       this.root.appendChild(ctr);
@@ -187,6 +191,7 @@
         moveTo: (id, x, y) => this.moveTo(id, x, y),
         drawArrow: (id) => this.drawArrow(id),
         setBars: (id, vals) => this.setBars(id, vals),
+        setLabel: (id, text) => this.setLabel(id, text),
         lightCells: (id, cells) => this.lightCells(id, cells),
         pulse: (id, on = true) => this.nodes.get(id)?.group.classList.toggle("is-pulse", on),
         svgEl: svg,
@@ -467,6 +472,11 @@
         bar.setAttribute("y", baseY + (bh - h));
       });
     }
+    // troca o texto de um elemento (label/box). Útil p/ contadores ao vivo.
+    setLabel(id, text) {
+      const t = this.nodes.get(id)?.group.querySelector(".xp-text");
+      if (t) t.textContent = text;
+    }
     lightCells(id, cells) {
       const node = this.nodes.get(id);
       if (!node) return;
@@ -594,6 +604,11 @@
           if (wrap.dataset.done) return;
           this.quizState.set(stepIdx, oi);   // lembra a resposta nesta sessão
           settle(oi);
+          // se o autoplay tinha parado neste quiz, retoma após ler a explicação
+          if (this._pausedForQuiz) {
+            this._pausedForQuiz = false;
+            setTimeout(() => { if (!this.playing) this.play(); }, 1600);
+          }
         });
         opts.appendChild(btn);
       });
@@ -643,7 +658,12 @@
       this._applyStep(idx);
       this._syncUI();
       this._updateMinimap();
-      if (this.playing) this._runAutobar();
+      // título da aba reflete a cena (útil ao compartilhar um deep-link)
+      const st = this.steps[idx];
+      try { document.title = (st.title ? st.title + " · " : "") + (this.d.title || this._baseTitle || "Explicador"); } catch {}
+      // autoplay para numa cena de quiz ainda não respondida; retoma ao responder
+      if (this.playing && st.quiz && !this.quizState.has(idx)) { this._pausedForQuiz = true; this.pause(); }
+      else if (this.playing) this._runAutobar();
       if (!fromHash) {
         const h = "#cena=" + (idx + 1);
         try { if (location.hash !== h) history.replaceState(null, "", h); } catch {}
@@ -663,7 +683,10 @@
 
     _syncUI() {
       this.btnPrev.disabled = this.i === 0;
-      this.btnNext.disabled = this.i === this.steps.length - 1;
+      const atEnd = this.i === this.steps.length - 1;
+      this.btnNext.disabled = false;
+      this.btnNext.textContent = atEnd ? "↻ Reiniciar" : "Próximo →";
+      this.btnNext.setAttribute("aria-label", atEnd ? "Reiniciar do começo" : "Próxima cena");
       this.counter.textContent = `${this.i + 1} / ${this.steps.length}`;
       this.progress.firstChild.style.width = ((this.i + 1) / this.steps.length) * 100 + "%";
       [...this.list.children].forEach((li, k) => {

@@ -21,6 +21,10 @@
     { id: "alvo", type: "box", x: 540, y: 150, w: 200, h: 64, rx: 12,
       stroke: "var(--accent)", mono: true, label: ["alvo = " + ALVO, "procurar este valor"] },
 
+    // contador de comparações (atualizado via ctx.setLabel ao longo das cenas)
+    { id: "cmp", type: "label", x: 210, y: 188, sub: true, mono: true, anchor: "middle",
+      label: "comparações: 0", base: true },
+
     // ponteiros (revelados depois; movem-se com moveTo)
     { id: "p_mid", type: "token", x: cx(0) - 34, y: 268, w: 68, h: 34,
       label: "mid ▾", stroke: "var(--accent)", fill: "#1b2550" },
@@ -38,15 +42,16 @@
       anchor: "middle", label: String(i), base: true });
   });
 
-  // posiciona ponteiros nos índices da cena (idempotente p/ ida e volta)
-  // Posiciona ponteiros nos índices da cena (idempotente p/ ida e volta).
+  // Posiciona ponteiros nos índices da cena (idempotente p/ ida e volta) e
+  // atualiza o contador de comparações.
   // OBS: nunca usar `pulse` num ponteiro — a animação de pulse usa transform e
   // anularia o translate do moveTo (o ponteiro saltaria p/ o índice 0). Quem
   // "pisca" é a CÉLULA do meio (via step.pulse), não o ponteiro.
-  const place = (ctx, lo, hi, mid) => {
+  const place = (ctx, lo, hi, mid, cmp) => {
     ctx.moveTo("p_lo", lo * step, 0);
     ctx.moveTo("p_hi", hi * step, 0);
     if (mid != null) ctx.moveTo("p_mid", mid * step, 0);
+    if (cmp != null) ctx.setLabel("cmp", "comparações: " + cmp);
   };
 
   const steps = [
@@ -70,7 +75,7 @@
       balloon: { anchor: "p_lo", placement: "bottom",
         text: "Dois ponteiros delimitam a janela de busca: <strong>lo</strong> no início (0) e <strong>hi</strong> no fim (11). O alvo, se existir, está entre eles.",
         why: "A cada passo a janela [lo, hi] encolhe. Quando lo passa de hi sem achar, o valor não está no array." },
-      enter: (ctx) => place(ctx, 0, 11),
+      enter: (ctx) => place(ctx, 0, 11, null, 0),
     },
     {
       title: "Sonda 1: olhe o meio",
@@ -78,7 +83,7 @@
       balloon: { anchor: "a5", placement: "top",
         text: "<span class=\"xp-term\" tabindex=\"0\" data-tip=\"mid = (lo + hi) / 2, arredondado para baixo.\">mid</span> = (0 + 11) / 2 = <strong>5</strong> → valor <strong>27</strong>. Como <strong>27 &lt; " + ALVO + "</strong>, o alvo está à <strong>direita</strong>.",
         why: "Toda a metade esquerda (índices 0–5) pode ser descartada: lá os valores só diminuem." },
-      enter: (ctx) => place(ctx, 0, 11, 5),
+      enter: (ctx) => place(ctx, 0, 11, 5, 1),
     },
     {
       title: "Descarte a esquerda: lo = 6",
@@ -86,7 +91,7 @@
       balloon: { anchor: "a8", placement: "top",
         text: "Movemos <strong>lo = mid + 1 = 6</strong>. Nova janela: 6–11. mid = (6 + 11) / 2 = <strong>8</strong> → valor <strong>50</strong>. Agora <strong>50 &gt; " + ALVO + "</strong>: o alvo está à <strong>esquerda</strong>.",
         why: "Em duas sondas já restam só 6 dos 12 elementos — e logo bem menos." },
-      enter: (ctx) => place(ctx, 6, 11, 8),
+      enter: (ctx) => place(ctx, 6, 11, 8, 2),
     },
     {
       title: "Descarte a direita: hi = 7",
@@ -94,7 +99,7 @@
       balloon: { anchor: "a6", placement: "top",
         text: "Movemos <strong>hi = mid − 1 = 7</strong>. Janela: 6–7. mid = (6 + 7) / 2 = <strong>6</strong> → valor <strong>33</strong>. Como <strong>33 &lt; " + ALVO + "</strong>, vá para a direita: <strong>lo = 7</strong>.",
         why: "A janela tem só dois elementos. Mais uma sonda decide." },
-      enter: (ctx) => place(ctx, 6, 7, 6),
+      enter: (ctx) => place(ctx, 6, 7, 6, 3),
     },
     {
       title: "Achou! índice 7",
@@ -102,7 +107,15 @@
       balloon: { anchor: "a7", placement: "top",
         text: "Janela: 7–7. mid = <strong>7</strong> → valor <strong>" + ALVO + "</strong>. <strong>" + ALVO + " == " + ALVO + "</strong> ✅ — encontrado no índice <strong>7</strong> em apenas <strong>4</strong> comparações.",
         why: "A linear poderia gastar 8 comparações para chegar aqui; a binária garantiu 4 no pior caso." },
-      enter: (ctx) => { place(ctx, 7, 7, 7); setTimeout(() => ctx.pulse("a7", true), 120); },
+      enter: (ctx) => { place(ctx, 7, 7, 7, 4); setTimeout(() => ctx.pulse("a7", true), 120); },
+    },
+    {
+      title: "E se o valor não existir?",
+      dim: inRange(0, 11),
+      balloon: { anchor: { x: 640, y: 250 }, placement: "bottom",
+        text: "Procurando <strong>42</strong> (que não está aqui): a janela encolhe até <strong>lo (8) ultrapassar hi (7)</strong> — repare nos ponteiros <strong>cruzados</strong> abaixo. Janela vazia ⇒ <strong>não encontrado</strong>.",
+        why: "O critério de parada é <strong>lo &gt; hi</strong>. É ele que garante o término: ou o valor aparece, ou a janela esvazia provando que ele não existe." },
+      enter: (ctx) => place(ctx, 8, 7, 7, 4),
     },
     {
       title: "Por que é O(log n)",
@@ -110,7 +123,7 @@
       balloon: { anchor: { x: 640, y: 250 }, placement: "bottom",
         text: "Cada sonda corta o espaço de busca <strong>pela metade</strong>: 12 → 6 → 3 → 1. O número de passos é <strong>log₂(n)</strong>.",
         why: "Por isso a escala impressiona: 1.000 itens ≈ 10 passos; 1.000.000 ≈ 20 passos. Dobrar os dados custa <strong>uma</strong> comparação a mais." },
-      enter: (ctx) => place(ctx, 7, 7, 7),
+      enter: (ctx) => place(ctx, 7, 7, 7, 4),
     },
     {
       title: "Teste rápido",
@@ -134,7 +147,7 @@
       balloon: { anchor: "a7", placement: "top",
         text: "Busca binária: <strong>array ordenado</strong> → comparar com o <strong>meio</strong> → descartar a metade impossível → repetir até a janela ter 1 elemento.",
         why: "Pré-requisito é a ordenação. Se os dados mudam muito e você busca o tempo todo, vale manter ordenado (ou usar uma hash map para O(1) médio)." },
-      enter: (ctx) => place(ctx, 7, 7, 7),
+      enter: (ctx) => place(ctx, 7, 7, 7, 4),
     },
   ];
 

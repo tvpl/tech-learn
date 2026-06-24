@@ -14,6 +14,7 @@ Explicadores disponíveis:
 - 🌿 **Git** — as quatro áreas e o caminho de `add` → `commit` → `push` → `pull`.
 - #️⃣ **Hash Map** — chave → hash → índice → bucket, colisões, encadeamento e resize.
 - 🔎 **Busca Binária** — array ordenado, ponteiros lo/hi/mid, descartar metade a cada sonda e O(log n).
+- 🔁 **Recursão** — `fact(4)`: empilhar as chamadas, atingir o caso base, desempilhar os retornos e o stack overflow.
 
 Todos compartilham o **mesmo motor** (`engine/`): cada um é apenas um arquivo de
 dados. Isso é a prova de que a estrutura se reaproveita.
@@ -105,7 +106,8 @@ tech-learn/
 │   ├── tcp.html         / tcp.data.js
 │   ├── git.html         / git.data.js
 │   ├── hashmap.html     / hashmap.data.js
-│   └── busca-binaria.html / busca-binaria.data.js
+│   ├── busca-binaria.html / busca-binaria.data.js
+│   └── recursao.html    / recursao.data.js
 ├── tools/                      # smoke.mjs, checklinks.mjs (testes), screenshots.mjs
 ├── assets/preview/             # PNGs de preview (gerados pelo workflow Screenshots)
 ├── .github/workflows/          # ci.yml, pages.yml, screenshots.yml
