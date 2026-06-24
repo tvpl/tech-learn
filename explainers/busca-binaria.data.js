@@ -39,10 +39,14 @@
   });
 
   // posiciona ponteiros nos índices da cena (idempotente p/ ida e volta)
+  // Posiciona ponteiros nos índices da cena (idempotente p/ ida e volta).
+  // OBS: nunca usar `pulse` num ponteiro — a animação de pulse usa transform e
+  // anularia o translate do moveTo (o ponteiro saltaria p/ o índice 0). Quem
+  // "pisca" é a CÉLULA do meio (via step.pulse), não o ponteiro.
   const place = (ctx, lo, hi, mid) => {
     ctx.moveTo("p_lo", lo * step, 0);
     ctx.moveTo("p_hi", hi * step, 0);
-    if (mid != null) { ctx.moveTo("p_mid", mid * step, 0); ctx.pulse("p_mid", false); }
+    if (mid != null) ctx.moveTo("p_mid", mid * step, 0);
   };
 
   const steps = [
@@ -74,7 +78,7 @@
       balloon: { anchor: "a5", placement: "top",
         text: "<span class=\"xp-term\" tabindex=\"0\" data-tip=\"mid = (lo + hi) / 2, arredondado para baixo.\">mid</span> = (0 + 11) / 2 = <strong>5</strong> → valor <strong>27</strong>. Como <strong>27 &lt; " + ALVO + "</strong>, o alvo está à <strong>direita</strong>.",
         why: "Toda a metade esquerda (índices 0–5) pode ser descartada: lá os valores só diminuem." },
-      enter: (ctx) => { place(ctx, 0, 11, 5); setTimeout(() => ctx.pulse("p_mid", true), 120); },
+      enter: (ctx) => place(ctx, 0, 11, 5),
     },
     {
       title: "Descarte a esquerda: lo = 6",
@@ -82,7 +86,7 @@
       balloon: { anchor: "a8", placement: "top",
         text: "Movemos <strong>lo = mid + 1 = 6</strong>. Nova janela: 6–11. mid = (6 + 11) / 2 = <strong>8</strong> → valor <strong>50</strong>. Agora <strong>50 &gt; " + ALVO + "</strong>: o alvo está à <strong>esquerda</strong>.",
         why: "Em duas sondas já restam só 6 dos 12 elementos — e logo bem menos." },
-      enter: (ctx) => { place(ctx, 6, 11, 8); setTimeout(() => ctx.pulse("p_mid", true), 120); },
+      enter: (ctx) => place(ctx, 6, 11, 8),
     },
     {
       title: "Descarte a direita: hi = 7",
@@ -90,7 +94,7 @@
       balloon: { anchor: "a6", placement: "top",
         text: "Movemos <strong>hi = mid − 1 = 7</strong>. Janela: 6–7. mid = (6 + 7) / 2 = <strong>6</strong> → valor <strong>33</strong>. Como <strong>33 &lt; " + ALVO + "</strong>, vá para a direita: <strong>lo = 7</strong>.",
         why: "A janela tem só dois elementos. Mais uma sonda decide." },
-      enter: (ctx) => { place(ctx, 6, 7, 6); setTimeout(() => ctx.pulse("p_mid", true), 120); },
+      enter: (ctx) => place(ctx, 6, 7, 6),
     },
     {
       title: "Achou! índice 7",
