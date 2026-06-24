@@ -71,12 +71,14 @@
       this.btnMap = el("button", { class: "xp-icon", title: "Minimapa (m)", "aria-label": "Mostrar ou ocultar o minimapa" }, "🗺️");
       this.btnLink = el("button", { class: "xp-icon", title: "Copiar link desta cena", "aria-label": "Copiar link desta cena" }, "🔗");
       this.btnFull = el("button", { class: "xp-icon", title: "Modo apresentação (f)", "aria-label": "Entrar no modo apresentação" }, "⛶");
+      this.btnHelp = el("button", { class: "xp-icon", title: "Atalhos de teclado (?)", "aria-label": "Mostrar atalhos de teclado" }, "⌨️");
       const home = el("a", { class: "xp-home", href: this.d.homeHref || "../index.html" }, "↩ Todos");
       this.btnTheme.addEventListener("click", () => this._toggleTheme());
       this.btnMap.addEventListener("click", () => this._toggleMinimap());
       this.btnLink.addEventListener("click", () => this._copyLink());
       this.btnFull.addEventListener("click", () => this._togglePresent());
-      tools.append(this.btnTheme, this.btnMap, this.btnLink, this.btnFull, home);
+      this.btnHelp.addEventListener("click", () => this._toggleHelp());
+      tools.append(this.btnTheme, this.btnMap, this.btnLink, this.btnFull, this.btnHelp, home);
       head.appendChild(tools);
       this.root.appendChild(head);
 
@@ -154,12 +156,15 @@
       // teclado
       this._onKey = (e) => {
         if (e.target && /^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;
+        // Esc fecha a ajuda (e só ela) antes de qualquer outro atalho
+        if (e.key === "Escape" && this.root.classList.contains("show-help")) { this._toggleHelp(false); return; }
         if (e.key === "ArrowRight") this.next();
         else if (e.key === "ArrowLeft") this.prev();
         else if (e.key === " ") { e.preventDefault(); this.togglePlay(); }
         else if (e.key === "f") this._togglePresent();
         else if (e.key === "m") this._toggleMinimap();
         else if (e.key === "d") this._toggleDebug();
+        else if (e.key === "?" || e.key === "h") this._toggleHelp();
         else if (e.key === "+" || e.key === "=") this._zoomBy(1.2);
         else if (e.key === "-" || e.key === "_") this._zoomBy(1 / 1.2);
         else if (e.key === "0") this._resetView();
@@ -697,6 +702,50 @@
       const url = location.href;
       const done = () => { this.btnLink.textContent = "✓"; setTimeout(() => (this.btnLink.textContent = "🔗"), 1200); };
       try { navigator.clipboard ? navigator.clipboard.writeText(url).then(done, done) : done(); } catch { done(); }
+    }
+
+    /* ---- ajuda: lista de atalhos de teclado (tecla ? ou h) ------------- */
+    _toggleHelp(force) {
+      if (!this.help) this._buildHelp();
+      const on = force != null ? force : !this.root.classList.contains("show-help");
+      this.root.classList.toggle("show-help", on);
+      this.help.setAttribute("aria-hidden", on ? "false" : "true");
+      this.btnHelp.setAttribute("aria-expanded", on ? "true" : "false");
+      if (on) this.help.querySelector(".xp-help-close")?.focus();
+      else this.btnHelp.focus();
+    }
+    _buildHelp() {
+      // lista genérica: vale para todos os explicadores (nada específico de dados)
+      const rows = [
+        ["← →", "Cena anterior / próxima"],
+        ["Espaço", "Reproduzir / pausar"],
+        ["f", "Modo apresentação (tela cheia)"],
+        ["m", "Minimapa"],
+        ["d", "Modo debug (grade + ids)"],
+        ["+ −", "Zoom; arraste para mover"],
+        ["0", "Resetar zoom"],
+        ["? h", "Esta ajuda"],
+      ];
+      const overlay = el("div", { class: "xp-help", role: "dialog", "aria-modal": "true",
+        "aria-label": "Atalhos de teclado", "aria-hidden": "true" });
+      const card = el("div", { class: "xp-help-card" });
+      card.appendChild(el("h2", null, "Atalhos de teclado"));
+      const dl = el("dl", { class: "xp-help-list" });
+      rows.forEach(([k, desc]) => {
+        const keys = el("dt");
+        k.split(" ").forEach((key) => keys.appendChild(el("kbd", null, key)));
+        dl.appendChild(keys);
+        dl.appendChild(el("dd", null, desc));
+      });
+      card.appendChild(dl);
+      const close = el("button", { class: "xp-btn xp-help-close" }, "Fechar");
+      close.addEventListener("click", () => this._toggleHelp(false));
+      card.appendChild(close);
+      overlay.appendChild(card);
+      // clique fora do cartão fecha
+      overlay.addEventListener("click", (e) => { if (e.target === overlay) this._toggleHelp(false); });
+      this.help = overlay;
+      this.root.appendChild(overlay);
     }
 
     /* ---- autoplay + barra de tempo da cena ----------------------------- */

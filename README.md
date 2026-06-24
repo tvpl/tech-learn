@@ -13,6 +13,7 @@ Explicadores disponíveis:
 - 🔌 **TCP/IP** — three-way handshake, segmentos/ACKs, janela, perda+retransmissão, FIN.
 - 🌿 **Git** — as quatro áreas e o caminho de `add` → `commit` → `push` → `pull`.
 - #️⃣ **Hash Map** — chave → hash → índice → bucket, colisões, encadeamento e resize.
+- 🔎 **Busca Binária** — array ordenado, ponteiros lo/hi/mid, descartar metade a cada sonda e O(log n).
 
 Todos compartilham o **mesmo motor** (`engine/`): cada um é apenas um arquivo de
 dados. Isso é a prova de que a estrutura se reaproveita.
@@ -28,6 +29,7 @@ dados. Isso é a prova de que a estrutura se reaproveita.
 - 🌓 **Tema claro/escuro** (persiste) · ⛶ **modo apresentação** (fullscreen) ·
   🗺️ **minimapa** · 🔎 **zoom/pan** (roda, pinça, teclado) e **swipe** no toque.
 - 🧭 **Retoma** a última cena vista e tem **modo debug** (tecla `d`) com grade e ids.
+- ⌨️ **Ajuda de atalhos** (tecla `?` ou `h`) em overlay, para descobrir o teclado.
 - ❓ **Quiz** opcional ao fim de cada explicador (lembra a resposta na sessão).
 - 💬 **Glossário**: termos com definição em tooltip dentro dos balões.
 - ♿ **Acessível**: navegação por teclado, foco visível, `aria-live` e
@@ -55,11 +57,13 @@ o índice lateral de etapas, ou o teclado:
 | **m** | mostra/oculta o minimapa |
 | **+ / − / 0** | zoom: aproxima / afasta / reseta |
 | **d** | modo debug (grade de coordenadas + ids) — ajuda a posicionar elementos |
+| **? / h** | mostra os atalhos de teclado (Esc fecha) |
 
 Com **mouse**: roda do mouse dá zoom, arrastar (com zoom) faz *pan*, duplo-clique
 reseta. No **toque**: *swipe* horizontal troca de cena, pinça dá zoom e arrastar faz
 *pan*. No cabeçalho há botões para **tema** (🌓), **minimapa** (🗺️), **copiar link
-da cena** (🔗) e **apresentação** (⛶). A última cena vista é **retomada** ao reabrir.
+da cena** (🔗), **apresentação** (⛶) e **atalhos** (⌨️). A última cena vista é
+**retomada** ao reabrir.
 
 ## 🧪 Testes
 
@@ -100,7 +104,8 @@ tech-learn/
 │   ├── http.html        / http.data.js
 │   ├── tcp.html         / tcp.data.js
 │   ├── git.html         / git.data.js
-│   └── hashmap.html     / hashmap.data.js
+│   ├── hashmap.html     / hashmap.data.js
+│   └── busca-binaria.html / busca-binaria.data.js
 ├── tools/                      # smoke.mjs, checklinks.mjs (testes), screenshots.mjs
 ├── assets/preview/             # PNGs de preview (gerados pelo workflow Screenshots)
 ├── .github/workflows/          # ci.yml, pages.yml, screenshots.yml
