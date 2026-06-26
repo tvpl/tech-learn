@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Amazon EKS — Kubernetes gerenciado na AWS — Explicador animado</title>
+  <meta name="description" content="Control Plane gerenciado pela AWS, Node Groups, Fargate, VPC, IRSA, Add-ons e integração com ECR e ALB Ingress Controller." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Amazon EKS — Kubernetes gerenciado na AWS" />
+  <meta property="og:description" content="Control Plane gerenciado pela AWS, Node Groups, Fargate, VPC, IRSA, Add-ons e integração com ECR e ALB Ingress Controller." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../engine/explainer.css" />
+</head>
+<body>
+  <div id="app"></div>
+  <script src="../engine/explainer.js"></script>
+  <script src="eks.data.js"></script>
+  <script>
+    new Explainer(window.EKS_DIAGRAM).mount("#app");
+  </script>
+  <script src="../engine/related.js"></script>
+</body>
+</html>

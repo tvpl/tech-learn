@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MFA / 2FA — Autenticação Multifator — Explicador animado</title>
+  <meta name="description" content="TOTP (RFC 6238), FIDO2/WebAuthn, SMS OTP e por que o segundo fator muda tudo contra phishing e credential stuffing." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="MFA / 2FA — Autenticação Multifator" />
+  <meta property="og:description" content="TOTP (RFC 6238), FIDO2/WebAuthn, SMS OTP e por que o segundo fator muda tudo contra phishing e credential stuffing." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../engine/explainer.css" />
+</head>
+<body>
+  <div id="app"></div>
+  <script src="../engine/explainer.js"></script>
+  <script src="mfa.data.js"></script>
+  <script>
+    new Explainer(window.MFA_DIAGRAM).mount("#app");
+  </script>
+  <script src="../engine/related.js"></script>
+</body>
+</html>

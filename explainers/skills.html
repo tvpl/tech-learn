@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Skills — Capacidades de Agentes — Explicador animado</title>
+  <meta name="description" content="O que são Skills, como o LLM decide qual invocar, o contrato input/output e como compor skills em fluxos complexos." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Skills — Capacidades de Agentes" />
+  <meta property="og:description" content="O que são Skills, como o LLM decide qual invocar, o contrato input/output e como compor skills em fluxos complexos." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../engine/explainer.css" />
+</head>
+<body>
+  <div id="app"></div>
+  <script src="../engine/explainer.js"></script>
+  <script src="skills.data.js"></script>
+  <script>
+    new Explainer(window.SKILLS_DIAGRAM).mount("#app");
+  </script>
+  <script src="../engine/related.js"></script>
+</body>
+</html>

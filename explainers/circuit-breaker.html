@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Circuit Breaker — Resiliência de serviços — Explicador animado</title>
+  <meta name="description" content="O padrão que evita cascata de falhas: CLOSED, OPEN, HALF-OPEN — contador de erros, timer e probe request." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Circuit Breaker — Resiliência de serviços" />
+  <meta property="og:description" content="O padrão que evita cascata de falhas: CLOSED, OPEN, HALF-OPEN — contador de erros, timer e probe request." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../engine/explainer.css" />
+</head>
+<body>
+  <div id="app"></div>
+  <script src="../engine/explainer.js"></script>
+  <script src="circuit-breaker.data.js"></script>
+  <script>
+    new Explainer(window.CIRCUIT_BREAKER_DIAGRAM).mount("#app");
+  </script>
+  <script src="../engine/related.js"></script>
+</body>
+</html>
