@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kafka Serialization + Schema Registry — Avro, Protobuf e JSON — Explicador animado</title>
+  <meta name="description" content="JSON vs Avro vs Protobuf: payload size e schema enforcement. Schema Registry: magic byte + schema_id, fluxo producer/consumer e compatibility modes." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Kafka Serialization + Schema Registry" />
+  <meta property="og:description" content="JSON vs Avro vs Protobuf: payload size e schema enforcement. Schema Registry: magic byte + schema_id, fluxo producer/consumer e compatibility modes." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../engine/explainer.css" />
+</head>
+<body>
+  <div id="app"></div>
+  <script src="../engine/explainer.js"></script>
+  <script src="kafka-schema.data.js"></script>
+  <script>
+    new Explainer(window.KAFKA_SCHEMA_DIAGRAM).mount("#app");
+  </script>
+  <script src="../engine/related.js"></script>
+</body>
+</html>

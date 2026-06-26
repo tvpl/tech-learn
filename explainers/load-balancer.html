@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Load Balancer — L4, L7, Algoritmos e Health Checks — Explicador animado</title>
+  <meta name="description" content="L4 vs L7, Round Robin, Weighted, Least Connections, IP Hash, health checks ativos e passivos, SSL termination e Global Load Balancing." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Load Balancer — L4, L7 e Algoritmos de Balanceamento" />
+  <meta property="og:description" content="L4 vs L7, Round Robin, Weighted, Least Connections, IP Hash, health checks ativos e passivos, SSL termination e Global Load Balancing." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../engine/explainer.css" />
+</head>
+<body>
+  <div id="app"></div>
+  <script src="../engine/explainer.js"></script>
+  <script src="load-balancer.data.js"></script>
+  <script>
+    new Explainer(window.LOAD_BALANCER_DIAGRAM).mount("#app");
+  </script>
+  <script src="../engine/related.js"></script>
+</body>
+</html>

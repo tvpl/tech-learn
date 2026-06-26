@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Criptografia — Simétrica, Assimétrica, Hashes e KDFs — Explicador animado</title>
+  <meta name="description" content="AES e ChaCha20 (simétrica), RSA e ECC (assimétrica), hybrid encryption, assinaturas digitais, SHA-256 e KDFs como bcrypt e Argon2." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Criptografia — Simétrica, Assimétrica e Hashes" />
+  <meta property="og:description" content="AES e ChaCha20 (simétrica), RSA e ECC (assimétrica), hybrid encryption, assinaturas digitais, SHA-256 e KDFs como bcrypt e Argon2." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../engine/explainer.css" />
+</head>
+<body>
+  <div id="app"></div>
+  <script src="../engine/explainer.js"></script>
+  <script src="crypto.data.js"></script>
+  <script>
+    new Explainer(window.CRYPTO_DIAGRAM).mount("#app");
+  </script>
+  <script src="../engine/related.js"></script>
+</body>
+</html>

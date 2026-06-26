@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TLS / mTLS — Handshake, X.509 e Autenticação Mútua — Explicador animado</title>
+  <meta name="description" content="Handshake TLS completo: ClientHello, X.509 e chain of trust, ECDHE key exchange, derivação de session keys e extensão mTLS para autenticação mútua." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="TLS / mTLS — Handshake e Autenticação Mútua" />
+  <meta property="og:description" content="Handshake TLS completo: ClientHello, X.509 e chain of trust, ECDHE key exchange, derivação de session keys e extensão mTLS para autenticação mútua." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../engine/explainer.css" />
+</head>
+<body>
+  <div id="app"></div>
+  <script src="../engine/explainer.js"></script>
+  <script src="tls.data.js"></script>
+  <script>
+    new Explainer(window.TLS_DIAGRAM).mount("#app");
+  </script>
+  <script src="../engine/related.js"></script>
+</body>
+</html>

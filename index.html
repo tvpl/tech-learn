@@ -210,6 +210,12 @@
           <h3>gRPC →</h3>
           <p>Schema-first com Protocol Buffers, HTTP/2 multiplexing, quatro tipos de RPC (Unary, Server Stream, Client Stream, Bidirectional) e Interceptors.</p>
         </a>
+
+        <a class="card" href="explainers/tls.html">
+          <span class="tag web">Web · Segurança</span>
+          <h3>TLS / mTLS →</h3>
+          <p>Handshake ClientHello/ServerHello, X.509 e chain of trust, ECDHE key exchange, derivação de session keys e mTLS para autenticação mútua.</p>
+        </a>
       </div>
     </section>
 
@@ -251,6 +257,12 @@
           <span class="tag auth">Auth · MFA</span>
           <h3>MFA / 2FA →</h3>
           <p>Os 3 fatores (saber, ter, ser): TOTP com HMAC-SHA1 e janela de 30s, FIDO2/WebAuthn phishing-resistant e por que SMS OTP é inseguro.</p>
+        </a>
+
+        <a class="card" href="explainers/crypto.html">
+          <span class="tag auth">Segurança · Crypto</span>
+          <h3>Criptografia →</h3>
+          <p>Simétrica (AES, ChaCha20) vs assimétrica (RSA, ECC), hybrid encryption, assinaturas digitais, funções hash e KDFs (bcrypt, Argon2).</p>
         </a>
       </div>
     </section>
@@ -312,6 +324,12 @@
           <h3>Rate Limiting →</h3>
           <p>Token Bucket, Leaky Bucket e Sliding Window: como proteger APIs de abuso, tokens se reabastecendo, burst capacity e os headers X-RateLimit-*.</p>
         </a>
+
+        <a class="card" href="explainers/load-balancer.html">
+          <span class="tag infra">Infra · Redes</span>
+          <h3>Load Balancer →</h3>
+          <p>L4 vs L7, Round Robin, Weighted, Least Connections, IP Hash, health checks, SSL termination e Global Load Balancing.</p>
+        </a>
       </div>
     </section>
 
@@ -323,6 +341,12 @@
           <span class="tag async">Mensageria</span>
           <h3>Sync → Async com Redis / Kafka →</h3>
           <p>Transformar uma requisição síncrona em processamento assíncrono: enfileirar, 202 Accepted, worker, result store, polling, webhook e Dead Letter Queue.</p>
+        </a>
+
+        <a class="card" href="explainers/kafka-schema.html">
+          <span class="tag async">Kafka · Serialização</span>
+          <h3>Kafka Serialization + Schema Registry →</h3>
+          <p>JSON vs Avro vs Protobuf: payload size, schema enforcement. Schema Registry: magic byte + schema_id, producer/consumer flow e compatibility modes.</p>
         </a>
       </div>
     </section>
