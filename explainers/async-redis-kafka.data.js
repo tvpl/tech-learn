@@ -332,14 +332,17 @@
     },
     {
       title: "Quiz",
-      text: "Teste seu conhecimento sobre processamento assíncrono com Redis e Kafka.",
-      why: "",
-      balloonAnchor: { x: 640, y: 680 },
-      placement: "top",
-      enter(ctx) {
-        ALL_IDS.forEach(id => ctx.hide(id));
-        ctx.show("quiz_panel"); ctx.show("quiz_title");
-        ["q1","q1a","q2","q2a","q3","q3a","q4","q4a","q5","q5a","q6","q6a"].forEach(id => ctx.show(id));
+      balloon: { anchor: { x: 640, y: 360 }, placement: "bottom", text: "Teste seu conhecimento sobre Async Redis/Kafka:" },
+      quiz: {
+        question: "Por que a API responde 202 Accepted em vez de 200 OK ao enfileirar uma tarefa assíncrona?",
+        options: [
+          "200 OK é reservado exclusivamente para requisições GET",
+          "202 indica que a requisição foi aceita mas o processamento ainda não foi concluído",
+          "202 é obrigatório quando se usa Redis como fila",
+          "Para economizar bandwidth omitindo o corpo da resposta"
+        ],
+        answer: 1,
+        explain: "202 Accepted = 'recebi e enfileirei, mas ainda não processei'. O cliente sabe que precisa verificar o resultado depois via polling ou aguardar um webhook. 200 implicaria trabalho concluído."
       }
     },
     {

@@ -53,14 +53,61 @@
 
     .foot { margin-top: 48px; color: var(--muted); font-size: 13px; text-align: center; }
     .foot code { background: var(--panel); padding: 2px 7px; border-radius: 6px; color: var(--ink-soft); }
+
+    /* Theme toggle button */
+    .home-tools { display: flex; align-items: center; justify-content: flex-end; margin-bottom: -36px; }
+    #theme-btn {
+      appearance: none; background: var(--panel); border: 1px solid var(--line);
+      color: var(--ink); width: 38px; height: 34px; border-radius: 9px;
+      font-size: 16px; cursor: pointer; display: grid; place-items: center;
+      transition: all .28s cubic-bezier(.22,1,.36,1);
+    }
+    #theme-btn:hover { border-color: var(--accent); background: var(--panel-2); transform: translateY(-1px); }
+
+    /* Search */
+    .search-wrap { margin-bottom: 36px; }
+    #search {
+      width: 100%; max-width: 480px; display: block; margin: 0 auto;
+      background: var(--panel); border: 1px solid var(--line);
+      color: var(--ink); font: inherit; font-size: 15px;
+      padding: 11px 18px; border-radius: 999px; outline: none;
+      transition: border-color .28s; box-shadow: 0 4px 20px rgba(0,0,0,.18);
+    }
+    #search::placeholder { color: var(--muted); }
+    #search:focus { border-color: var(--accent); }
+
+    /* Progress badge */
+    .card { position: relative; }
+    .card.visited::after {
+      content: "✓"; position: absolute; top: 12px; right: 14px;
+      font-size: 11px; font-weight: 700; color: var(--good);
+      background: rgba(81,224,163,.12); border: 1px solid var(--good);
+      border-radius: 999px; padding: 1px 7px; line-height: 1.6;
+    }
+    /* hide sections when all cards filtered out */
+    .cat-section.is-hidden { display: none; }
+    .card.is-filtered { display: none; }
+
+    /* no-results message */
+    #no-results { display: none; text-align: center; color: var(--muted); padding: 48px 0; font-size: 15px; }
   </style>
 </head>
 <body>
   <main class="home">
+    <div class="home-tools">
+      <button id="theme-btn" title="Alternar tema claro/escuro" aria-label="Alternar tema">🌓</button>
+    </div>
+
     <header class="home-header">
       <h1>🧠 tech-learn</h1>
       <p class="lead">Diagramas interativos que explicam conceitos de tecnologia passo a passo, com animação e balões — construídos sobre um motor reutilizável.</p>
     </header>
+
+    <div class="search-wrap">
+      <input id="search" type="search" placeholder="🔍  Buscar explicador..." autocomplete="off" aria-label="Buscar explicador" />
+    </div>
+
+    <p id="no-results">Nenhum explicador encontrado para "<span id="no-results-q"></span>".</p>
 
     <!-- ═══════════════════════ IA & AGENTES ═══════════════════════ -->
     <section class="cat-section">
@@ -256,5 +303,61 @@
 
     <p class="foot">Tudo em HTML/CSS/JS puro · sem build · abre direto no navegador · <code>npm run serve</code></p>
   </main>
+
+  <script>
+    (function () {
+      // ── Theme toggle ──────────────────────────────────────────────────────
+      const root = document.documentElement;
+      const themeBtn = document.getElementById('theme-btn');
+      const saved = localStorage.getItem('xp-theme');
+      if (saved) root.setAttribute('data-theme', saved);
+      themeBtn.addEventListener('click', () => {
+        const next = root.getAttribute('data-theme') === 'light' ? '' : 'light';
+        if (next) { root.setAttribute('data-theme', next); localStorage.setItem('xp-theme', next); }
+        else { root.removeAttribute('data-theme'); localStorage.removeItem('xp-theme'); }
+      });
+
+      // ── Progress tracking ─────────────────────────────────────────────────
+      const VISITED_KEY = 'xp-visited';
+      function getVisited() {
+        try { return new Set(JSON.parse(localStorage.getItem(VISITED_KEY) || '[]')); }
+        catch { return new Set(); }
+      }
+      function markVisited(href) {
+        const v = getVisited(); v.add(href);
+        localStorage.setItem(VISITED_KEY, JSON.stringify([...v]));
+      }
+      const visited = getVisited();
+      document.querySelectorAll('.card').forEach(card => {
+        const href = card.getAttribute('href');
+        if (href && visited.has(href)) card.classList.add('visited');
+        card.addEventListener('click', () => markVisited(href));
+      });
+
+      // ── Search / filter ───────────────────────────────────────────────────
+      const search = document.getElementById('search');
+      const noResults = document.getElementById('no-results');
+      const noResultsQ = document.getElementById('no-results-q');
+      const sections = document.querySelectorAll('.cat-section');
+
+      search.addEventListener('input', () => {
+        const q = search.value.trim().toLowerCase();
+        let totalVisible = 0;
+        sections.forEach(sec => {
+          const cards = sec.querySelectorAll('.card');
+          let visible = 0;
+          cards.forEach(card => {
+            const match = !q || card.textContent.toLowerCase().includes(q);
+            card.classList.toggle('is-filtered', !match);
+            if (match) visible++;
+          });
+          sec.classList.toggle('is-hidden', visible === 0);
+          totalVisible += visible;
+        });
+        noResults.style.display = totalVisible === 0 ? 'block' : 'none';
+        noResultsQ.textContent = q;
+      });
+    })();
+  </script>
 </body>
 </html>

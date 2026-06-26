@@ -322,14 +322,17 @@
     },
     {
       title: "Quiz",
-      text: "Teste seu conhecimento sobre Kubernetes.",
-      why: "",
-      balloonAnchor: { x: 640, y: 680 },
-      placement: "top",
-      enter(ctx) {
-        ALL_IDS.forEach(id => ctx.hide(id));
-        ctx.show("quiz_panel"); ctx.show("quiz_title");
-        ["q1","q1a","q2","q2a","q3","q3a","q4","q4a","q5","q5a","q6","q6a","q7","q7a"].forEach(id => ctx.show(id));
+      balloon: { anchor: { x: 640, y: 360 }, placement: "bottom", text: "Teste seu conhecimento sobre Kubernetes:" },
+      quiz: {
+        question: "Qual componente do Control Plane armazena o estado completo do cluster?",
+        options: [
+          "API Server — processa todas as requisições",
+          "Scheduler — decide onde rodar os Pods",
+          "etcd — banco key-value distribuído e consistente",
+          "Controller Manager — reconcilia o estado desejado"
+        ],
+        answer: 2,
+        explain: "etcd é a fonte de verdade do cluster. Todo estado (configurações, secrets, status de Pods) vive no etcd. O API Server é o único componente que acessa o etcd diretamente."
       }
     },
     {

@@ -256,14 +256,17 @@
     },
     {
       title: "Quiz",
-      text: "Teste seu conhecimento sobre Amazon RDS.",
-      why: "",
-      balloonAnchor: { x: 640, y: 680 },
-      placement: "top",
-      enter(ctx) {
-        ALL_IDS.forEach(id => ctx.hide(id));
-        ctx.show("quiz_panel"); ctx.show("quiz_title");
-        ["q1","q1a","q2","q2a","q3","q3a","q4","q4a","q5","q5a","q6","q6a"].forEach(id => ctx.show(id));
+      balloon: { anchor: { x: 640, y: 360 }, placement: "bottom", text: "Teste seu conhecimento sobre Amazon RDS:" },
+      quiz: {
+        question: "O que acontece no failover Multi-AZ do RDS?",
+        options: [
+          "O banco fica indisponível por ~30 minutos enquanto o standby sobe",
+          "O DNS do endpoint aponta automaticamente para o standby em menos de 2 minutos",
+          "Você precisa atualizar manualmente a string de conexão da aplicação",
+          "Os dados são copiados do primário para o standby somente após o failover"
+        ],
+        answer: 1,
+        explain: "Multi-AZ mantém replicação síncrona em outra AZ. Em falha, o RDS atualiza o CNAME do endpoint para o standby em < 2 min — sem alterar a connection string da aplicação."
       }
     },
     {

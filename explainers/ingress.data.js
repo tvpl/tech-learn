@@ -307,14 +307,17 @@
     },
     {
       title: "Quiz",
-      text: "Teste seu conhecimento sobre Kubernetes Ingress.",
-      why: "",
-      balloonAnchor: { x: 640, y: 660 },
-      placement: "top",
-      enter(ctx) {
-        ALL_IDS.forEach(id => ctx.hide(id));
-        ctx.show("quiz_panel"); ctx.show("quiz_title");
-        ["q1","q1a","q2","q2a","q3","q3a","q4","q4a","q5","q5a"].forEach(id => ctx.show(id));
+      balloon: { anchor: { x: 640, y: 360 }, placement: "bottom", text: "Teste seu conhecimento sobre Ingress:" },
+      quiz: {
+        question: "Qual a principal vantagem do Ingress sobre um LoadBalancer Service no Kubernetes?",
+        options: [
+          "O Ingress só funciona com HTTPS, o que é mais seguro",
+          "Ingress roteia L7 (host/path) com um único IP externo para vários services",
+          "LoadBalancer cria muitos IPs (um por service), enquanto o Ingress concentra tudo em um único endpoint",
+          "B e C estão corretas"
+        ],
+        answer: 3,
+        explain: "Ingress opera em L7: roteia por hostname e path, termina TLS e usa um único IP externo para múltiplos services. LoadBalancer é L4 e cria um cloud load balancer (e custo) por service."
       }
     },
     {

@@ -319,17 +319,17 @@
     },
     {
       title: "Quiz",
-      text: "Teste seu conhecimento sobre Rate Limiting.",
-      why: "",
-      balloonAnchor: { x: 640, y: 700 },
-      placement: "top",
-      enter(ctx) {
-        ALL_IDS.forEach(id => ctx.hide(id));
-        ctx.show("quiz_panel"); ctx.show("quiz_title");
-        ctx.show("q1"); ctx.show("q1a");
-        ctx.show("q2"); ctx.show("q2a");
-        ctx.show("q3"); ctx.show("q3a");
-        ctx.show("q4"); ctx.show("q4a");
+      balloon: { anchor: { x: 640, y: 360 }, placement: "bottom", text: "Teste seu conhecimento sobre Rate Limiting:" },
+      quiz: {
+        question: "O que acontece quando o Token Bucket está completamente vazio?",
+        options: [
+          "A requisição aguarda na fila até um token estar disponível",
+          "429 Too Many Requests é retornado imediatamente",
+          "O sistema reinicia o bucket e permite a requisição",
+          "A requisição é roteada para um servidor alternativo"
+        ],
+        answer: 1,
+        explain: "Bucket vazio → rejeição imediata com 429. Nenhuma espera. O cliente deve respeitar o header X-RateLimit-Reset e tentar novamente após os tokens se renovarem."
       }
     },
     {

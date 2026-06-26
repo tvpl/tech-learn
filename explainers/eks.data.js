@@ -317,14 +317,17 @@
     },
     {
       title: "Quiz",
-      text: "Teste seu conhecimento sobre Amazon EKS.",
-      why: "",
-      balloonAnchor: { x: 640, y: 680 },
-      placement: "top",
-      enter(ctx) {
-        ALL_IDS.forEach(id => ctx.hide(id));
-        ctx.show("quiz_panel"); ctx.show("quiz_title");
-        ["q1","q1a","q2","q2a","q3","q3a","q4","q4a","q5","q5a","q6","q6a"].forEach(id => ctx.show(id));
+      balloon: { anchor: { x: 640, y: 360 }, placement: "bottom", text: "Teste seu conhecimento sobre Amazon EKS:" },
+      quiz: {
+        question: "O que é IRSA (IAM Roles for Service Accounts) no EKS?",
+        options: [
+          "Um serviço de monitoramento de roles do IAM",
+          "Um mecanismo que permite Pods assumirem permissões IAM via OIDC sem credenciais hardcoded",
+          "Uma forma de criar usuários IAM automaticamente para cada Pod",
+          "Um add-on que gerencia secrets do AWS Secrets Manager"
+        ],
+        answer: 1,
+        explain: "IRSA vincula IAM roles a Kubernetes ServiceAccounts via OIDC. Os Pods recebem tokens JWT temporários que o AWS STS troca por credenciais IAM — zero chaves hardcoded ou IAM users."
       }
     },
     {

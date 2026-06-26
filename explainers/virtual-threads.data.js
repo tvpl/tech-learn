@@ -354,14 +354,17 @@
     },
     {
       title: "Quiz",
-      text: "Teste seu conhecimento sobre Virtual Threads Java.",
-      why: "",
-      balloonAnchor: { x: 640, y: 680 },
-      placement: "top",
-      enter(ctx) {
-        ALL_IDS.forEach(id => ctx.hide(id));
-        ctx.show("quiz_panel"); ctx.show("quiz_title");
-        ["q1","q1a","q2","q2a","q3","q3a","q4","q4a","q5","q5a","q6","q6a"].forEach(id => ctx.show(id));
+      balloon: { anchor: { x: 640, y: 360 }, placement: "bottom", text: "Teste seu conhecimento sobre Virtual Threads Java:" },
+      quiz: {
+        question: "O que acontece quando uma Virtual Thread executa uma operação de I/O bloqueante?",
+        options: [
+          "A JVM inteira para de executar até o I/O terminar",
+          "A Virtual Thread é desmontada do Carrier Thread, que fica livre para outra tarefa",
+          "Um novo OS Thread é criado para continuar o processamento",
+          "A operação é convertida automaticamente em I/O não-bloqueante via NIO"
+        ],
+        answer: 1,
+        explain: "O Project Loom intercepta chamadas bloqueantes. A VThread suspende e o Carrier Thread fica imediatamente disponível para montar outra VThread. Quando o I/O termina, a VThread é reagendada — transparente para o código."
       }
     },
     {

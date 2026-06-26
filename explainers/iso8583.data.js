@@ -370,14 +370,17 @@
     },
     {
       title: "Quiz",
-      text: "Teste seu conhecimento sobre ISO 8583.",
-      why: "",
-      balloonAnchor: { x: 640, y: 680 },
-      placement: "top",
-      enter(ctx) {
-        ALL_IDS.forEach(id => ctx.hide(id));
-        ctx.show("quiz_panel"); ctx.show("quiz_title");
-        ["q1","q1a","q2","q2a","q3","q3a","q4","q4a","q5","q5a","q6","q6a"].forEach(id => ctx.show(id));
+      balloon: { anchor: { x: 640, y: 360 }, placement: "bottom", text: "Teste seu conhecimento sobre ISO 8583:" },
+      quiz: {
+        question: "O que o Bitmap de uma mensagem ISO 8583 indica?",
+        options: [
+          "O tipo de transação: compra, saque ou estorno",
+          "Quais Data Elements estão presentes na mensagem (bit 1 = campo presente)",
+          "A chave criptográfica usada para assinar a mensagem",
+          "O código de resposta retornado pelo emissor"
+        ],
+        answer: 1,
+        explain: "O Bitmap é uma máscara de 64 bits (ou 128 com bitmap secundário). Cada bit 1 indica que o Data Element correspondente está presente: bit 2 = DE2 (PAN), bit 4 = DE4 (Valor), bit 11 = DE11 (STAN), etc."
       }
     },
     {
