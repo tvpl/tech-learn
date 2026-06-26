@@ -60,6 +60,7 @@
       this.root = typeof sel === "string" ? document.querySelector(sel) : sel;
       this.root.classList.add("xp-app");
       this.root.innerHTML = "";
+      try { this._baseTitle = document.title; } catch {}
       this._applyTheme(store.get("xp-theme", "dark"));
 
       // cabeçalho + ferramentas (tema, link, apresentação)
@@ -71,12 +72,14 @@
       this.btnMap = el("button", { class: "xp-icon", title: "Minimapa (m)", "aria-label": "Mostrar ou ocultar o minimapa" }, "🗺️");
       this.btnLink = el("button", { class: "xp-icon", title: "Copiar link desta cena", "aria-label": "Copiar link desta cena" }, "🔗");
       this.btnFull = el("button", { class: "xp-icon", title: "Modo apresentação (f)", "aria-label": "Entrar no modo apresentação" }, "⛶");
+      this.btnHelp = el("button", { class: "xp-icon", title: "Atalhos de teclado (?)", "aria-label": "Mostrar atalhos de teclado" }, "⌨️");
       const home = el("a", { class: "xp-home", href: this.d.homeHref || "../index.html" }, "↩ Todos");
       this.btnTheme.addEventListener("click", () => this._toggleTheme());
       this.btnMap.addEventListener("click", () => this._toggleMinimap());
       this.btnLink.addEventListener("click", () => this._copyLink());
       this.btnFull.addEventListener("click", () => this._togglePresent());
-      tools.append(this.btnTheme, this.btnMap, this.btnLink, this.btnFull, home);
+      this.btnHelp.addEventListener("click", () => this._toggleHelp());
+      tools.append(this.btnTheme, this.btnMap, this.btnLink, this.btnFull, this.btnHelp, home);
       head.appendChild(tools);
       this.root.appendChild(head);
 
@@ -132,7 +135,10 @@
       this.progress.appendChild(el("span"));
       this.counter = el("div", { class: "xp-counter" });
       this.btnPrev.addEventListener("click", () => this.prev());
-      this.btnNext.addEventListener("click", () => this.next());
+      // no fim, "Próximo" vira "Reiniciar" e volta à primeira cena
+      this.btnNext.addEventListener("click", () => {
+        if (this.i >= this.steps.length - 1) { this.pause(); this.go(0); } else this.next();
+      });
       this.btnPlay.addEventListener("click", () => this.togglePlay());
       ctr.append(this.btnPrev, this.btnPlay, this.progress, this.counter, this.btnNext);
       this.root.appendChild(ctr);
@@ -154,12 +160,15 @@
       // teclado
       this._onKey = (e) => {
         if (e.target && /^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;
+        // Esc fecha a ajuda (e só ela) antes de qualquer outro atalho
+        if (e.key === "Escape" && this.root.classList.contains("show-help")) { this._toggleHelp(false); return; }
         if (e.key === "ArrowRight") this.next();
         else if (e.key === "ArrowLeft") this.prev();
         else if (e.key === " ") { e.preventDefault(); this.togglePlay(); }
         else if (e.key === "f") this._togglePresent();
         else if (e.key === "m") this._toggleMinimap();
         else if (e.key === "d") this._toggleDebug();
+        else if (e.key === "?" || e.key === "h") this._toggleHelp();
         else if (e.key === "+" || e.key === "=") this._zoomBy(1.2);
         else if (e.key === "-" || e.key === "_") this._zoomBy(1 / 1.2);
         else if (e.key === "0") this._resetView();
@@ -182,6 +191,7 @@
         moveTo: (id, x, y) => this.moveTo(id, x, y),
         drawArrow: (id) => this.drawArrow(id),
         setBars: (id, vals) => this.setBars(id, vals),
+        setLabel: (id, text) => this.setLabel(id, text),
         lightCells: (id, cells) => this.lightCells(id, cells),
         pulse: (id, on = true) => this.nodes.get(id)?.group.classList.toggle("is-pulse", on),
         svgEl: svg,
@@ -462,6 +472,11 @@
         bar.setAttribute("y", baseY + (bh - h));
       });
     }
+    // troca o texto de um elemento (label/box). Útil p/ contadores ao vivo.
+    setLabel(id, text) {
+      const t = this.nodes.get(id)?.group.querySelector(".xp-text");
+      if (t) t.textContent = text;
+    }
     lightCells(id, cells) {
       const node = this.nodes.get(id);
       if (!node) return;
@@ -589,6 +604,11 @@
           if (wrap.dataset.done) return;
           this.quizState.set(stepIdx, oi);   // lembra a resposta nesta sessão
           settle(oi);
+          // se o autoplay tinha parado neste quiz, retoma após ler a explicação
+          if (this._pausedForQuiz) {
+            this._pausedForQuiz = false;
+            setTimeout(() => { if (!this.playing) this.play(); }, 1600);
+          }
         });
         opts.appendChild(btn);
       });
@@ -638,7 +658,12 @@
       this._applyStep(idx);
       this._syncUI();
       this._updateMinimap();
-      if (this.playing) this._runAutobar();
+      // título da aba reflete a cena (útil ao compartilhar um deep-link)
+      const st = this.steps[idx];
+      try { document.title = (st.title ? st.title + " · " : "") + (this.d.title || this._baseTitle || "Explicador"); } catch {}
+      // autoplay para numa cena de quiz ainda não respondida; retoma ao responder
+      if (this.playing && st.quiz && !this.quizState.has(idx)) { this._pausedForQuiz = true; this.pause(); }
+      else if (this.playing) this._runAutobar();
       if (!fromHash) {
         const h = "#cena=" + (idx + 1);
         try { if (location.hash !== h) history.replaceState(null, "", h); } catch {}
@@ -658,7 +683,10 @@
 
     _syncUI() {
       this.btnPrev.disabled = this.i === 0;
-      this.btnNext.disabled = this.i === this.steps.length - 1;
+      const atEnd = this.i === this.steps.length - 1;
+      this.btnNext.disabled = false;
+      this.btnNext.textContent = atEnd ? "↻ Reiniciar" : "Próximo →";
+      this.btnNext.setAttribute("aria-label", atEnd ? "Reiniciar do começo" : "Próxima cena");
       this.counter.textContent = `${this.i + 1} / ${this.steps.length}`;
       this.progress.firstChild.style.width = ((this.i + 1) / this.steps.length) * 100 + "%";
       [...this.list.children].forEach((li, k) => {
@@ -697,6 +725,50 @@
       const url = location.href;
       const done = () => { this.btnLink.textContent = "✓"; setTimeout(() => (this.btnLink.textContent = "🔗"), 1200); };
       try { navigator.clipboard ? navigator.clipboard.writeText(url).then(done, done) : done(); } catch { done(); }
+    }
+
+    /* ---- ajuda: lista de atalhos de teclado (tecla ? ou h) ------------- */
+    _toggleHelp(force) {
+      if (!this.help) this._buildHelp();
+      const on = force != null ? force : !this.root.classList.contains("show-help");
+      this.root.classList.toggle("show-help", on);
+      this.help.setAttribute("aria-hidden", on ? "false" : "true");
+      this.btnHelp.setAttribute("aria-expanded", on ? "true" : "false");
+      if (on) this.help.querySelector(".xp-help-close")?.focus();
+      else this.btnHelp.focus();
+    }
+    _buildHelp() {
+      // lista genérica: vale para todos os explicadores (nada específico de dados)
+      const rows = [
+        ["← →", "Cena anterior / próxima"],
+        ["Espaço", "Reproduzir / pausar"],
+        ["f", "Modo apresentação (tela cheia)"],
+        ["m", "Minimapa"],
+        ["d", "Modo debug (grade + ids)"],
+        ["+ −", "Zoom; arraste para mover"],
+        ["0", "Resetar zoom"],
+        ["? h", "Esta ajuda"],
+      ];
+      const overlay = el("div", { class: "xp-help", role: "dialog", "aria-modal": "true",
+        "aria-label": "Atalhos de teclado", "aria-hidden": "true" });
+      const card = el("div", { class: "xp-help-card" });
+      card.appendChild(el("h2", null, "Atalhos de teclado"));
+      const dl = el("dl", { class: "xp-help-list" });
+      rows.forEach(([k, desc]) => {
+        const keys = el("dt");
+        k.split(" ").forEach((key) => keys.appendChild(el("kbd", null, key)));
+        dl.appendChild(keys);
+        dl.appendChild(el("dd", null, desc));
+      });
+      card.appendChild(dl);
+      const close = el("button", { class: "xp-btn xp-help-close" }, "Fechar");
+      close.addEventListener("click", () => this._toggleHelp(false));
+      card.appendChild(close);
+      overlay.appendChild(card);
+      // clique fora do cartão fecha
+      overlay.addEventListener("click", (e) => { if (e.target === overlay) this._toggleHelp(false); });
+      this.help = overlay;
+      this.root.appendChild(overlay);
     }
 
     /* ---- autoplay + barra de tempo da cena ----------------------------- */
