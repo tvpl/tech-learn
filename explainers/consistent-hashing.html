@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Consistent Hashing — Hash Ring — Explicador animado</title>
+  <meta name="description" content="Por que hash(key)%N falha ao escalar, o hash ring, lookup clockwise, virtual nodes e replicação com deslocamento." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Consistent Hashing — Hash Ring" />
+  <meta property="og:description" content="Por que hash(key)%N falha ao escalar, o hash ring, lookup clockwise, virtual nodes e replicação com deslocamento." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../engine/explainer.css" />
+</head>
+<body>
+  <div id="app"></div>
+  <script src="../engine/explainer.js"></script>
+  <script src="consistent-hashing.data.js"></script>
+  <script>
+    new Explainer(window.CONSISTENT_HASHING_DIAGRAM).mount("#app");
+  </script>
+  <script src="../engine/related.js"></script>
+</body>
+</html>

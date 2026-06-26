@@ -47,6 +47,8 @@
     .card .tag.runtime { color: var(--hot); }
     .card .tag.algo  { color: var(--warn); }
     .card .tag.tools { color: var(--muted); }
+    .card .tag.auth  { color: var(--hot); }
+    .card .tag.dist  { color: var(--accent-2); }
     .card h3 { margin: 7px 0 5px; font-size: 18px; }
     .card p { margin: 0; color: var(--ink-soft); font-size: 13px; line-height: 1.5; }
     .card.soon { opacity: .45; pointer-events: none; }
@@ -195,6 +197,78 @@
           <span class="tag web">Protocolos · Pagamentos</span>
           <h3>ISO 8583 →</h3>
           <p>O padrão de mensagens de cartão: MTI, bitmap primário/secundário, data elements e o fluxo POS → Adquirente → Bandeira → Emissor.</p>
+        </a>
+
+        <a class="card" href="explainers/websocket.html">
+          <span class="tag web">Web · Real-time</span>
+          <h3>WebSocket →</h3>
+          <p>Full-duplex sobre TCP: handshake HTTP 101 Upgrade, estrutura de frame (FIN, opcode, MASK), opcodes text/binary/ping/pong e comparativo com SSE.</p>
+        </a>
+
+        <a class="card" href="explainers/grpc.html">
+          <span class="tag web">Web · APIs</span>
+          <h3>gRPC →</h3>
+          <p>Schema-first com Protocol Buffers, HTTP/2 multiplexing, quatro tipos de RPC (Unary, Server Stream, Client Stream, Bidirectional) e Interceptors.</p>
+        </a>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════ SEGURANÇA & AUTENTICAÇÃO ═══════════════════════ -->
+    <section class="cat-section">
+      <h2 class="cat-head"><span class="cat-emoji">🔐</span> Segurança &amp; Autenticação</h2>
+      <div class="cards">
+        <a class="card" href="explainers/oauth.html">
+          <span class="tag auth">Auth · OAuth</span>
+          <h3>OAuth 2.0 / OIDC →</h3>
+          <p>Authorization Code Flow com 4 atores, PKCE para apps públicas, os três tokens (access, refresh, id_token) e OIDC como camada de identidade.</p>
+        </a>
+
+        <a class="card" href="explainers/jwt.html">
+          <span class="tag auth">Auth · Tokens</span>
+          <h3>JWT →</h3>
+          <p>Header.Payload.Signature: claims padrão (sub, exp, iss, aud), HS256 vs RS256, verificação stateless sem banco e estratégia de revogação com refresh token.</p>
+        </a>
+
+        <a class="card" href="explainers/sso.html">
+          <span class="tag auth">Auth · SSO</span>
+          <h3>SSO — Single Sign-On →</h3>
+          <p>1 login no IdP, acesso a N apps: SP-initiated flow, SSO session cookie, assertions SAML vs OIDC, e Single Logout (SLO).</p>
+        </a>
+
+        <a class="card" href="explainers/sessions.html">
+          <span class="tag auth">Auth · Sessions</span>
+          <h3>Sessions &amp; Cookies →</h3>
+          <p>State server-side com session_id no Redis, atributos HttpOnly/Secure/SameSite, proteção contra CSRF e session hijacking.</p>
+        </a>
+
+        <a class="card" href="explainers/api-keys.html">
+          <span class="tag auth">Auth · M2M</span>
+          <h3>API Keys →</h3>
+          <p>Geração com crypto.randomBytes, armazenar apenas SHA-256, rate limiting por chave no Redis, escopos e rotação sem downtime.</p>
+        </a>
+
+        <a class="card" href="explainers/mfa.html">
+          <span class="tag auth">Auth · MFA</span>
+          <h3>MFA / 2FA →</h3>
+          <p>Os 3 fatores (saber, ter, ser): TOTP com HMAC-SHA1 e janela de 30s, FIDO2/WebAuthn phishing-resistant e por que SMS OTP é inseguro.</p>
+        </a>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════ SISTEMAS DISTRIBUÍDOS ═══════════════════════ -->
+    <section class="cat-section">
+      <h2 class="cat-head"><span class="cat-emoji">⛓️</span> Sistemas Distribuídos</h2>
+      <div class="cards">
+        <a class="card" href="explainers/consistent-hashing.html">
+          <span class="tag dist">Distribuídos · Particionamento</span>
+          <h3>Consistent Hashing →</h3>
+          <p>Hash ring 0..2³², lookup clockwise O(log N), virtual nodes para distribuição uniforme, add/remove nó remapeia apenas ~1/N chaves. Base de Cassandra, DynamoDB e Redis Cluster.</p>
+        </a>
+
+        <a class="card" href="explainers/blockchain.html">
+          <span class="tag dist">Distribuídos · Consensus</span>
+          <h3>Blockchain →</h3>
+          <p>Cadeia de blocos encadeados por prev_hash, Proof of Work (brute-force de nonce), longest chain wins, ciclo de vida de uma transação e Smart Contracts.</p>
         </a>
       </div>
     </section>

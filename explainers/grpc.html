@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>gRPC — Protocol Buffers e HTTP/2 — Explicador animado</title>
+  <meta name="description" content="Schema-first com .proto, geração de código, HTTP/2 multiplexing e os 4 tipos de streaming: Unary, Server, Client e Bidirecional." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="gRPC — Protocol Buffers e HTTP/2" />
+  <meta property="og:description" content="Schema-first com .proto, geração de código, HTTP/2 multiplexing e os 4 tipos de streaming: Unary, Server, Client e Bidirecional." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../engine/explainer.css" />
+</head>
+<body>
+  <div id="app"></div>
+  <script src="../engine/explainer.js"></script>
+  <script src="grpc.data.js"></script>
+  <script>
+    new Explainer(window.GRPC_DIAGRAM).mount("#app");
+  </script>
+  <script src="../engine/related.js"></script>
+</body>
+</html>
