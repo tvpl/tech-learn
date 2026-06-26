@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Amazon RDS — Banco relacional gerenciado — Explicador animado</title>
+  <meta name="description" content="Multi-AZ com failover automático, Read Replicas, backups automáticos, restore point-in-time, encryption e Performance Insights." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Amazon RDS — Banco relacional gerenciado" />
+  <meta property="og:description" content="Multi-AZ com failover automático, Read Replicas, backups automáticos, restore point-in-time, encryption e Performance Insights." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../engine/explainer.css" />
+</head>
+<body>
+  <div id="app"></div>
+  <script src="../engine/explainer.js"></script>
+  <script src="rds.data.js"></script>
+  <script>
+    new Explainer(window.RDS_DIAGRAM).mount("#app");
+  </script>
+</body>
+</html>

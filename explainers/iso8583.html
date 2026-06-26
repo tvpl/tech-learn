@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ISO 8583 — Mensagens de pagamento com cartão — Explicador animado</title>
+  <meta name="description" content="O padrão ISO 8583: MTI, bitmap primário e secundário, data elements e o fluxo POS → Adquirente → Bandeira → Emissor." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="ISO 8583 — Mensagens de pagamento com cartão" />
+  <meta property="og:description" content="O padrão ISO 8583: MTI, bitmap primário e secundário, data elements e o fluxo POS → Adquirente → Bandeira → Emissor." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../engine/explainer.css" />
+</head>
+<body>
+  <div id="app"></div>
+  <script src="../engine/explainer.js"></script>
+  <script src="iso8583.data.js"></script>
+  <script>
+    new Explainer(window.ISO8583_DIAGRAM).mount("#app");
+  </script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rate Limiting — Token Bucket e Sliding Window — Explicador animado</title>
+  <meta name="description" content="Como proteger APIs de abuso: Token Bucket, Leaky Bucket, Sliding Window, burst capacity e headers X-RateLimit-*." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Rate Limiting — Token Bucket e Sliding Window" />
+  <meta property="og:description" content="Como proteger APIs de abuso: Token Bucket, Leaky Bucket, Sliding Window, burst capacity e headers X-RateLimit-*." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../engine/explainer.css" />
+</head>
+<body>
+  <div id="app"></div>
+  <script src="../engine/explainer.js"></script>
+  <script src="rate-limit.data.js"></script>
+  <script>
+    new Explainer(window.RATE_LIMIT_DIAGRAM).mount("#app");
+  </script>
+</body>
+</html>

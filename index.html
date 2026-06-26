@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>tech-learn · Diagramas explicativos animados</title>
-  <meta name="description" content="Diagramas interativos animados que explicam tecnologia passo a passo: Transformer, HTTP, TCP/IP, Git, Hash map, Busca binária e Recursão." />
+  <meta name="description" content="Diagramas interativos animados que explicam tecnologia passo a passo: IA, RAG, MCP, Kubernetes, Circuit Breaker, ISO 8583, Java Virtual Threads e muito mais." />
   <meta property="og:type" content="website" />
   <meta property="og:title" content="tech-learn · Diagramas explicativos animados" />
   <meta property="og:description" content="Aprenda conceitos de tecnologia passo a passo, com animação e balões." />
@@ -14,82 +14,247 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="engine/explainer.css" />
   <style>
-    body { display: grid; place-items: center; min-height: 100vh; }
-    .home { max-width: 880px; padding: 48px 28px; text-align: center; }
-    .home h1 { font-size: 38px; margin: 0 0 10px; letter-spacing: -.5px; }
-    .home p.lead { color: var(--ink-soft); font-size: 17px; margin: 0 auto 40px; max-width: 560px; line-height: 1.6; }
-    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; text-align: left; }
+    body { display: grid; place-items: start center; min-height: 100vh; }
+    .home { max-width: 1100px; padding: 48px 28px 64px; width: 100%; }
+    .home-header { text-align: center; margin-bottom: 52px; }
+    .home-header h1 { font-size: 38px; margin: 0 0 10px; letter-spacing: -.5px; }
+    .home-header p.lead { color: var(--ink-soft); font-size: 17px; margin: 0 auto; max-width: 560px; line-height: 1.6; }
+
+    /* Seções de categoria */
+    .cat-section { margin-bottom: 52px; }
+    .cat-head {
+      font-size: 12px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 1.4px; color: var(--muted);
+      display: flex; align-items: center; gap: 10px;
+      border-bottom: 1px solid var(--line); padding-bottom: 10px; margin-bottom: 18px;
+    }
+    .cat-emoji { font-size: 16px; }
+
+    /* Cards */
+    .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
     .card {
       display: block; text-decoration: none; color: inherit;
       background: linear-gradient(160deg, var(--panel-2), var(--panel));
       border: 1px solid var(--line); border-radius: var(--radius);
-      padding: 22px 22px 20px; transition: all var(--t-fast) var(--ease);
+      padding: 20px 20px 18px; transition: all var(--t-fast) var(--ease);
     }
     .card:hover { border-color: var(--accent); transform: translateY(-3px); box-shadow: var(--shadow); }
-    .card .tag { font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--accent); }
-    .card h3 { margin: 8px 0 6px; font-size: 20px; }
-    .card p { margin: 0; color: var(--ink-soft); font-size: 14px; line-height: 1.5; }
-    .card.soon { opacity: .55; pointer-events: none; }
-    .foot { margin-top: 40px; color: var(--muted); font-size: 13px; }
+    .card .tag { font-size: 10px; text-transform: uppercase; letter-spacing: 1.2px; font-weight: 600; }
+    .card .tag.ai    { color: var(--accent); }
+    .card .tag.web   { color: var(--accent-2); }
+    .card .tag.infra { color: var(--good); }
+    .card .tag.async { color: var(--warn); }
+    .card .tag.runtime { color: var(--hot); }
+    .card .tag.algo  { color: var(--warn); }
+    .card .tag.tools { color: var(--muted); }
+    .card h3 { margin: 7px 0 5px; font-size: 18px; }
+    .card p { margin: 0; color: var(--ink-soft); font-size: 13px; line-height: 1.5; }
+    .card.soon { opacity: .45; pointer-events: none; }
+
+    .foot { margin-top: 48px; color: var(--muted); font-size: 13px; text-align: center; }
     .foot code { background: var(--panel); padding: 2px 7px; border-radius: 6px; color: var(--ink-soft); }
   </style>
 </head>
 <body>
   <main class="home">
-    <h1>🧠 tech-learn</h1>
-    <p class="lead">Diagramas interativos que explicam conceitos de tecnologia passo a passo, com animação e balões — construídos sobre um motor reutilizável.</p>
+    <header class="home-header">
+      <h1>🧠 tech-learn</h1>
+      <p class="lead">Diagramas interativos que explicam conceitos de tecnologia passo a passo, com animação e balões — construídos sobre um motor reutilizável.</p>
+    </header>
 
-    <div class="cards">
-      <a class="card" href="explainers/transformer.html">
-        <span class="tag">IA · LLMs</span>
-        <h3>Rede Transformer →</h3>
-        <p>Do texto cru à próxima palavra: tokenização, embeddings, positional encoding, self-attention (Q/K/V), multi-head, residual, feed-forward e a cabeça de saída.</p>
-      </a>
+    <!-- ═══════════════════════ IA & AGENTES ═══════════════════════ -->
+    <section class="cat-section">
+      <h2 class="cat-head"><span class="cat-emoji">🤖</span> IA &amp; Agentes</h2>
+      <div class="cards">
+        <a class="card" href="explainers/transformer.html">
+          <span class="tag ai">IA · LLMs</span>
+          <h3>Rede Transformer →</h3>
+          <p>Do texto cru à próxima palavra: tokenização, embeddings, positional encoding, self-attention (Q/K/V), multi-head, residual, feed-forward e cabeça de saída.</p>
+        </a>
 
-      <a class="card" href="explainers/http.html">
-        <span class="tag">Web · Redes</span>
-        <h3>Requisição HTTP →</h3>
-        <p>Da URL digitada à página renderizada: DNS, conexão TCP, handshake TLS, request, resposta (200 OK) e cache — em diagrama de sequência.</p>
-      </a>
+        <a class="card" href="explainers/rag.html">
+          <span class="tag ai">IA · RAG</span>
+          <h3>RAG →</h3>
+          <p>Retrieval-Augmented Generation: chunking, embeddings, busca vetorial, recuperação de contexto e como fundamentar as respostas de um LLM em dados reais.</p>
+        </a>
 
-      <a class="card" href="explainers/tcp.html">
-        <span class="tag">Redes</span>
-        <h3>TCP/IP →</h3>
-        <p>Three-way handshake (SYN/SYN-ACK/ACK), segmentos numerados, ACKs, janela deslizante, perda + retransmissão e encerramento.</p>
-      </a>
+        <a class="card" href="explainers/mcp.html">
+          <span class="tag ai">IA · Protocolos</span>
+          <h3>Model Context Protocol →</h3>
+          <p>Como o MCP conecta LLMs a ferramentas e dados externos: Host, Client, Server, Tools, Resources, Prompts e o fluxo JSON-RPC de ida e volta.</p>
+        </a>
 
-      <a class="card" href="explainers/git.html">
-        <span class="tag">Ferramentas</span>
-        <h3>Git: do add ao push →</h3>
-        <p>As quatro áreas (working, staging, repo local, remoto) e o caminho de uma mudança: add, commit, push e pull.</p>
-      </a>
+        <a class="card" href="explainers/subagents.html">
+          <span class="tag ai">IA · Agentes</span>
+          <h3>SubAgentes →</h3>
+          <p>Orquestrador que spawna subagentes especializados, executa em paralelo, agrega resultados e lida com falhas — o padrão multi-agente explicado.</p>
+        </a>
 
-      <a class="card" href="explainers/hashmap.html">
-        <span class="tag">Estruturas de dados</span>
-        <h3>Hash Map por dentro →</h3>
-        <p>Chave → hash → índice → bucket. Colisões, encadeamento, busca O(1) médio e resize/rehash.</p>
-      </a>
+        <a class="card" href="explainers/context-eng.html">
+          <span class="tag ai">IA · Engenharia</span>
+          <h3>Engenharia de Contexto →</h3>
+          <p>Janela de contexto, hierarquia de mensagens, estratégias de compressão, caching de prompt e como aproveitar cada token da forma mais eficiente.</p>
+        </a>
 
-      <a class="card" href="explainers/busca-binaria.html">
-        <span class="tag">Algoritmos</span>
-        <h3>Busca Binária →</h3>
-        <p>Dividir para conquistar num array ordenado: ponteiros lo/hi/mid, descartar metade a cada sonda e por que o custo é O(log n).</p>
-      </a>
+        <a class="card" href="explainers/prompt-eng.html">
+          <span class="tag ai">IA · Prompts</span>
+          <h3>Engenharia de Prompt →</h3>
+          <p>Zero-shot, few-shot, chain-of-thought, role prompting, ReAct, XML tags e os anti-padrões que fazem modelos perderem precisão.</p>
+        </a>
 
-      <a class="card" href="explainers/recursao.html">
-        <span class="tag">Programação</span>
-        <h3>Recursão e a pilha →</h3>
-        <p>fact(4) passo a passo: empilhar as chamadas, atingir o caso base e desempilhar os retornos — e por que existe o stack overflow.</p>
-      </a>
+        <a class="card" href="explainers/guardrails.html">
+          <span class="tag ai">IA · Segurança</span>
+          <h3>Guardrails →</h3>
+          <p>Camadas de proteção para sistemas de IA: validação de entrada, detecção de injeção de prompt, filtros de saída, fallback e auditoria.</p>
+        </a>
 
-      <div class="card soon">
-        <span class="tag">Em breve</span>
-        <h3>Seu próximo diagrama</h3>
-        <p>Copie qualquer <code>*.data.js</code>, troque <code>elements</code> e <code>steps</code>, e o motor cuida do resto. Veja o README.</p>
+        <a class="card" href="explainers/skills.html">
+          <span class="tag ai">IA · Agentes</span>
+          <h3>Skills →</h3>
+          <p>O que são Skills no contexto de agentes, como o LLM decide qual invocar, o contrato input/output e como compor skills em fluxos mais complexos.</p>
+        </a>
+
+        <a class="card" href="explainers/sdd.html">
+          <span class="tag ai">IA · Metodologia</span>
+          <h3>Spec-Driven Development →</h3>
+          <p>O ciclo SDD: escrever a spec, gerar código com IA, validar com testes automatizados, iterar — e por que a spec é a fonte de verdade.</p>
+        </a>
+
+        <a class="card" href="explainers/specs.html">
+          <span class="tag ai">IA · Especificações</span>
+          <h3>Specs para Agentes →</h3>
+          <p>Estrutura de uma spec de agente: contexto, objetivo, restrições, tools, contratos de I/O, exemplos e como diferenciar de system prompt e CLAUDE.md.</p>
+        </a>
       </div>
-    </div>
+    </section>
 
-    <p class="foot">Tudo em HTML/CSS/JS puro · sem build · abre direto no navegador.</p>
+    <!-- ═══════════════════════ WEB & PROTOCOLOS ═══════════════════════ -->
+    <section class="cat-section">
+      <h2 class="cat-head"><span class="cat-emoji">🌐</span> Web &amp; Protocolos</h2>
+      <div class="cards">
+        <a class="card" href="explainers/http.html">
+          <span class="tag web">Web · Redes</span>
+          <h3>Requisição HTTP →</h3>
+          <p>Da URL digitada à página renderizada: DNS, conexão TCP, handshake TLS, request, resposta (200 OK) e cache — em diagrama de sequência.</p>
+        </a>
+
+        <a class="card" href="explainers/tcp.html">
+          <span class="tag web">Redes</span>
+          <h3>TCP/IP →</h3>
+          <p>Three-way handshake (SYN/SYN-ACK/ACK), segmentos numerados, ACKs, janela deslizante, perda + retransmissão e encerramento.</p>
+        </a>
+
+        <a class="card" href="explainers/iso8583.html">
+          <span class="tag web">Protocolos · Pagamentos</span>
+          <h3>ISO 8583 →</h3>
+          <p>O padrão de mensagens de cartão: MTI, bitmap primário/secundário, data elements e o fluxo POS → Adquirente → Bandeira → Emissor.</p>
+        </a>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════ INFRAESTRUTURA & CLOUD ═══════════════════════ -->
+    <section class="cat-section">
+      <h2 class="cat-head"><span class="cat-emoji">☁️</span> Infraestrutura &amp; Cloud</h2>
+      <div class="cards">
+        <a class="card" href="explainers/kubernetes.html">
+          <span class="tag infra">Kubernetes</span>
+          <h3>Kubernetes →</h3>
+          <p>Control Plane (API Server, etcd, Scheduler), Worker Nodes, Pods, Deployments, Services, HPA e rolling deploy sem downtime.</p>
+        </a>
+
+        <a class="card" href="explainers/eks.html">
+          <span class="tag infra">AWS · EKS</span>
+          <h3>Amazon EKS →</h3>
+          <p>Kubernetes gerenciado na AWS: Control Plane mantido pela AWS, Node Groups, Fargate, VPC, IRSA, Add-ons e integração com ECR e ALB.</p>
+        </a>
+
+        <a class="card" href="explainers/rds.html">
+          <span class="tag infra">AWS · RDS</span>
+          <h3>Amazon RDS →</h3>
+          <p>Banco relacional gerenciado: Multi-AZ com failover automático, Read Replicas, backups automáticos, restore point-in-time e encryption.</p>
+        </a>
+
+        <a class="card" href="explainers/ingress.html">
+          <span class="tag infra">Kubernetes · Redes</span>
+          <h3>Ingress →</h3>
+          <p>Como expor serviços Kubernetes externamente: Ingress Controller, host/path routing, TLS termination e por que supera NodePort e LoadBalancer.</p>
+        </a>
+
+        <a class="card" href="explainers/circuit-breaker.html">
+          <span class="tag infra">Resiliência</span>
+          <h3>Circuit Breaker →</h3>
+          <p>O padrão que evita cascata de falhas: estados CLOSED → OPEN → HALF-OPEN, contador de erros, timer e probe request explicados passo a passo.</p>
+        </a>
+
+        <a class="card" href="explainers/rate-limit.html">
+          <span class="tag infra">Resiliência</span>
+          <h3>Rate Limiting →</h3>
+          <p>Token Bucket, Leaky Bucket e Sliding Window: como proteger APIs de abuso, tokens se reabastecendo, burst capacity e os headers X-RateLimit-*.</p>
+        </a>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════ MENSAGERIA & ASYNC ═══════════════════════ -->
+    <section class="cat-section">
+      <h2 class="cat-head"><span class="cat-emoji">⚡</span> Mensageria &amp; Processamento Async</h2>
+      <div class="cards">
+        <a class="card" href="explainers/async-redis-kafka.html">
+          <span class="tag async">Mensageria</span>
+          <h3>Sync → Async com Redis / Kafka →</h3>
+          <p>Transformar uma requisição síncrona em processamento assíncrono: enfileirar, 202 Accepted, worker, result store, polling, webhook e Dead Letter Queue.</p>
+        </a>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════ RUNTIME & LINGUAGENS ═══════════════════════ -->
+    <section class="cat-section">
+      <h2 class="cat-head"><span class="cat-emoji">☕</span> Runtime &amp; Linguagens</h2>
+      <div class="cards">
+        <a class="card" href="explainers/virtual-threads.html">
+          <span class="tag runtime">Java · Concorrência</span>
+          <h3>Virtual Threads Java →</h3>
+          <p>Project Loom no Java 21: Platform Threads vs Virtual Threads, carrier threads, desmontagem em I/O bloqueante e Structured Concurrency.</p>
+        </a>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════ ALGORITMOS & ESTRUTURAS ═══════════════════════ -->
+    <section class="cat-section">
+      <h2 class="cat-head"><span class="cat-emoji">🔢</span> Algoritmos &amp; Estruturas de Dados</h2>
+      <div class="cards">
+        <a class="card" href="explainers/hashmap.html">
+          <span class="tag algo">Estruturas de dados</span>
+          <h3>Hash Map por dentro →</h3>
+          <p>Chave → hash → índice → bucket. Colisões, encadeamento, busca O(1) médio e resize/rehash.</p>
+        </a>
+
+        <a class="card" href="explainers/busca-binaria.html">
+          <span class="tag algo">Algoritmos</span>
+          <h3>Busca Binária →</h3>
+          <p>Dividir para conquistar num array ordenado: ponteiros lo/hi/mid, descartar metade a cada sonda e por que o custo é O(log n).</p>
+        </a>
+
+        <a class="card" href="explainers/recursao.html">
+          <span class="tag algo">Programação</span>
+          <h3>Recursão e a pilha →</h3>
+          <p>fact(4) passo a passo: empilhar as chamadas, atingir o caso base e desempilhar os retornos — e por que existe o stack overflow.</p>
+        </a>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════ FERRAMENTAS ═══════════════════════ -->
+    <section class="cat-section">
+      <h2 class="cat-head"><span class="cat-emoji">🛠️</span> Ferramentas</h2>
+      <div class="cards">
+        <a class="card" href="explainers/git.html">
+          <span class="tag tools">Ferramentas</span>
+          <h3>Git: do add ao push →</h3>
+          <p>As quatro áreas (working, staging, repo local, remoto) e o caminho de uma mudança: add, commit, push e pull.</p>
+        </a>
+      </div>
+    </section>
+
+    <p class="foot">Tudo em HTML/CSS/JS puro · sem build · abre direto no navegador · <code>npm run serve</code></p>
   </main>
 </body>
 </html>

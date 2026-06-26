@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RAG — Retrieval-Augmented Generation — Explicador animado</title>
+  <meta name="description" content="Entenda o RAG passo a passo: chunking, embeddings, busca vetorial, recuperação de contexto e como fundamentar as respostas de um LLM em dados reais." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="RAG — Retrieval-Augmented Generation" />
+  <meta property="og:description" content="Entenda o RAG passo a passo: chunking, embeddings, busca vetorial, recuperação de contexto e como fundamentar as respostas de um LLM em dados reais." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../engine/explainer.css" />
+</head>
+<body>
+  <div id="app"></div>
+  <script src="../engine/explainer.js"></script>
+  <script src="rag.data.js"></script>
+  <script>
+    new Explainer(window.RAG_DIAGRAM).mount("#app");
+  </script>
+</body>
+</html>
