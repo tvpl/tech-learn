@@ -3,6 +3,7 @@ import type { Timeline } from "@/core/timeline";
 import { FORMATS, WORLD } from "@/schema/formats";
 import { Caption } from "./Caption";
 import { ElementBody, type RenderCtx } from "./elements";
+import { QuizCard } from "./QuizCard";
 import { toneVar } from "./tones";
 import "./stage.css";
 
@@ -106,6 +107,12 @@ export function Stage({ timeline, tMs, theme = "dark", interactive = true, expor
         />
       ) : null}
 
+      {exporting && state.scene.def.quiz ? (
+        <div style={quizCardStyle(spec.regions)}>
+          <QuizCard quiz={state.scene.def.quiz} local={state.local} duration={state.scene.def.duration} />
+        </div>
+      ) : null}
+
       {exporting ? (
         <div className="tl-watermark" style={rectStyle(spec.regions.watermark)}>
           tech-learn.dev · {ex.slug}
@@ -113,6 +120,23 @@ export function Stage({ timeline, tMs, theme = "dark", interactive = true, expor
       ) : null}
     </div>
   );
+}
+
+function quizCardStyle(regions: (typeof FORMATS)[keyof typeof FORMATS]["regions"]): React.CSSProperties {
+  if (regions.caption) return { ...rectStyle(regions.caption) };
+  // formato "wide": sem card fixo — centraliza sobre o palco, altura limitada
+  // com scroll interno como rede de segurança (explain mais longo não estoura o frame)
+  const s = regions.stage;
+  const maxH = s.h * 0.72;
+  return {
+    position: "absolute",
+    left: s.x + s.w / 2,
+    top: s.y + Math.max(8, (s.h - maxH) / 2),
+    width: Math.min(640, s.w * 0.48),
+    maxHeight: maxH,
+    overflow: "auto",
+    transform: "translateX(-50%)",
+  };
 }
 
 /**
