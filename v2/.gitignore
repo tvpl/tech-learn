@@ -1,0 +1,8 @@
+node_modules/
+.next/
+out/
+out-media/
+*.tsbuildinfo
+next-env.d.ts
+test-results/
+playwright-report/

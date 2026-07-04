@@ -1,0 +1,278 @@
+import { r, validateExplainer, type ExplainerInput } from "@/schema/explainer";
+
+const TOKENS = ["O", "▁gato", "▁sentou", "▁no", "▁tapete"];
+const CANDS = ["tapete", "chão", "sofá", "jardim", "cama", "carro"];
+
+const data: ExplainerInput = {
+  slug: "como-um-llm-funciona",
+  title: "Como um LLM funciona",
+  subtitle: "Do texto ao próximo token, passo a passo",
+  category: "IA & Agentes",
+  tags: ["llm", "transformer", "atenção", "embeddings"],
+  level: "medio",
+  glossary: {
+    token: "Pedaço de texto (palavra ou sub-palavra) com um ID numérico no vocabulário do modelo.",
+    embedding: "Vetor de números que representa o significado de um token num espaço matemático.",
+    atenção: "Mecanismo que deixa cada token 'olhar' para os outros e pesar sua importância.",
+    vocabulário: "Lista fixa de todos os tokens que o modelo conhece, cada um com um ID.",
+    amostragem: "Escolher o próximo token a partir das probabilidades — nem sempre o mais provável.",
+  },
+  elements: [
+    // hero (cena 1)
+    { id: "hero_icon", kind: "icon", name: "brain", tone: "accent", at: r(700, 260, 200, 200) },
+    { id: "hero_title", kind: "label", text: "Como um LLM funciona", size: 40, at: r(400, 490, 800, 60) },
+    { id: "hero_sub", kind: "label", text: "Do texto ao próximo token, passo a passo", size: 18, muted: true, at: r(400, 560, 800, 40) },
+
+    // coluna 1 — tokenização
+    { id: "lbl_c1", kind: "label", text: "1 · Tokenização", size: 15, tone: "accent", align: "start", at: r(40, 110, 350, 28) },
+    { id: "txt_input", kind: "text", md: '**"O gato sentou no tapete"**', size: 19, at: r(40, 150, 350, 50) },
+    {
+      id: "tok_row",
+      kind: "flow",
+      direction: "row",
+      gap: 8,
+      children: TOKENS.map((_, i) => `tok${i}`),
+      group: "tok",
+      at: r(40, 215, 350, 46),
+    },
+    ...TOKENS.map((t, i) => ({
+      id: `tok${i}`,
+      kind: "token" as const,
+      text: t,
+      tone: "accent" as const,
+      group: "tok",
+      at: r(40, 215, 60, 46),
+    })),
+    { id: "code_ids", kind: "code", lang: "json", source: "[15, 8823, 4401, 22, 6671]", title: "IDs no vocabulário", at: r(40, 280, 350, 110) },
+    { id: "conn_txt_tok", kind: "connector", from: "txt_input", to: "tok_row", route: "elbow" },
+    { id: "conn_tok_code", kind: "connector", from: "tok_row", to: "code_ids", route: "elbow" },
+
+    { id: "emb_lbl", kind: "label", text: "Embedding de \"gato\"", size: 14, muted: true, align: "start", at: r(40, 560, 350, 26) },
+    { id: "bars_emb", kind: "bars", values: [0.3, 0.85, 0.5, 0.95, 0.2, 0.6], tone: "accent2", at: r(40, 600, 350, 210) },
+    { id: "conn_code_emb", kind: "connector", from: "code_ids", to: "bars_emb", route: "elbow" },
+
+    // coluna 2 — atenção
+    { id: "lbl_c2", kind: "label", text: "2 · Atenção", size: 15, tone: "accent2", align: "start", at: r(430, 110, 350, 28) },
+    { id: "formula_pe", kind: "formula", latex: "PE_{(pos,2i)} = \\sin\\!\\left(\\dfrac{pos}{10000^{2i/d}}\\right)", size: 18, at: r(430, 150, 350, 120) },
+    {
+      id: "matrix_attn",
+      kind: "matrix",
+      rows: 5,
+      cols: 5,
+      rowLabels: TOKENS,
+      colLabels: TOKENS,
+      tone: "accent2",
+      at: r(430, 290, 350, 460),
+    },
+    { id: "conn_emb_pe", kind: "connector", from: "bars_emb", to: "formula_pe", route: "curve" },
+    { id: "conn_pe_attn", kind: "connector", from: "formula_pe", to: "matrix_attn", route: "elbow" },
+
+    // coluna 3 — camadas
+    { id: "lbl_c3", kind: "label", text: "3 · Camadas", size: 15, tone: "good", align: "start", at: r(820, 110, 350, 28) },
+    {
+      id: "flow_heads",
+      kind: "flow",
+      direction: "grid",
+      cols: 2,
+      gap: 12,
+      group: "heads",
+      children: ["head0", "head1", "head2", "head3"],
+      at: r(820, 150, 350, 220),
+    },
+    ...[0, 1, 2, 3].map((i) => ({
+      id: `head${i}`,
+      kind: "box" as const,
+      label: `Cabeça ${i + 1}`,
+      icon: "layers",
+      tone: "good" as const,
+      group: "heads",
+      at: r(820, 150, 165, 100),
+    })),
+    { id: "box_ffn", kind: "box", label: "Feed-Forward", sub: "ReLU(xW₁+b₁)W₂+b₂", tone: "good", at: r(820, 400, 350, 130) },
+    { id: "counter_layers", kind: "counter", from: 1, to: 32, suffix: " camadas empilhadas", tone: "good", size: 30, at: r(820, 560, 350, 60) },
+    { id: "conn_attn_heads", kind: "connector", from: "matrix_attn", to: "flow_heads", route: "curve" },
+    { id: "conn_heads_ffn", kind: "connector", from: "flow_heads", to: "box_ffn", route: "elbow" },
+
+    // coluna 4 — previsão
+    { id: "lbl_c4", kind: "label", text: "4 · Previsão", size: 15, tone: "hot", align: "start", at: r(1210, 110, 350, 28) },
+    { id: "bars_output", kind: "bars", values: [0.62, 0.14, 0.09, 0.07, 0.05, 0.03], labels: CANDS, tone: "hot", at: r(1210, 150, 350, 220) },
+    { id: "conn_ffn_output", kind: "connector", from: "box_ffn", to: "bars_output", route: "curve" },
+    { id: "chosen_tok", kind: "token", text: "▁tapete", tone: "hot", at: r(1210, 430, 160, 50) },
+    { id: "conn_output_chosen", kind: "connector", from: "bars_output", to: "chosen_tok", route: "elbow" },
+  ],
+  scenes: [
+    {
+      id: "intro",
+      title: "Introdução",
+      role: "cover",
+      duration: 5500,
+      add: ["hero_icon", { id: "hero_title", enter: { type: "slide", dir: "up" } }, "hero_sub"],
+      camera: { fit: ["hero_icon", "hero_title", "hero_sub"], pad: 0.2 },
+      caption: {
+        anchor: "hero_icon",
+        placement: "right",
+        text: "Um {{token|LLM}} transforma texto em números, processa em camadas, e prevê o próximo {{token}}.",
+        why: "Entender esse fluxo tira a mágica do assunto: é álgebra linear e probabilidade, em escala gigantesca.",
+      },
+    },
+    {
+      id: "tokenizacao",
+      title: "1. O texto vira tokens",
+      duration: 9000,
+      remove: ["hero_icon", "hero_title", "hero_sub"],
+      add: [
+        "lbl_c1",
+        { id: "txt_input", enter: { type: "typewriter", duration: 1000 } },
+        { id: "@tok", enter: { type: "pop", stagger: 150 } },
+        { id: "conn_txt_tok", enter: { type: "draw", duration: 500 } },
+        { id: "code_ids", enter: { type: "fade", delay: 900 } },
+        { id: "conn_tok_code", enter: { type: "draw", duration: 500, delay: 900 } },
+      ],
+      cues: [{ at: 3200, duration: 800, target: "tok1", do: "pulse", times: 2 }],
+      camera: { fit: ["lbl_c1", "txt_input", "tok_row", "code_ids"], pad: 0.12 },
+      caption: {
+        anchor: "tok1",
+        placement: "right",
+        text: "O modelo não lê letras: ele quebra o texto em {{token|tokens}} — pedaços com um ID no {{vocabulário}}.",
+        why: "Redes neurais só operam sobre números. O vocabulário é o dicionário fixo entre linguagem e matemática.",
+      },
+    },
+    {
+      id: "embeddings",
+      title: "2. Tokens viram vetores",
+      duration: 8000,
+      add: ["emb_lbl", "bars_emb", { id: "conn_code_emb", enter: { type: "draw" } }],
+      camera: { fit: ["code_ids", "emb_lbl", "bars_emb"], pad: 0.15 },
+      caption: {
+        anchor: "bars_emb",
+        placement: "right",
+        text: "Cada token vira um {{embedding}} — um vetor com centenas de números.",
+        why: "Tokens com significado parecido (\"gato\", \"cachorro\") ficam próximos nesse espaço matemático.",
+      },
+    },
+    {
+      id: "posicional",
+      title: "3. A ordem importa",
+      duration: 7500,
+      add: ["lbl_c2", "formula_pe", { id: "conn_emb_pe", enter: { type: "draw" } }],
+      camera: { fit: ["bars_emb", "formula_pe"], pad: 0.15 },
+      caption: {
+        anchor: "formula_pe",
+        placement: "top",
+        text: "Somamos uma codificação posicional a cada vetor, com ondas de seno e cosseno.",
+        why: "Sem isso, o modelo veria a frase como um saco de palavras — a posição de cada token se perderia.",
+      },
+    },
+    {
+      id: "atencao",
+      title: "4. Self-attention",
+      duration: 10000,
+      add: ["matrix_attn", { id: "conn_pe_attn", enter: { type: "draw" } }],
+      cues: [
+        {
+          at: 800,
+          target: "matrix_attn",
+          do: "lightCells",
+          stagger: 110,
+          cells: [
+            [1, 0], [1, 1], [1, 2], [1, 3], [1, 4],
+          ],
+        },
+        { at: 500, duration: 4000, target: "conn_pe_attn", do: "flow", count: 5, tone: "accent2" },
+      ],
+      camera: { fit: ["formula_pe", "matrix_attn"], pad: 0.1 },
+      caption: {
+        anchor: "matrix_attn",
+        placement: "left",
+        text: "Cada token 'olha' para todos os outros e pesa quanto prestar {{atenção}} neles.",
+        why: "A linha \"gato\" acendendo mostra o quanto ele se relaciona com \"sentou\" — sujeito e verbo, mesmo distantes.",
+      },
+    },
+    {
+      id: "camadas",
+      title: "5. Múltiplas cabeças, várias camadas",
+      duration: 9500,
+      add: [
+        "lbl_c3",
+        { id: "@heads", enter: { type: "pop", stagger: 120 } },
+        { id: "conn_attn_heads", enter: { type: "draw" } },
+        { id: "box_ffn", enter: { type: "slide", dir: "left" } },
+        { id: "conn_heads_ffn", enter: { type: "draw" } },
+        "counter_layers",
+      ],
+      cues: [{ at: 400, duration: 1600, target: "counter_layers", do: "count" }],
+      camera: { fit: ["matrix_attn", "flow_heads", "box_ffn", "counter_layers"], pad: 0.1 },
+      caption: {
+        anchor: "flow_heads",
+        placement: "right",
+        text: "Várias cabeças de {{atenção}} rodam em paralelo, cada uma capturando um tipo de relação diferente.",
+        why: "Depois da atenção, uma rede feed-forward processa cada posição — e todo o bloco se repete dezenas de vezes.",
+      },
+    },
+    {
+      id: "previsao",
+      title: "6. Prevendo o próximo token",
+      duration: 8500,
+      add: ["lbl_c4", { id: "bars_output", enter: { type: "slide", dir: "right" } }, { id: "conn_ffn_output", enter: { type: "draw" } }],
+      camera: { fit: ["box_ffn", "counter_layers", "bars_output"], pad: 0.12 },
+      caption: {
+        anchor: "bars_output",
+        placement: "left",
+        text: "A última camada dá uma probabilidade para cada palavra do {{vocabulário}}.",
+        why: "\"tapete\" ganha porque combina com o contexto — o gato sentou EM ALGUM LUGAR.",
+      },
+    },
+    {
+      id: "escolha",
+      title: "7. O token escolhido",
+      duration: 7000,
+      add: [{ id: "chosen_tok", enter: { type: "pop" } }, { id: "conn_output_chosen", enter: { type: "draw" } }],
+      cues: [{ at: 600, duration: 1000, target: "chosen_tok", do: "pulse", times: 3 }],
+      camera: { fit: ["bars_output", "chosen_tok"], pad: 0.2 },
+      caption: {
+        anchor: "chosen_tok",
+        placement: "bottom",
+        text: "Por {{amostragem}}, escolhemos um token — aqui, \"tapete\".",
+        why: "Esse token entra de volta na entrada, e o ciclo inteiro se repete para gerar a próxima palavra.",
+      },
+    },
+    {
+      id: "resumo",
+      title: "Resumo: o ciclo completo",
+      duration: 8000,
+      camera: { fit: "all", pad: 0.05 },
+      cues: [
+        { at: 200, target: "lbl_c1", do: "pulse" },
+        { at: 900, target: "lbl_c2", do: "pulse" },
+        { at: 1600, target: "lbl_c3", do: "pulse" },
+        { at: 2300, target: "lbl_c4", do: "pulse" },
+      ],
+      caption: {
+        anchor: { x: 800, y: 60 },
+        placement: "bottom",
+        text: "Tokeniza → gera embeddings → soma posição → presta atenção → passa pelo feed-forward × N camadas → prevê o próximo token.",
+        why: "Esse ciclo roda token a token — é assim que um LLM escreve um texto inteiro, uma palavra de cada vez.",
+      },
+    },
+    {
+      id: "quiz",
+      title: "Teste seu entendimento",
+      role: "cta",
+      duration: 9000,
+      camera: { fit: "all", pad: 0.05 },
+      quiz: {
+        question: "Para que serve o mecanismo de atenção (self-attention)?",
+        options: [
+          "Para comprimir o texto e economizar memória",
+          "Para cada token pesar sua relação com os outros tokens da frase",
+          "Para corrigir erros de ortografia antes da tokenização",
+          "Para converter tokens em imagens",
+        ],
+        answer: 1,
+        explain: "A atenção deixa cada posição 'consultar' as demais e decidir o quanto cada uma importa para o seu próprio significado no contexto — é o que permite capturar relações como sujeito↔verbo mesmo distantes na frase.",
+      },
+    },
+  ],
+};
+
+export const comoUmLlmFunciona = validateExplainer(data);
