@@ -24,14 +24,16 @@ export function buildGroups(elements: RawElement[]): Map<string, string[]> {
   return groups;
 }
 
+/**
+ * Espelha `reveal()` REAL do engine (engine/explainer.js) — que é diferente
+ * de `_ids()` (usado em step.show/hide/highlight/dim/pulse): `reveal(target)`
+ * trata `target` como nome de GRUPO SEM PRECISAR do prefixo "@" quando é uma
+ * string que bate com um grupo conhecido; senão usa o array literal ou
+ * embrulha a string única — nunca expande "@" dentro de um array.
+ */
 function expandRevealTarget(target: string | string[], groups: Map<string, string[]>): string[] {
-  const list = Array.isArray(target) ? target : [target];
-  const out: string[] = [];
-  for (const id of list) {
-    if (typeof id === "string" && id[0] === "@") out.push(...(groups.get(id.slice(1)) ?? []));
-    else out.push(id);
-  }
-  return out;
+  if (typeof target === "string" && groups.has(target)) return groups.get(target)!;
+  return Array.isArray(target) ? target : [target];
 }
 
 function makeElProxy(id: string, record: (call: TraceCall, target: string, args?: Record<string, unknown>) => void) {

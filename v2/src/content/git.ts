@@ -1,0 +1,637 @@
+import { validateExplainer, type ExplainerInput } from "@/schema/explainer";
+
+// Gerado por v2/scripts/convert-v1.ts a partir de explainers/git.data.js (v1).
+// Câmera usa o default do schema (fit:"all") — sem ajuste fino de enquadramento
+// por cena. Revise o relatório do conversor para avisos específicos deste arquivo.
+const data: ExplainerInput = {
+  slug: "git",
+  title: "Git: do `add` ao `push`",
+  subtitle: "As quatro áreas e o caminho de uma mudança",
+  category: "Ferramentas",
+  tags: ["git", "versionamento"],
+  level: "intro",
+  glossary: {
+    HEAD: "Aponta para o commit/branch atual — é onde você está no histórico.",
+  },
+  elements: [
+    {
+      id: "c_wd",
+      kind: "box",
+      at: {
+        x: 63,
+        y: 141,
+        w: 325,
+        h: 694,
+      },
+      variant: "outline",
+    },
+    {
+      id: "c_st",
+      kind: "box",
+      at: {
+        x: 425,
+        y: 141,
+        w: 325,
+        h: 694,
+      },
+      variant: "outline",
+    },
+    {
+      id: "c_lo",
+      kind: "box",
+      at: {
+        x: 788,
+        y: 141,
+        w: 350,
+        h: 694,
+      },
+      variant: "outline",
+    },
+    {
+      id: "c_rm",
+      kind: "box",
+      at: {
+        x: 1188,
+        y: 141,
+        w: 350,
+        h: 694,
+      },
+      variant: "outline",
+    },
+    {
+      id: "h_wd",
+      kind: "label",
+      at: {
+        x: 126,
+        y: 95,
+        w: 198,
+        h: 42,
+      },
+      text: "Working Directory",
+      align: "center",
+    },
+    {
+      id: "h_st",
+      kind: "label",
+      at: {
+        x: 500,
+        y: 95,
+        w: 174,
+        h: 42,
+      },
+      text: "Staging (Index)",
+      align: "center",
+    },
+    {
+      id: "h_lo",
+      kind: "label",
+      at: {
+        x: 823,
+        y: 95,
+        w: 279,
+        h: 42,
+      },
+      text: "Repositório local (.git)",
+      align: "center",
+    },
+    {
+      id: "h_rm",
+      kind: "label",
+      at: {
+        x: 1275,
+        y: 95,
+        w: 174,
+        h: 42,
+      },
+      text: "Remoto (origin)",
+      align: "center",
+    },
+    {
+      id: "f1",
+      kind: "token",
+      at: {
+        x: 138,
+        y: 219,
+        w: 175,
+        h: 59,
+      },
+      text: "app.js  ✏️",
+    },
+    {
+      id: "cmd_add",
+      tone: "warn",
+      kind: "connector",
+      from: {
+        x: 319,
+        y: 248,
+      },
+      to: {
+        x: 494,
+        y: 248,
+      },
+      route: "line",
+      arrow: true,
+    },
+    {
+      id: "cmd_add_l",
+      kind: "label",
+      at: {
+        x: 366,
+        y: 208,
+        w: 81,
+        h: 42,
+      },
+      text: "git add",
+      align: "center",
+      muted: true,
+    },
+    {
+      id: "cmd_commit",
+      tone: "good",
+      kind: "connector",
+      from: {
+        x: 681,
+        y: 248,
+      },
+      to: {
+        x: 825,
+        y: 617,
+      },
+      route: "line",
+      arrow: true,
+    },
+    {
+      id: "cmd_commit_l",
+      kind: "label",
+      at: {
+        x: 717,
+        y: 365,
+        w: 116,
+        h: 42,
+      },
+      text: "git commit",
+      align: "center",
+      muted: true,
+    },
+    {
+      id: "cmd_push",
+      tone: "accent2",
+      kind: "connector",
+      from: {
+        x: 1113,
+        y: 411,
+      },
+      to: {
+        x: 1225,
+        y: 411,
+      },
+      route: "line",
+      arrow: true,
+    },
+    {
+      id: "cmd_push_l",
+      kind: "label",
+      at: {
+        x: 1116,
+        y: 371,
+        w: 93,
+        h: 42,
+      },
+      text: "git push",
+      align: "center",
+      muted: true,
+    },
+    {
+      id: "cmd_pull",
+      tone: "hot",
+      kind: "connector",
+      from: {
+        x: 1225,
+        y: 321,
+      },
+      to: {
+        x: 1113,
+        y: 321,
+      },
+      route: "line",
+      arrow: true,
+    },
+    {
+      id: "cmd_pull_l",
+      kind: "label",
+      at: {
+        x: 1116,
+        y: 281,
+        w: 93,
+        h: 42,
+      },
+      text: "git pull",
+      align: "center",
+      muted: true,
+    },
+    {
+      id: "c1",
+      kind: "box",
+      at: {
+        x: 923,
+        y: 653,
+        w: 80,
+        h: 82,
+      },
+      label: "c1",
+      variant: "outline",
+    },
+    {
+      id: "c2",
+      kind: "box",
+      at: {
+        x: 923,
+        y: 525,
+        w: 80,
+        h: 82,
+      },
+      label: "c2",
+      variant: "outline",
+    },
+    {
+      id: "c3",
+      kind: "box",
+      at: {
+        x: 923,
+        y: 396,
+        w: 80,
+        h: 82,
+      },
+      label: "c3",
+      variant: "outline",
+    },
+    {
+      id: "lnk12",
+      kind: "connector",
+      from: {
+        x: 963,
+        y: 607,
+      },
+      to: {
+        x: 963,
+        y: 653,
+      },
+      route: "line",
+      arrow: true,
+    },
+    {
+      id: "lnk23",
+      kind: "connector",
+      from: {
+        x: 963,
+        y: 478,
+      },
+      to: {
+        x: 963,
+        y: 525,
+      },
+      route: "line",
+      arrow: true,
+    },
+    {
+      id: "head",
+      kind: "token",
+      at: {
+        x: 1038,
+        y: 414,
+        w: 163,
+        h: 46,
+      },
+      text: "HEAD → main",
+    },
+    {
+      id: "rc1",
+      kind: "box",
+      at: {
+        x: 1323,
+        y: 653,
+        w: 80,
+        h: 82,
+      },
+      label: "c1",
+      variant: "outline",
+    },
+    {
+      id: "rc2",
+      kind: "box",
+      at: {
+        x: 1323,
+        y: 525,
+        w: 80,
+        h: 82,
+      },
+      label: "c2",
+      variant: "outline",
+    },
+    {
+      id: "rlnk12",
+      kind: "connector",
+      from: {
+        x: 1363,
+        y: 607,
+      },
+      to: {
+        x: 1363,
+        y: 653,
+      },
+      route: "line",
+      arrow: true,
+    },
+  ],
+  scenes: [
+    {
+      id: "s1",
+      title: "As quatro áreas do Git",
+      duration: 8000,
+      add: ["c_wd", "c_st", "c_lo", "c_rm", "h_wd", "h_st", "h_lo", "h_rm"],
+      remove: [],
+      set: {},
+      cues: [],
+      caption: {
+        anchor: "h_st",
+        placement: "bottom",
+        text: "O Git separa seu trabalho em áreas: **Working Directory** (seus arquivos), **Staging** (o que vai no próximo commit), **Repositório local** (.git, o histórico) e o **Remoto** (origin, no servidor).",
+        why: "Essa separação é o que permite montar um commit com cuidado, ter histórico offline e sincronizar com a equipe quando quiser.",
+      },
+    },
+    {
+      id: "s2",
+      title: "Você edita um arquivo",
+      duration: 8000,
+      add: ["f1"],
+      remove: [],
+      set: {},
+      cues: [
+        {
+          at: 0,
+          target: "f1",
+          do: "move",
+          by: {
+            x: 0,
+            y: 0,
+          },
+        },
+        {
+          at: 0,
+          target: "f1",
+          do: "highlight",
+        },
+        {
+          at: 0,
+          target: "c_wd",
+          do: "highlight",
+        },
+      ],
+      caption: {
+        anchor: "f1",
+        placement: "right",
+        text: "Você altera **app.js**. A mudança existe só no **Working Directory**; o Git a vê como “modificada”, mas ainda não a está rastreando para o próximo commit.",
+        why: "Nada é registrado automaticamente — você decide o que entra em cada commit.",
+      },
+    },
+    {
+      id: "s3",
+      title: "git add → Staging",
+      duration: 8000,
+      add: ["cmd_add", "cmd_add_l"],
+      remove: [],
+      set: {},
+      cues: [
+        {
+          at: 0,
+          target: "cmd_add",
+          do: "draw",
+        },
+        {
+          at: 120,
+          target: "f1",
+          do: "move",
+          by: {
+            x: 363,
+            y: 0,
+          },
+        },
+        {
+          at: 0,
+          target: "c_st",
+          do: "highlight",
+        },
+      ],
+      caption: {
+        anchor: "cmd_add_l",
+        placement: "top",
+        text: "`git add app.js` move uma **fotografia** do arquivo para o **Staging**: a área que monta o próximo commit.",
+        why: "Você pode adicionar só parte das mudanças, revisando o que vai (ou não) no commit. Staging = rascunho do commit.",
+      },
+    },
+    {
+      id: "s4",
+      title: "git commit → histórico local",
+      duration: 8000,
+      add: ["cmd_commit", "cmd_commit_l", "c1"],
+      remove: ["f1"],
+      set: {},
+      cues: [
+        {
+          at: 0,
+          target: "cmd_commit",
+          do: "draw",
+        },
+        {
+          at: 0,
+          target: "c1",
+          do: "highlight",
+        },
+      ],
+      caption: {
+        anchor: "c1",
+        placement: "right",
+        text: "`git commit` grava o que está no Staging como um **commit** permanente no .git — com hash, autor, data e mensagem. O Staging esvazia.",
+        why: "Cada commit é um ponto de retorno imutável. Tudo isso é **local**: nada saiu da sua máquina ainda.",
+      },
+    },
+    {
+      id: "s5",
+      title: "O histórico cresce",
+      duration: 8000,
+      add: ["c2", "lnk12", "head"],
+      remove: [],
+      set: {},
+      cues: [
+        {
+          at: 0,
+          target: "lnk12",
+          do: "draw",
+        },
+        {
+          at: 0,
+          target: "c2",
+          do: "highlight",
+        },
+        {
+          at: 0,
+          target: "head",
+          do: "highlight",
+        },
+      ],
+      caption: {
+        anchor: "c2",
+        placement: "left",
+        text: "Mais commits formam uma **corrente**: cada commit aponta para o seu **pai**. O ponteiro {{HEAD}} diz em qual commit/branch você está (aqui, **main**).",
+        why: "Um branch é só um ponteiro móvel para um commit. Criar branches é barato porque nada é copiado — só um novo ponteiro.",
+      },
+    },
+    {
+      id: "s6",
+      title: "git push → Remoto",
+      duration: 8000,
+      add: ["cmd_push", "cmd_push_l", "rc1", "rc2", "rlnk12"],
+      remove: [],
+      set: {},
+      cues: [
+        {
+          at: 0,
+          target: "cmd_push",
+          do: "draw",
+        },
+        {
+          at: 0,
+          target: "rlnk12",
+          do: "draw",
+        },
+        {
+          at: 0,
+          target: "c_rm",
+          do: "highlight",
+        },
+      ],
+      caption: {
+        anchor: "cmd_push_l",
+        placement: "top",
+        text: "`git push` envia os commits locais que faltam para o **remoto** (origin), atualizando o branch lá.",
+        why: "Só agora seu trabalho fica disponível para o time. Antes do push, tudo vivia apenas no seu .git local.",
+      },
+    },
+    {
+      id: "s7",
+      title: "git pull → traz e integra",
+      duration: 8000,
+      add: ["cmd_pull", "cmd_pull_l", "c3", "lnk23"],
+      remove: [],
+      set: {},
+      cues: [
+        {
+          at: 0,
+          target: "cmd_pull",
+          do: "draw",
+        },
+        {
+          at: 200,
+          target: "lnk23",
+          do: "draw",
+        },
+        {
+          at: 0,
+          target: "c3",
+          do: "highlight",
+        },
+      ],
+      caption: {
+        anchor: "c3",
+        placement: "left",
+        text: "Quando alguém publica commits novos, `git pull` faz **fetch** (baixa) + **merge** (integra) no seu histórico local — aqui chega o commit **c3**.",
+        why: "Assim os históricos convergem. Se as mudanças tocarem as mesmas linhas, o Git pede uma resolução de **conflito**.",
+      },
+    },
+    {
+      id: "s8",
+      title: "Teste rápido",
+      duration: 8000,
+      add: [],
+      remove: [],
+      set: {},
+      cues: [],
+      caption: {
+        anchor: "c1",
+        placement: "right",
+        text: "Confirme o que cada comando faz 👇",
+      },
+      quiz: {
+        question: "O que o comando git commit faz?",
+        options: [
+          "Envia as mudanças para o servidor remoto",
+          "Grava o conteúdo do Staging como um ponto permanente no repositório local",
+          "Descarta as mudanças do Working Directory",
+          "Cria automaticamente um novo branch",
+        ],
+        answer: 1,
+        explain:
+          "commit registra o que está no Staging no histórico local (.git). Enviar ao remoto é tarefa do git push.",
+      },
+    },
+    {
+      id: "s9",
+      title: "Resumo do fluxo",
+      duration: 8000,
+      add: [],
+      remove: [],
+      set: {},
+      cues: [
+        {
+          at: 0,
+          target: "cmd_add",
+          do: "pulse",
+          times: 2,
+        },
+        {
+          at: 130,
+          target: "cmd_commit",
+          do: "pulse",
+          times: 2,
+        },
+        {
+          at: 260,
+          target: "cmd_push",
+          do: "pulse",
+          times: 2,
+        },
+        {
+          at: 0,
+          target: "f1",
+          do: "highlight",
+        },
+        {
+          at: 0,
+          target: "c1",
+          do: "highlight",
+        },
+        {
+          at: 0,
+          target: "c2",
+          do: "highlight",
+        },
+        {
+          at: 0,
+          target: "c3",
+          do: "highlight",
+        },
+      ],
+      caption: {
+        anchor: {
+          x: 640,
+          y: 360,
+        },
+        placement: "top",
+        text: "O caminho de uma mudança: **editar (working) → git add (staging) → git commit (local) → git push (remoto)**, e **git pull** para trazer o que os outros fizeram.",
+        why: "Entender as quatro áreas e que “branch é um ponteiro” explica quase tudo no Git: add, commit, merge, rebase, reset…",
+      },
+    },
+  ],
+};
+
+export const git = validateExplainer(data);
