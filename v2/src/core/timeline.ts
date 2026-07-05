@@ -14,6 +14,7 @@
  *  - `cues` têm escopo LOCAL à cena: ao sair da cena, seus efeitos somem.
  */
 import type { Explainer, Scene, Settable } from "@/schema/explainer";
+import { cueDurationEstimate } from "@/schema/explainer";
 import type { Caption, Cue, Transition } from "@/schema/directives";
 import type { ElementDef, Tone } from "@/schema/elements";
 import { FORMATS, type FormatId, type Rect } from "@/schema/formats";
@@ -138,10 +139,13 @@ export function compileTimeline(ex: Explainer, format: FormatId): Timeline {
     }
 
     const cap = sc.duration > 0 ? sc.duration - 1 : 0;
-    const settleMs = Math.min(
-      cap,
-      [...enters.values()].reduce((max, e) => Math.max(max, e.delay + e.tr.duration), 0),
-    );
+    // Quando visto navegando direto (não em playback), a cena precisa estar
+    // "assentada": tanto os enters de `add` quanto as CUES (show/hide/etc.,
+    // que também têm sua própria janela de fade) precisam ter terminado —
+    // senão elementos revelados só por cue ficam com opacidade 0 até `cue.at`.
+    const entersEnd = [...enters.values()].reduce((max, e) => Math.max(max, e.delay + e.tr.duration), 0);
+    const cuesEnd = sc.cues.reduce((max, c) => Math.max(max, c.at + cueDurationEstimate(c)), 0);
+    const settleMs = Math.min(cap, Math.max(entersEnd, cuesEnd));
     const revealMs = sc.quiz ? Math.max(settleMs, Math.min(cap, sc.duration - QUIZ_GUARD_MS)) : settleMs;
 
     scenes.push({

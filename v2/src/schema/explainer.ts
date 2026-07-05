@@ -1,6 +1,26 @@
 import { z } from "zod";
 import { ElementSchema, RectSchema, type ElementDef } from "./elements";
-import { AddSpecSchema, CameraSchema, CaptionSchema, CueSchema, QuizSchema } from "./directives";
+import { AddSpecSchema, CameraSchema, CaptionSchema, CueSchema, QuizSchema, type Cue } from "./directives";
+
+/**
+ * Estimativa de quanto tempo uma cue ocupa, só para a validação de "não pode
+ * terminar depois da cena". Espelha `defaultCueDuration` de `core/timeline.ts`
+ * (duplicado de propósito: `core/` importa de `schema/`, então importar
+ * `core/` daqui criaria um ciclo de módulos).
+ */
+export function cueDurationEstimate(cue: Cue): number {
+  if (cue.do === "lightCells") return cue.cells.length * cue.stagger;
+  if (cue.duration !== undefined) return cue.duration;
+  switch (cue.do) {
+    case "pulse": return 900;
+    case "move": return 700;
+    case "setBars": return 800;
+    case "draw": return 650;
+    case "count": return 1200;
+    case "morphText": return 600;
+    default: return 400;
+  }
+}
 
 /** Propriedades que `scene.set` pode sobrescrever de forma PERSISTENTE (keyframe). */
 export const SettableSchema = z
@@ -40,6 +60,9 @@ export const SceneSchema = z.object({
   posterAt: z.number().min(0).optional(),
 });
 export type Scene = z.infer<typeof SceneSchema>;
+/** Forma "de entrada" de uma cena (campos com default ficam opcionais) — útil
+ * para código que MONTA cenas programaticamente (ex.: o conversor v1→v2). */
+export type SceneInput = z.input<typeof SceneSchema>;
 
 export const ExplainerSchema = z.object({
   slug: z.string().regex(/^[a-z0-9-]+$/),
@@ -115,6 +138,10 @@ export function validateExplainer(input: unknown): Explainer {
     for (const cue of sc.cues) {
       if (!hasRef(cue.target)) problems.push(`${where}: cue "${cue.do}" mira "${cue.target}" inexistente`);
       if (cue.at >= sc.duration) problems.push(`${where}: cue "${cue.do}" em at=${cue.at} fora da duração (${sc.duration})`);
+      const cueEnd = cue.at + cueDurationEstimate(cue);
+      if (cueEnd > sc.duration) {
+        problems.push(`${where}: cue "${cue.do}" termina em ${cueEnd}ms, depois da duração da cena (${sc.duration})`);
+      }
       if (cue.do === "flow") {
         const conn = ex.elements.find((e) => e.id === cue.target);
         if (conn && conn.kind !== "connector") problems.push(`${where}: flow mira "${cue.target}" que não é connector`);

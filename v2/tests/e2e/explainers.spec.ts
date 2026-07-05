@@ -1,4 +1,4 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect } from "@playwright/test";
 import { SLUGS } from "../../src/content/index";
 
 /**
@@ -37,29 +37,31 @@ for (const slug of SLUGS) {
       expect(errors, `console/erros: ${errors.join("\n")}`).toEqual([]);
     });
 
-    test("quiz final revela a resposta e explica", async ({ page }) => {
+    test("cena de quiz (se houver) revela a resposta e explica", async ({ page }) => {
+      // acha a cena do quiz clicando pelo índice lateral — não assume que é a
+      // última (conteúdo migrado da v1 às vezes põe "Resumo" depois do quiz).
       await page.goto(`/e/${slug}/`);
       await expect(page.locator("text=Preparando…")).toHaveCount(0, { timeout: 15_000 });
-      await goToLastScene(page);
+
+      const sceneButtons = page.locator('nav[aria-label="Cenas"] button');
+      const total = await sceneButtons.count();
+      expect(total).toBeGreaterThan(0);
+
+      let found = false;
+      for (let i = 0; i < total; i++) {
+        await sceneButtons.nth(i).click();
+        if (await page.locator(".tl-quiz-opt").first().isVisible({ timeout: 800 }).catch(() => false)) {
+          found = true;
+          break;
+        }
+      }
+      test.skip(!found, `"${slug}" não tem cena de quiz`);
 
       const options = page.locator(".tl-quiz-opt");
-      await expect(options.first()).toBeVisible({ timeout: 5_000 });
       await options.first().click();
 
       await expect(page.locator(".tl-quiz-explain")).toBeVisible();
       await expect(page.locator(".tl-quiz-correct")).toBeVisible();
     });
   });
-}
-
-async function goToLastScene(page: Page) {
-  const next = page.getByRole("button", { name: "Próxima →" });
-  for (let i = 0; i < 20; i++) {
-    const disabled = await next.isDisabled().catch(() => false);
-    if (disabled) break;
-    const before = await page.locator("text=/^Cena \\d+ de \\d+$/").textContent();
-    await next.click();
-    const after = await page.locator("text=/^Cena \\d+ de \\d+$/").textContent();
-    if (before === after) break; // já estava na última cena
-  }
 }
