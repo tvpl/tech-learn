@@ -47,7 +47,7 @@ export default function Home() {
           vídeo vertical, feed ou carrossel para redes sociais — sem duplicar nada.
         </p>
 
-        <div className="mb-12 flex items-center gap-2 rounded-xl border border-[#232a3d] bg-[#131826] px-4 py-2.5">
+        <div className="mb-12 flex items-center gap-2 rounded-xl border border-[#232a3d] bg-[#131826] px-4 py-2.5 focus-within:border-[#5b9dff] focus-within:ring-1 focus-within:ring-[#5b9dff]">
           <Search size={16} className="text-[#6b7690]" />
           <input
             value={query}

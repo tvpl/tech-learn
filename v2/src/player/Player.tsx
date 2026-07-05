@@ -76,6 +76,13 @@ export function Player({ explainer }: { explainer: Explainer }) {
     setItem(visitedKey(explainer.slug), "1");
   }, [scene.index, explainer.slug]);
 
+  // anuncia a troca de cena pra leitor de tela (espelha o aria-live da v1)
+  const [announcement, setAnnouncement] = useState("");
+  useEffect(() => {
+    const parts = [scene.def.title, scene.def.caption?.text, scene.def.quiz?.question].filter(Boolean) as string[];
+    setAnnouncement(parts.map(stripMarkup).join(". "));
+  }, [scene.index]);
+
   // pausa automaticamente ao chegar na janela do quiz, se não respondido
   useEffect(() => {
     if (!scene.def.quiz) return;
@@ -222,6 +229,18 @@ export function Player({ explainer }: { explainer: Explainer }) {
           </button>
         </div>
       </footer>
+
+      <div role="status" aria-live="polite" className="sr-only">
+        {announcement}
+      </div>
     </div>
   );
+}
+
+/** Remove markdown leve (**bold**, `code`, {{termo|texto}}) pra virar texto puro anunciável. */
+function stripMarkup(s: string): string {
+  return s
+    .replace(/\*\*(.+?)\*\*/g, "$1")
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/\{\{([^}|]+)(?:\|([^}]+))?\}\}/g, (_m, term: string, shown?: string) => shown ?? term);
 }
