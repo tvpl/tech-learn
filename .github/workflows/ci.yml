@@ -36,3 +36,7 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+      - name: Instalar browser do Playwright
+        run: npx playwright install --with-deps chromium
+      - name: Testes e2e (smoke por explainer)
+        run: npm run test:e2e
