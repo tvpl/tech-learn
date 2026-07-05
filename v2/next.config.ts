@@ -1,3 +1,4 @@
+import path from "node:path";
 import type { NextConfig } from "next";
 
 // No GitHub Pages o site é servido em /<repo>/v2/ — o basePath só entra no CI
@@ -13,6 +14,9 @@ const nextConfig: NextConfig = {
   trailingSlash: true,
   images: { unoptimized: true },
   env: { NEXT_PUBLIC_BASE_PATH: basePath },
+  // v2/ é um pacote independente, mas o lockfile da v1 na raiz do repo faz o
+  // Next inferir errado a raiz do "workspace" — fixamos explicitamente.
+  outputFileTracingRoot: path.resolve(__dirname),
 };
 
 export default nextConfig;

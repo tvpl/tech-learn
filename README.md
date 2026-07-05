@@ -22,6 +22,14 @@ dados. Isso é a prova de que a estrutura se reaproveita.
 > 🤖 Vai trabalhar no código (humano ou IA)? Comece pelo **[`AGENTS.md`](AGENTS.md)**:
 > arquitetura, o modelo de visibilidade das cenas e os principais cuidados.
 
+## ✨ v2 (beta)
+
+Há uma segunda geração da plataforma em [`v2/`](v2/): Next.js, motor dirigido
+por tempo (mesma cena roda no player web e vira MP4/GIF/carrossel para
+redes sociais), vocabulário rico (código com highlight, fórmulas, câmera
+animada, partículas). Detalhes em [`v2/README.md`](v2/README.md) e
+[`v2/AGENTS.md`](v2/AGENTS.md). A v1 abaixo continua no ar sem mudanças.
+
 ### Recursos do motor
 
 - ▶️ **Autoplay** com barra de tempo por cena, além de Próximo/Anterior e índice.

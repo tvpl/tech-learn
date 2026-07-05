@@ -1,7 +1,7 @@
 name: Deploy GitHub Pages
 
-# Publica o site estático (raiz do repo) no GitHub Pages.
-# Habilite em Settings → Pages → Source: GitHub Actions.
+# Publica a v1 (arquivos estáticos na raiz) + a v2 (Next.js export estático)
+# sob /v2/ no mesmo site. Habilite em Settings → Pages → Source: GitHub Actions.
 on:
   push:
     branches: [main]
@@ -17,16 +17,37 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: v2/package-lock.json
+      - name: Build da v2 (Next.js, export estático)
+        working-directory: v2
+        run: |
+          npm ci
+          npm run build
+      - name: Montar _site (v1 na raiz + v2 em /v2/)
+        run: |
+          mkdir -p _site
+          rsync -a --exclude='.git' --exclude='node_modules' --exclude='v2' --exclude='_site' ./ _site/
+          mkdir -p _site/v2
+          cp -r v2/out/. _site/v2/
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: "_site"
+
   deploy:
+    needs: build
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: "."
       - id: deployment
         uses: actions/deploy-pages@v4

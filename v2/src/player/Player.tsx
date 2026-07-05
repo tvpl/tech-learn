@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Pause, Play, Maximize, Minimize, Moon, Sun } from "lucide-react";
+import Link from "next/link";
+import { Pause, Play, Maximize, Minimize, Moon, Sun, Wand2 } from "lucide-react";
 import { compileTimeline } from "@/core/timeline";
 import type { Explainer } from "@/schema/explainer";
 import { Stage } from "@/stage/Stage";
@@ -138,6 +139,12 @@ export function Player({ explainer }: { explainer: Explainer }) {
           {explainer.subtitle ? <p className="text-xs text-[var(--tl-ink-soft)]">{explainer.subtitle}</p> : null}
         </div>
         <div className="flex items-center gap-2">
+          <Link
+            href={`/studio/${explainer.slug}/`}
+            className="flex items-center gap-1.5 rounded-lg border border-[var(--tl-line)] px-3 py-2 text-xs font-medium hover:border-[var(--tl-accent)]"
+          >
+            <Wand2 size={14} /> Studio
+          </Link>
           <button onClick={toggleTheme} aria-label="Alternar tema" className="rounded-lg border border-[var(--tl-line)] p-2 hover:border-[var(--tl-accent)]">
             {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
           </button>
