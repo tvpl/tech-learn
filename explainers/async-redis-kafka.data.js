@@ -27,24 +27,24 @@
     const y = my(i);
     return [
       { id: id + "_arr", type: "arrow", x1, y1: y, x2, y2: y, style: `stroke:${color};stroke-width:2${dashed ? ";stroke-dasharray:5,4" : ""}` },
-      { id: id + "_lbl", type: "label", x: (x1 + x2) / 2, y: y - 9, text: label, style: `font-size:10px;fill:${color};font-weight:600` },
+      { id: id + "_lbl", type: "label", x: (x1 + x2) / 2, y: y - 9, label: label, style: `font-size:10px;fill:${color};font-weight:600` },
     ];
   }
 
   const elements = [
     // ── Title ──
-    { id: "title_main", type: "label", x: W / 2, y: 30, text: "Async com Redis / Kafka", style: "font-size:22px;font-weight:700;fill:var(--ink)" },
+    { id: "title_main", type: "label", x: W / 2, y: 30, label: "Async com Redis / Kafka", style: "font-size:22px;font-weight:700;fill:var(--ink)" },
 
     // ── Actor boxes ──
     ...ACTORS.map(a => ({ id: a.id + "_box", type: "box", x: a.x, y: ACT_Y, w: ACT_W, h: ACT_H, rx: 8, style: `fill:${a.color};opacity:0.85` })),
-    ...ACTORS.map(a => ({ id: a.id + "_lbl", type: "label", x: ax(a), y: ACT_Y + ACT_H / 2 + 5, text: a.label, style: "font-size:12px;font-weight:700;fill:#fff" })),
+    ...ACTORS.map(a => ({ id: a.id + "_lbl", type: "label", x: ax(a), y: ACT_Y + ACT_H / 2 + 5, label: a.label, style: "font-size:12px;font-weight:700;fill:#fff" })),
 
     // ── Lifelines ──
     ...ACTORS.map(a => ({ id: a.id + "_lf", type: "arrow", x1: ax(a), y1: LF_Y1, x2: ax(a), y2: LF_Y2, style: "stroke:var(--line);stroke-width:1;stroke-dasharray:4,4" })),
 
     // ── Sync problem box (left margin) ──
     { id: "sync_problem", type: "box", x: 10, y: MSG_START_Y - 10, w: 80, h: 120, rx: 6, style: "fill:var(--hot);opacity:0.15;stroke:var(--hot);stroke-width:1" },
-    { id: "sync_problem_lbl", type: "label", x: 50, y: MSG_START_Y + 40, text: "Sync → bloqueia", style: "font-size:9px;fill:var(--hot)" },
+    { id: "sync_problem_lbl", type: "label", x: 50, y: MSG_START_Y + 40, label: "Sync → bloqueia", style: "font-size:9px;fill:var(--hot)" },
 
     // ── Messages (rows 0–8) ──
     ...msg("m0", "ac_cli", "ac_api", 0, "POST /process (payload)", "var(--accent-2)"),
@@ -63,47 +63,47 @@
 
     // ── Alt frame: webhook alternative ──
     { id: "alt_frame", type: "box", x: ax(ACTORS[0]) - 30, y: my(5) - 10, w: ax(ACTORS[1]) - ax(ACTORS[0]) + 80, h: my(8) - my(5) + 30, rx: 6, style: "fill:none;stroke:var(--ink-soft);stroke-width:1;stroke-dasharray:4,3" },
-    { id: "alt_lbl", type: "label", x: ax(ACTORS[0]) - 14, y: my(5) - 14, text: "alt: poll | webhook | SSE", style: "font-size:9px;fill:var(--ink-soft);text-anchor:start" },
+    { id: "alt_lbl", type: "label", x: ax(ACTORS[0]) - 14, y: my(5) - 14, label: "alt: poll | webhook | SSE", style: "font-size:9px;fill:var(--ink-soft);text-anchor:start" },
 
     // ── Queue detail panel (right) ──
     { id: "q_detail", type: "box", x: W - 270, y: 60, w: 250, h: 480, rx: 10, style: "fill:var(--surface);stroke:var(--line);stroke-width:1.5" },
-    { id: "q_det_title", type: "label", x: W - 145, y: 80, text: "Queue Details", style: "font-size:13px;font-weight:700;fill:var(--ink)" },
+    { id: "q_det_title", type: "label", x: W - 145, y: 80, label: "Queue Details", style: "font-size:13px;font-weight:700;fill:var(--ink)" },
 
     // Redis section
-    { id: "redis_head", type: "label", x: W - 145, y: 108, text: "Redis (List / Streams)", style: "font-size:12px;font-weight:700;fill:var(--hot)" },
-    { id: "redis_d1", type: "label", x: W - 250, y: 130, text: "LPUSH queue job", style: "font-size:10px;font-family:monospace;fill:var(--ink-soft);text-anchor:start" },
-    { id: "redis_d2", type: "label", x: W - 250, y: 148, text: "BRPOP queue 0", style: "font-size:10px;font-family:monospace;fill:var(--ink-soft);text-anchor:start" },
-    { id: "redis_d3", type: "label", x: W - 145, y: 170, text: "Simple, low latency", style: "font-size:10px;fill:var(--good)" },
-    { id: "redis_d4", type: "label", x: W - 145, y: 188, text: "No persistence by default", style: "font-size:10px;fill:var(--warn)" },
-    { id: "redis_d5", type: "label", x: W - 145, y: 206, text: "Pub/Sub, Sorted Sets, Streams", style: "font-size:10px;fill:var(--ink-soft)" },
+    { id: "redis_head", type: "label", x: W - 145, y: 108, label: "Redis (List / Streams)", style: "font-size:12px;font-weight:700;fill:var(--hot)" },
+    { id: "redis_d1", type: "label", x: W - 250, y: 130, label: "LPUSH queue job", style: "font-size:10px;font-family:monospace;fill:var(--ink-soft);text-anchor:start" },
+    { id: "redis_d2", type: "label", x: W - 250, y: 148, label: "BRPOP queue 0", style: "font-size:10px;font-family:monospace;fill:var(--ink-soft);text-anchor:start" },
+    { id: "redis_d3", type: "label", x: W - 145, y: 170, label: "Simple, low latency", style: "font-size:10px;fill:var(--good)" },
+    { id: "redis_d4", type: "label", x: W - 145, y: 188, label: "No persistence by default", style: "font-size:10px;fill:var(--warn)" },
+    { id: "redis_d5", type: "label", x: W - 145, y: 206, label: "Pub/Sub, Sorted Sets, Streams", style: "font-size:10px;fill:var(--ink-soft)" },
 
     // Kafka section
-    { id: "kafka_head", type: "label", x: W - 145, y: 238, text: "Kafka (Topic / Partitions)", style: "font-size:12px;font-weight:700;fill:var(--accent)" },
-    { id: "kafka_d1", type: "label", x: W - 145, y: 260, text: "Log imutável + particionado", style: "font-size:10px;fill:var(--ink-soft)" },
-    { id: "kafka_d2", type: "label", x: W - 145, y: 278, text: "Retenção configurável (dias/TB)", style: "font-size:10px;fill:var(--good)" },
-    { id: "kafka_d3", type: "label", x: W - 145, y: 296, text: "Múltiplos consumer groups", style: "font-size:10px;fill:var(--good)" },
-    { id: "kafka_d4", type: "label", x: W - 145, y: 314, text: "Replay de mensagens", style: "font-size:10px;fill:var(--good)" },
-    { id: "kafka_d5", type: "label", x: W - 145, y: 332, text: "Alta throughput (milhões/s)", style: "font-size:10px;fill:var(--accent)" },
+    { id: "kafka_head", type: "label", x: W - 145, y: 238, label: "Kafka (Topic / Partitions)", style: "font-size:12px;font-weight:700;fill:var(--accent)" },
+    { id: "kafka_d1", type: "label", x: W - 145, y: 260, label: "Log imutável + particionado", style: "font-size:10px;fill:var(--ink-soft)" },
+    { id: "kafka_d2", type: "label", x: W - 145, y: 278, label: "Retenção configurável (dias/TB)", style: "font-size:10px;fill:var(--good)" },
+    { id: "kafka_d3", type: "label", x: W - 145, y: 296, label: "Múltiplos consumer groups", style: "font-size:10px;fill:var(--good)" },
+    { id: "kafka_d4", type: "label", x: W - 145, y: 314, label: "Replay de mensagens", style: "font-size:10px;fill:var(--good)" },
+    { id: "kafka_d5", type: "label", x: W - 145, y: 332, label: "Alta throughput (milhões/s)", style: "font-size:10px;fill:var(--accent)" },
 
     // DLQ section
-    { id: "dlq_head", type: "label", x: W - 145, y: 364, text: "Dead Letter Queue", style: "font-size:12px;font-weight:700;fill:var(--hot)" },
-    { id: "dlq_d1", type: "label", x: W - 145, y: 384, text: "Falhou N vezes → DLQ", style: "font-size:10px;fill:var(--ink-soft)" },
-    { id: "dlq_d2", type: "label", x: W - 145, y: 402, text: "Alertas + análise manual", style: "font-size:10px;fill:var(--ink-soft)" },
-    { id: "dlq_d3", type: "label", x: W - 145, y: 420, text: "Reprocessamento seguro", style: "font-size:10px;fill:var(--good)" },
-    { id: "dlq_d4", type: "label", x: W - 145, y: 440, text: "Idempotência obrigatória!", style: "font-size:10px;fill:var(--hot);font-weight:600" },
+    { id: "dlq_head", type: "label", x: W - 145, y: 364, label: "Dead Letter Queue", style: "font-size:12px;font-weight:700;fill:var(--hot)" },
+    { id: "dlq_d1", type: "label", x: W - 145, y: 384, label: "Falhou N vezes → DLQ", style: "font-size:10px;fill:var(--ink-soft)" },
+    { id: "dlq_d2", type: "label", x: W - 145, y: 402, label: "Alertas + análise manual", style: "font-size:10px;fill:var(--ink-soft)" },
+    { id: "dlq_d3", type: "label", x: W - 145, y: 420, label: "Reprocessamento seguro", style: "font-size:10px;fill:var(--good)" },
+    { id: "dlq_d4", type: "label", x: W - 145, y: 440, label: "Idempotência obrigatória!", style: "font-size:10px;fill:var(--hot);font-weight:600" },
 
     // ── Webhook/SSE alternative box ──
     { id: "webhook_panel", type: "box", x: 60, y: 580, w: W - 120 - 270, h: 100, rx: 10, style: "fill:var(--surface);stroke:var(--accent-2);stroke-width:1.5" },
-    { id: "webhook_t", type: "label", x: (60 + W - 270) / 2, y: 600, text: "Alternativas ao Polling", style: "font-size:13px;font-weight:700;fill:var(--accent-2)" },
-    { id: "webhook_d1", type: "label", x: (60 + W - 270) / 2, y: 624, text: "Webhook: Worker faz POST no callback URL do cliente quando termina", style: "font-size:11px;fill:var(--ink-soft)" },
-    { id: "webhook_d2", type: "label", x: (60 + W - 270) / 2, y: 644, text: "SSE (Server-Sent Events): conexão HTTP aberta, servidor notifica quando pronto", style: "font-size:11px;fill:var(--accent-2)" },
-    { id: "webhook_d3", type: "label", x: (60 + W - 270) / 2, y: 664, text: "WebSocket: bidirecional; polling com backoff: simples porém ineficiente", style: "font-size:11px;fill:var(--ink-soft)" },
+    { id: "webhook_t", type: "label", x: (60 + W - 270) / 2, y: 600, label: "Alternativas ao Polling", style: "font-size:13px;font-weight:700;fill:var(--accent-2)" },
+    { id: "webhook_d1", type: "label", x: (60 + W - 270) / 2, y: 624, label: "Webhook: Worker faz POST no callback URL do cliente quando termina", style: "font-size:11px;fill:var(--ink-soft)" },
+    { id: "webhook_d2", type: "label", x: (60 + W - 270) / 2, y: 644, label: "SSE (Server-Sent Events): conexão HTTP aberta, servidor notifica quando pronto", style: "font-size:11px;fill:var(--accent-2)" },
+    { id: "webhook_d3", type: "label", x: (60 + W - 270) / 2, y: 664, label: "WebSocket: bidirecional; polling com backoff: simples porém ineficiente", style: "font-size:11px;fill:var(--ink-soft)" },
 
     // ── Redis vs Kafka comparison ──
     { id: "rvk_panel", type: "box", x: 60, y: 80, w: W - 120, h: 560, rx: 12, style: "fill:var(--surface);stroke:var(--line);stroke-width:1.5" },
-    { id: "rvk_title", type: "label", x: W / 2, y: 108, text: "Redis Queue vs Kafka Stream", style: "font-size:16px;font-weight:700;fill:var(--ink)" },
-    { id: "rvk_h1", type: "label", x: W / 4, y: 148, text: "Redis / BullMQ / Sidekiq", style: "font-size:14px;font-weight:700;fill:var(--hot)" },
-    { id: "rvk_h2", type: "label", x: 3 * W / 4, y: 148, text: "Apache Kafka / SQS / RabbitMQ", style: "font-size:14px;font-weight:700;fill:var(--accent)" },
+    { id: "rvk_title", type: "label", x: W / 2, y: 108, label: "Redis Queue vs Kafka Stream", style: "font-size:16px;font-weight:700;fill:var(--ink)" },
+    { id: "rvk_h1", type: "label", x: W / 4, y: 148, label: "Redis / BullMQ / Sidekiq", style: "font-size:14px;font-weight:700;fill:var(--hot)" },
+    { id: "rvk_h2", type: "label", x: 3 * W / 4, y: 148, label: "Apache Kafka / SQS / RabbitMQ", style: "font-size:14px;font-weight:700;fill:var(--accent)" },
     ...[
       ["Modelo", "Queue: consume e remove", "Log: consome sem remover"],
       ["Replay", "Não — mensagem desaparece", "Sim — qualquer consumer group"],
@@ -114,53 +114,53 @@
       ["Use case", "Jobs, tasks, queues async", "Event streaming, analytics, audit log"],
       ["Managed", "Elasticache, Upstash", "MSK, Confluent, Aiven"],
     ].flatMap(([row, left, right], i) => [
-      { id: `rvk_row_${i}`, type: "label", x: 60, y: 185 + i * 44, text: row, style: "font-size:11px;fill:var(--ink-soft);text-anchor:start" },
-      { id: `rvk_left_${i}`, type: "label", x: W / 4, y: 185 + i * 44, text: left, style: "font-size:11px;fill:var(--ink)" },
-      { id: `rvk_right_${i}`, type: "label", x: 3 * W / 4, y: 185 + i * 44, text: right, style: "font-size:11px;fill:var(--ink)" },
+      { id: `rvk_row_${i}`, type: "label", x: 60, y: 185 + i * 44, label: row, style: "font-size:11px;fill:var(--ink-soft);text-anchor:start" },
+      { id: `rvk_left_${i}`, type: "label", x: W / 4, y: 185 + i * 44, label: left, style: "font-size:11px;fill:var(--ink)" },
+      { id: `rvk_right_${i}`, type: "label", x: 3 * W / 4, y: 185 + i * 44, label: right, style: "font-size:11px;fill:var(--ink)" },
     ]),
     { id: "rvk_div", type: "box", x: W / 2 - 1, y: 160, w: 2, h: 440, rx: 0, style: "fill:var(--line)" },
-    { id: "rvk_note", type: "label", x: W / 2, y: 576, text: "Regra: Redis para jobs simples, Kafka para eventos que múltiplos sistemas precisam consumir", style: "font-size:12px;font-weight:600;fill:var(--accent)" },
+    { id: "rvk_note", type: "label", x: W / 2, y: 576, label: "Regra: Redis para jobs simples, Kafka para eventos que múltiplos sistemas precisam consumir", style: "font-size:12px;font-weight:600;fill:var(--accent)" },
 
     // ── Quiz ──
     { id: "quiz_panel", type: "box", x: 100, y: 50, w: 1080, h: 620, rx: 12, style: "fill:var(--surface);stroke:var(--accent);stroke-width:2" },
-    { id: "quiz_title", type: "label", x: 640, y: 80, text: "Quiz — Async com Redis / Kafka", style: "font-size:18px;font-weight:700;fill:var(--ink)" },
-    { id: "q1", type: "label", x: 640, y: 140, text: "Q: Por que retornar 202 Accepted em vez de esperar o processamento?", style: "font-size:13px;fill:var(--ink)" },
-    { id: "q1a", type: "label", x: 640, y: 165, text: "A: Evita timeout HTTP, libera o worker thread, melhora UX com feedback imediato", style: "font-size:12px;fill:var(--good)" },
-    { id: "q2", type: "label", x: 640, y: 215, text: "Q: O que é uma Dead Letter Queue?", style: "font-size:13px;fill:var(--ink)" },
-    { id: "q2a", type: "label", x: 640, y: 240, text: "A: Fila onde mensagens que falharam N vezes são enviadas para análise/reprocessamento manual", style: "font-size:12px;fill:var(--good)" },
-    { id: "q3", type: "label", x: 640, y: 290, text: "Q: Diferença polling vs webhook?", style: "font-size:13px;fill:var(--ink)" },
-    { id: "q3a", type: "label", x: 640, y: 315, text: "A: Polling: cliente pergunta repetidamente. Webhook: servidor notifica cliente quando pronto.", style: "font-size:12px;fill:var(--good)" },
-    { id: "q4", type: "label", x: 640, y: 365, text: "Q: Por que idempotência é obrigatória em workers?", style: "font-size:13px;fill:var(--ink)" },
-    { id: "q4a", type: "label", x: 640, y: 390, text: "A: Mensagem pode ser entregue mais de uma vez (at-least-once). Worker deve ser seguro para executar N vezes.", style: "font-size:12px;fill:var(--good)" },
-    { id: "q5", type: "label", x: 640, y: 440, text: "Q: Quando usar Kafka em vez de Redis para filas?", style: "font-size:13px;fill:var(--ink)" },
-    { id: "q5a", type: "label", x: 640, y: 465, text: "A: Quando múltiplos sistemas precisam consumir o mesmo evento (consumer groups) ou quando precisa de replay.", style: "font-size:12px;fill:var(--good)" },
-    { id: "q6", type: "label", x: 640, y: 515, text: "Q: O que faz o Worker com o resultado do job?", style: "font-size:13px;fill:var(--ink)" },
-    { id: "q6a", type: "label", x: 640, y: 540, text: "A: Salva no Result Store (Redis, DB, S3) com o jobId como chave para o cliente consultar depois.", style: "font-size:12px;fill:var(--good)" },
+    { id: "quiz_title", type: "label", x: 640, y: 80, label: "Quiz — Async com Redis / Kafka", style: "font-size:18px;font-weight:700;fill:var(--ink)" },
+    { id: "q1", type: "label", x: 640, y: 140, label: "Q: Por que retornar 202 Accepted em vez de esperar o processamento?", style: "font-size:13px;fill:var(--ink)" },
+    { id: "q1a", type: "label", x: 640, y: 165, label: "A: Evita timeout HTTP, libera o worker thread, melhora UX com feedback imediato", style: "font-size:12px;fill:var(--good)" },
+    { id: "q2", type: "label", x: 640, y: 215, label: "Q: O que é uma Dead Letter Queue?", style: "font-size:13px;fill:var(--ink)" },
+    { id: "q2a", type: "label", x: 640, y: 240, label: "A: Fila onde mensagens que falharam N vezes são enviadas para análise/reprocessamento manual", style: "font-size:12px;fill:var(--good)" },
+    { id: "q3", type: "label", x: 640, y: 290, label: "Q: Diferença polling vs webhook?", style: "font-size:13px;fill:var(--ink)" },
+    { id: "q3a", type: "label", x: 640, y: 315, label: "A: Polling: cliente pergunta repetidamente. Webhook: servidor notifica cliente quando pronto.", style: "font-size:12px;fill:var(--good)" },
+    { id: "q4", type: "label", x: 640, y: 365, label: "Q: Por que idempotência é obrigatória em workers?", style: "font-size:13px;fill:var(--ink)" },
+    { id: "q4a", type: "label", x: 640, y: 390, label: "A: Mensagem pode ser entregue mais de uma vez (at-least-once). Worker deve ser seguro para executar N vezes.", style: "font-size:12px;fill:var(--good)" },
+    { id: "q5", type: "label", x: 640, y: 440, label: "Q: Quando usar Kafka em vez de Redis para filas?", style: "font-size:13px;fill:var(--ink)" },
+    { id: "q5a", type: "label", x: 640, y: 465, label: "A: Quando múltiplos sistemas precisam consumir o mesmo evento (consumer groups) ou quando precisa de replay.", style: "font-size:12px;fill:var(--good)" },
+    { id: "q6", type: "label", x: 640, y: 515, label: "Q: O que faz o Worker com o resultado do job?", style: "font-size:13px;fill:var(--ink)" },
+    { id: "q6a", type: "label", x: 640, y: 540, label: "A: Salva no Result Store (Redis, DB, S3) com o jobId como chave para o cliente consultar depois.", style: "font-size:12px;fill:var(--good)" },
 
     // ── Summary ──
     { id: "sum_panel", type: "box", x: 60, y: 40, w: 1160, h: 640, rx: 12, style: "fill:var(--surface);stroke:var(--line);stroke-width:1.5" },
-    { id: "sum_title", type: "label", x: 640, y: 68, text: "Async Redis / Kafka — Resumo", style: "font-size:20px;font-weight:700;fill:var(--ink)" },
+    { id: "sum_title", type: "label", x: 640, y: 68, label: "Async Redis / Kafka — Resumo", style: "font-size:20px;font-weight:700;fill:var(--ink)" },
     { id: "sum_pat", type: "box", x: 100, y: 96, w: 1020, h: 140, rx: 8, style: "fill:var(--accent);opacity:0.1" },
-    { id: "sum_pat_t", type: "label", x: 610, y: 116, text: "Padrão Fire-and-Forget Async", style: "font-size:13px;font-weight:700;fill:var(--accent)" },
-    { id: "sum_pat1", type: "label", x: 610, y: 140, text: "1. API aceita request → serializa job → publica na fila → responde 202 Accepted", style: "font-size:11px;fill:var(--ink-soft)" },
-    { id: "sum_pat2", type: "label", x: 610, y: 160, text: "2. Worker consome job → processa → salva resultado no Result Store", style: "font-size:11px;fill:var(--ink-soft)" },
-    { id: "sum_pat3", type: "label", x: 610, y: 180, text: "3. Cliente faz polling / recebe webhook / abre SSE para saber quando terminou", style: "font-size:11px;fill:var(--ink-soft)" },
-    { id: "sum_pat4", type: "label", x: 610, y: 205, text: "Workers precisam ser idempotentes (at-least-once delivery). DLQ para falhas.", style: "font-size:11px;fill:var(--hot);font-weight:600" },
+    { id: "sum_pat_t", type: "label", x: 610, y: 116, label: "Padrão Fire-and-Forget Async", style: "font-size:13px;font-weight:700;fill:var(--accent)" },
+    { id: "sum_pat1", type: "label", x: 610, y: 140, label: "1. API aceita request → serializa job → publica na fila → responde 202 Accepted", style: "font-size:11px;fill:var(--ink-soft)" },
+    { id: "sum_pat2", type: "label", x: 610, y: 160, label: "2. Worker consome job → processa → salva resultado no Result Store", style: "font-size:11px;fill:var(--ink-soft)" },
+    { id: "sum_pat3", type: "label", x: 610, y: 180, label: "3. Cliente faz polling / recebe webhook / abre SSE para saber quando terminou", style: "font-size:11px;fill:var(--ink-soft)" },
+    { id: "sum_pat4", type: "label", x: 610, y: 205, label: "Workers precisam ser idempotentes (at-least-once delivery). DLQ para falhas.", style: "font-size:11px;fill:var(--hot);font-weight:600" },
     { id: "sum_when", type: "box", x: 100, y: 258, w: 480, h: 200, rx: 8, style: "fill:var(--good);opacity:0.1" },
-    { id: "sum_when_t", type: "label", x: 340, y: 278, text: "Quando usar Async?", style: "font-size:13px;font-weight:700;fill:var(--good)" },
-    { id: "sum_w1", type: "label", x: 340, y: 302, text: "Processamento > 100ms (relatórios, IA, encoding)", style: "font-size:11px;fill:var(--ink-soft)" },
-    { id: "sum_w2", type: "label", x: 340, y: 322, text: "Não precisa de resposta imediata", style: "font-size:11px;fill:var(--ink-soft)" },
-    { id: "sum_w3", type: "label", x: 340, y: 342, text: "Picos de carga (rate smoothing)", style: "font-size:11px;fill:var(--ink-soft)" },
-    { id: "sum_w4", type: "label", x: 340, y: 362, text: "Integração com sistemas lentos", style: "font-size:11px;fill:var(--ink-soft)" },
-    { id: "sum_w5", type: "label", x: 340, y: 382, text: "Retry automático sem impacto no usuário", style: "font-size:11px;fill:var(--good)" },
+    { id: "sum_when_t", type: "label", x: 340, y: 278, label: "Quando usar Async?", style: "font-size:13px;font-weight:700;fill:var(--good)" },
+    { id: "sum_w1", type: "label", x: 340, y: 302, label: "Processamento > 100ms (relatórios, IA, encoding)", style: "font-size:11px;fill:var(--ink-soft)" },
+    { id: "sum_w2", type: "label", x: 340, y: 322, label: "Não precisa de resposta imediata", style: "font-size:11px;fill:var(--ink-soft)" },
+    { id: "sum_w3", type: "label", x: 340, y: 342, label: "Picos de carga (rate smoothing)", style: "font-size:11px;fill:var(--ink-soft)" },
+    { id: "sum_w4", type: "label", x: 340, y: 362, label: "Integração com sistemas lentos", style: "font-size:11px;fill:var(--ink-soft)" },
+    { id: "sum_w5", type: "label", x: 340, y: 382, label: "Retry automático sem impacto no usuário", style: "font-size:11px;fill:var(--good)" },
     { id: "sum_tools", type: "box", x: 620, y: 258, w: 500, h: 200, rx: 8, style: "fill:var(--accent-2);opacity:0.1" },
-    { id: "sum_tools_t", type: "label", x: 870, y: 278, text: "Ferramentas Populares", style: "font-size:13px;font-weight:700;fill:var(--accent-2)" },
-    { id: "sum_t1", type: "label", x: 870, y: 302, text: "Redis + BullMQ (Node.js) / Celery (Python)", style: "font-size:11px;fill:var(--ink-soft)" },
-    { id: "sum_t2", type: "label", x: 870, y: 322, text: "Kafka + kafka-go / confluent-kafka", style: "font-size:11px;fill:var(--ink-soft)" },
-    { id: "sum_t3", type: "label", x: 870, y: 342, text: "AWS SQS + Lambda (serverless workers)", style: "font-size:11px;fill:var(--ink-soft)" },
-    { id: "sum_t4", type: "label", x: 870, y: 362, text: "RabbitMQ + amqplib", style: "font-size:11px;fill:var(--ink-soft)" },
-    { id: "sum_t5", type: "label", x: 870, y: 382, text: "Temporal.io (durable workflow engine)", style: "font-size:11px;fill:var(--accent-2)" },
-    { id: "sum_motto", type: "label", x: 610, y: 510, text: "Async desacopla produtor de consumidor → resiliência, escalabilidade, eficiência", style: "font-size:13px;font-weight:600;fill:var(--accent)" },
+    { id: "sum_tools_t", type: "label", x: 870, y: 278, label: "Ferramentas Populares", style: "font-size:13px;font-weight:700;fill:var(--accent-2)" },
+    { id: "sum_t1", type: "label", x: 870, y: 302, label: "Redis + BullMQ (Node.js) / Celery (Python)", style: "font-size:11px;fill:var(--ink-soft)" },
+    { id: "sum_t2", type: "label", x: 870, y: 322, label: "Kafka + kafka-go / confluent-kafka", style: "font-size:11px;fill:var(--ink-soft)" },
+    { id: "sum_t3", type: "label", x: 870, y: 342, label: "AWS SQS + Lambda (serverless workers)", style: "font-size:11px;fill:var(--ink-soft)" },
+    { id: "sum_t4", type: "label", x: 870, y: 362, label: "RabbitMQ + amqplib", style: "font-size:11px;fill:var(--ink-soft)" },
+    { id: "sum_t5", type: "label", x: 870, y: 382, label: "Temporal.io (durable workflow engine)", style: "font-size:11px;fill:var(--accent-2)" },
+    { id: "sum_motto", type: "label", x: 610, y: 510, label: "Async desacopla produtor de consumidor → resiliência, escalabilidade, eficiência", style: "font-size:13px;font-weight:600;fill:var(--accent)" },
   ];
 
   const ALL_IDS = elements.map(e => e.id);

@@ -68,6 +68,16 @@ for (const file of files) {
   const liveBalloons = xp.balloons.querySelectorAll(".xp-balloon:not([data-leaving])").length;
   if (liveBalloons > 1) errors.push(`balões empilhados: ${liveBalloons} visíveis ao mesmo tempo`);
 
+  // regressão: elemento com "text" em vez de "label" renderiza <text> vazio
+  // sem erro de runtime — pega isso explicitamente (ver AGENTS.md/README).
+  let badLabel = 0;
+  for (const el of diagram.elements) {
+    const t = el.type || "box";
+    if (["box", "token", "label"].includes(t) && el.text != null && el.label == null) {
+      badLabel++; errors.push(`elemento "${el.id}": tem "text" mas não "label" (renderiza vazio)`);
+    }
+  }
+
   // valida referências
   const ids = new Set([...xp.nodes.keys()]);
   const expand = (list) => xp._ids(list);
@@ -92,7 +102,7 @@ for (const file of files) {
     if (!xp.balloons.querySelector(".xp-quiz-opt")) { badQuiz++; errors.push("quiz não renderizou opções"); }
   }
 
-  const ok = errors.length === 0 && badAnchor === 0 && badRef === 0 && badQuiz === 0;
+  const ok = errors.length === 0 && badAnchor === 0 && badRef === 0 && badQuiz === 0 && badLabel === 0;
   console.log(
     `${ok ? "✅" : "❌"} ${gname.padEnd(20)} cenas:${String(xp.steps.length).padStart(2)} ` +
     `elems:${String(xp.nodes.size).padStart(3)} quizzes:${quizSteps} ` +

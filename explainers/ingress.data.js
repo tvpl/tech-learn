@@ -26,7 +26,7 @@
 
   const elements = [
     // ── Title ──
-    { id: "title_main", type: "label", x: W / 2, y: 36, text: "Kubernetes Ingress", style: "font-size:22px;font-weight:700;fill:var(--ink)" },
+    { id: "title_main", type: "label", x: W / 2, y: 36, label: "Kubernetes Ingress", style: "font-size:22px;font-weight:700;fill:var(--ink)" },
 
     // ── Layers ──
     ...layers.map(l => ({
@@ -34,31 +34,31 @@
       style: `fill:${l.color};opacity:0.18`
     })),
     ...layers.map(l => ({
-      id: l.id + "_lbl", type: "label", x: LX + 90, y: l.y + l.h / 2 + 5, text: l.label,
+      id: l.id + "_lbl", type: "label", x: LX + 90, y: l.y + l.h / 2 + 5, label: l.label,
       style: `font-size:13px;font-weight:600;fill:${l.textColor};text-anchor:start`
     })),
 
     // ── Internet user ──
     { id: "user_box", type: "box", x: 560, y: 68, w: 160, h: 54, rx: 28, style: "fill:var(--muted);opacity:0.3" },
-    { id: "user_lbl", type: "label", x: 640, y: 95 + 5, text: "User / Browser", style: "font-size:12px;fill:var(--ink-soft)" },
+    { id: "user_lbl", type: "label", x: 640, y: 95 + 5, label: "User / Browser", style: "font-size:12px;fill:var(--ink-soft)" },
 
     // ── LB ──
     { id: "lb_box", type: "box", x: 560, y: 166, w: 160, h: 58, rx: 8, style: "fill:var(--accent);opacity:0.8" },
-    { id: "lb_lbl", type: "label", x: 640, y: 195 + 5, text: "AWS ALB / GCP LB", style: "font-size:12px;fill:#fff;font-weight:600" },
+    { id: "lb_lbl", type: "label", x: 640, y: 195 + 5, label: "AWS ALB / GCP LB", style: "font-size:12px;fill:#fff;font-weight:600" },
 
     // ── Ingress Controller ──
     { id: "ic_box", type: "box", x: 500, y: 266, w: 280, h: 58, rx: 8, style: "fill:var(--accent-2);opacity:0.85" },
-    { id: "ic_lbl", type: "label", x: 640, y: 295 + 5, text: "nginx / traefik / HAProxy", style: "font-size:12px;fill:#fff;font-weight:600" },
-    { id: "ic_pod_lbl", type: "label", x: 640, y: 335, text: "Roda como Pod no cluster", style: "font-size:11px;fill:var(--ink-soft)" },
+    { id: "ic_lbl", type: "label", x: 640, y: 295 + 5, label: "nginx / traefik / HAProxy", style: "font-size:12px;fill:#fff;font-weight:600" },
+    { id: "ic_pod_lbl", type: "label", x: 640, y: 335, label: "Roda como Pod no cluster", style: "font-size:11px;fill:var(--ink-soft)" },
 
     // ── Services ──
     ...SVC.map(s => ({ id: s.id, type: "box", x: s.x, y: 366, w: 180, h: 58, rx: 8, style: "fill:var(--good);opacity:0.8" })),
-    ...SVC.map(s => ({ id: s.id + "_lbl", type: "label", x: s.x + 90, y: 390 + 5, text: s.label + "\n" + s.port, style: "font-size:11px;fill:#fff;font-weight:600" })),
-    ...SVC.map(s => ({ id: s.id + "_port", type: "label", x: s.x + 90, y: 406, text: s.port, style: "font-size:10px;fill:#eee" })),
+    ...SVC.map(s => ({ id: s.id + "_lbl", type: "label", x: s.x + 90, y: 390 + 5, label: s.label + "\n" + s.port, style: "font-size:11px;fill:#fff;font-weight:600" })),
+    ...SVC.map(s => ({ id: s.id + "_port", type: "label", x: s.x + 90, y: 406, label: s.port, style: "font-size:10px;fill:#eee" })),
 
     // ── Pods ──
     ...PODS.map(p => ({ id: p.id, type: "box", x: p.x, y: 466, w: 100, h: 54, rx: 24, style: "fill:var(--warn);opacity:0.7" })),
-    ...PODS.map(p => ({ id: p.id + "_lbl", type: "label", x: p.x + 50, y: 493 + 5, text: "Pod", style: "font-size:11px;fill:#fff;font-weight:600" })),
+    ...PODS.map(p => ({ id: p.id + "_lbl", type: "label", x: p.x + 50, y: 493 + 5, label: "Pod", style: "font-size:11px;fill:#fff;font-weight:600" })),
 
     // ── Arrows user → lb → ic → svc ──
     { id: "arr_u_lb",  type: "arrow", x1: 640, y1: 122, x2: 640, y2: 166, style: "stroke:var(--accent);stroke-width:2" },
@@ -77,91 +77,91 @@
 
     // ── Ingress Resource panel (right side) ──
     { id: "ing_res_panel", type: "box", x: 1020, y: 60, w: 230, h: 480, rx: 10, style: "fill:var(--surface);stroke:var(--accent-2);stroke-width:1.5" },
-    { id: "ing_res_title", type: "label", x: 1135, y: 80, text: "Ingress Resource (YAML)", style: "font-size:11px;font-weight:700;fill:var(--accent-2)" },
-    { id: "ing_yaml1", type: "label", x: 1040, y: 104, text: "apiVersion: networking.k8s.io/v1", style: "font-size:9px;font-family:monospace;fill:var(--ink-soft);text-anchor:start" },
-    { id: "ing_yaml2", type: "label", x: 1040, y: 120, text: "kind: Ingress", style: "font-size:9px;font-family:monospace;fill:var(--ink-soft);text-anchor:start" },
-    { id: "ing_yaml3", type: "label", x: 1040, y: 136, text: "metadata:", style: "font-size:9px;font-family:monospace;fill:var(--ink-soft);text-anchor:start" },
-    { id: "ing_yaml4", type: "label", x: 1040, y: 152, text: "  name: my-ingress", style: "font-size:9px;font-family:monospace;fill:var(--ink);text-anchor:start" },
-    { id: "ing_yaml5", type: "label", x: 1040, y: 168, text: "spec:", style: "font-size:9px;font-family:monospace;fill:var(--ink-soft);text-anchor:start" },
-    { id: "ing_yaml6", type: "label", x: 1040, y: 184, text: "  rules:", style: "font-size:9px;font-family:monospace;fill:var(--ink-soft);text-anchor:start" },
-    { id: "ing_yaml7", type: "label", x: 1040, y: 200, text: "  - host: app.com", style: "font-size:9px;font-family:monospace;fill:var(--accent);text-anchor:start" },
-    { id: "ing_yaml8", type: "label", x: 1040, y: 216, text: "    http:", style: "font-size:9px;font-family:monospace;fill:var(--ink-soft);text-anchor:start" },
-    { id: "ing_yaml9", type: "label", x: 1040, y: 232, text: "      paths:", style: "font-size:9px;font-family:monospace;fill:var(--ink-soft);text-anchor:start" },
-    { id: "ing_yaml10", type: "label", x: 1040, y: 248, text: "      - path: /api", style: "font-size:9px;font-family:monospace;fill:var(--good);text-anchor:start" },
-    { id: "ing_yaml11", type: "label", x: 1040, y: 264, text: "        backend:", style: "font-size:9px;font-family:monospace;fill:var(--ink-soft);text-anchor:start" },
-    { id: "ing_yaml12", type: "label", x: 1040, y: 280, text: "          service:", style: "font-size:9px;font-family:monospace;fill:var(--ink-soft);text-anchor:start" },
-    { id: "ing_yaml13", type: "label", x: 1040, y: 296, text: "            name: svc-api", style: "font-size:9px;font-family:monospace;fill:var(--good);text-anchor:start" },
-    { id: "ing_yaml14", type: "label", x: 1040, y: 312, text: "            port: 8080", style: "font-size:9px;font-family:monospace;fill:var(--good);text-anchor:start" },
-    { id: "ing_tls_yaml", type: "label", x: 1040, y: 340, text: "  tls:", style: "font-size:9px;font-family:monospace;fill:var(--ink-soft);text-anchor:start" },
-    { id: "ing_tls_yaml2", type: "label", x: 1040, y: 356, text: "  - hosts: [app.com]", style: "font-size:9px;font-family:monospace;fill:var(--accent-2);text-anchor:start" },
-    { id: "ing_tls_yaml3", type: "label", x: 1040, y: 372, text: "    secretName: tls-cert", style: "font-size:9px;font-family:monospace;fill:var(--accent-2);text-anchor:start" },
+    { id: "ing_res_title", type: "label", x: 1135, y: 80, label: "Ingress Resource (YAML)", style: "font-size:11px;font-weight:700;fill:var(--accent-2)" },
+    { id: "ing_yaml1", type: "label", x: 1040, y: 104, label: "apiVersion: networking.k8s.io/v1", style: "font-size:9px;font-family:monospace;fill:var(--ink-soft);text-anchor:start" },
+    { id: "ing_yaml2", type: "label", x: 1040, y: 120, label: "kind: Ingress", style: "font-size:9px;font-family:monospace;fill:var(--ink-soft);text-anchor:start" },
+    { id: "ing_yaml3", type: "label", x: 1040, y: 136, label: "metadata:", style: "font-size:9px;font-family:monospace;fill:var(--ink-soft);text-anchor:start" },
+    { id: "ing_yaml4", type: "label", x: 1040, y: 152, label: "  name: my-ingress", style: "font-size:9px;font-family:monospace;fill:var(--ink);text-anchor:start" },
+    { id: "ing_yaml5", type: "label", x: 1040, y: 168, label: "spec:", style: "font-size:9px;font-family:monospace;fill:var(--ink-soft);text-anchor:start" },
+    { id: "ing_yaml6", type: "label", x: 1040, y: 184, label: "  rules:", style: "font-size:9px;font-family:monospace;fill:var(--ink-soft);text-anchor:start" },
+    { id: "ing_yaml7", type: "label", x: 1040, y: 200, label: "  - host: app.com", style: "font-size:9px;font-family:monospace;fill:var(--accent);text-anchor:start" },
+    { id: "ing_yaml8", type: "label", x: 1040, y: 216, label: "    http:", style: "font-size:9px;font-family:monospace;fill:var(--ink-soft);text-anchor:start" },
+    { id: "ing_yaml9", type: "label", x: 1040, y: 232, label: "      paths:", style: "font-size:9px;font-family:monospace;fill:var(--ink-soft);text-anchor:start" },
+    { id: "ing_yaml10", type: "label", x: 1040, y: 248, label: "      - path: /api", style: "font-size:9px;font-family:monospace;fill:var(--good);text-anchor:start" },
+    { id: "ing_yaml11", type: "label", x: 1040, y: 264, label: "        backend:", style: "font-size:9px;font-family:monospace;fill:var(--ink-soft);text-anchor:start" },
+    { id: "ing_yaml12", type: "label", x: 1040, y: 280, label: "          service:", style: "font-size:9px;font-family:monospace;fill:var(--ink-soft);text-anchor:start" },
+    { id: "ing_yaml13", type: "label", x: 1040, y: 296, label: "            name: svc-api", style: "font-size:9px;font-family:monospace;fill:var(--good);text-anchor:start" },
+    { id: "ing_yaml14", type: "label", x: 1040, y: 312, label: "            port: 8080", style: "font-size:9px;font-family:monospace;fill:var(--good);text-anchor:start" },
+    { id: "ing_tls_yaml", type: "label", x: 1040, y: 340, label: "  tls:", style: "font-size:9px;font-family:monospace;fill:var(--ink-soft);text-anchor:start" },
+    { id: "ing_tls_yaml2", type: "label", x: 1040, y: 356, label: "  - hosts: [app.com]", style: "font-size:9px;font-family:monospace;fill:var(--accent-2);text-anchor:start" },
+    { id: "ing_tls_yaml3", type: "label", x: 1040, y: 372, label: "    secretName: tls-cert", style: "font-size:9px;font-family:monospace;fill:var(--accent-2);text-anchor:start" },
 
     // annotations
-    { id: "ing_ann_title", type: "label", x: 1040, y: 400, text: "Annotations:", style: "font-size:9px;font-family:monospace;fill:var(--ink-soft);text-anchor:start" },
-    { id: "ing_ann1", type: "label", x: 1040, y: 416, text: "nginx.ingress.k8s.io/", style: "font-size:9px;font-family:monospace;fill:var(--hot);text-anchor:start" },
-    { id: "ing_ann2", type: "label", x: 1040, y: 432, text: "  rewrite-target: /", style: "font-size:9px;font-family:monospace;fill:var(--hot);text-anchor:start" },
-    { id: "ing_ann3", type: "label", x: 1040, y: 448, text: "  rate-limit: 100rps", style: "font-size:9px;font-family:monospace;fill:var(--hot);text-anchor:start" },
-    { id: "ing_ann4", type: "label", x: 1040, y: 464, text: "  auth-url: /auth", style: "font-size:9px;font-family:monospace;fill:var(--hot);text-anchor:start" },
+    { id: "ing_ann_title", type: "label", x: 1040, y: 400, label: "Annotations:", style: "font-size:9px;font-family:monospace;fill:var(--ink-soft);text-anchor:start" },
+    { id: "ing_ann1", type: "label", x: 1040, y: 416, label: "nginx.ingress.k8s.io/", style: "font-size:9px;font-family:monospace;fill:var(--hot);text-anchor:start" },
+    { id: "ing_ann2", type: "label", x: 1040, y: 432, label: "  rewrite-target: /", style: "font-size:9px;font-family:monospace;fill:var(--hot);text-anchor:start" },
+    { id: "ing_ann3", type: "label", x: 1040, y: 448, label: "  rate-limit: 100rps", style: "font-size:9px;font-family:monospace;fill:var(--hot);text-anchor:start" },
+    { id: "ing_ann4", type: "label", x: 1040, y: 464, label: "  auth-url: /auth", style: "font-size:9px;font-family:monospace;fill:var(--hot);text-anchor:start" },
 
     // ── Routing highlight overlays ──
     { id: "route_host", type: "box", x: 130, y: 258, w: 200, h: 80, rx: 6, style: "fill:none;stroke:var(--accent);stroke-width:2;stroke-dasharray:5,4" },
-    { id: "route_host_lbl", type: "label", x: 230, y: 282, text: "Host-based", style: "font-size:12px;font-weight:700;fill:var(--accent)" },
-    { id: "route_host_lbl2", type: "label", x: 230, y: 302, text: "app.com → svc-frontend", style: "font-size:10px;fill:var(--accent)" },
-    { id: "route_host_lbl3", type: "label", x: 230, y: 322, text: "api.com → svc-api", style: "font-size:10px;fill:var(--accent)" },
+    { id: "route_host_lbl", type: "label", x: 230, y: 282, label: "Host-based", style: "font-size:12px;font-weight:700;fill:var(--accent)" },
+    { id: "route_host_lbl2", type: "label", x: 230, y: 302, label: "app.com → svc-frontend", style: "font-size:10px;fill:var(--accent)" },
+    { id: "route_host_lbl3", type: "label", x: 230, y: 322, label: "api.com → svc-api", style: "font-size:10px;fill:var(--accent)" },
 
     { id: "route_path", type: "box", x: 130, y: 258, w: 200, h: 80, rx: 6, style: "fill:none;stroke:var(--good);stroke-width:2;stroke-dasharray:5,4" },
-    { id: "route_path_lbl", type: "label", x: 230, y: 282, text: "Path-based", style: "font-size:12px;font-weight:700;fill:var(--good)" },
-    { id: "route_path_lbl2", type: "label", x: 230, y: 302, text: "app.com/ → svc-frontend", style: "font-size:10px;fill:var(--good)" },
-    { id: "route_path_lbl3", type: "label", x: 230, y: 322, text: "app.com/api → svc-api", style: "font-size:10px;fill:var(--good)" },
+    { id: "route_path_lbl", type: "label", x: 230, y: 282, label: "Path-based", style: "font-size:12px;font-weight:700;fill:var(--good)" },
+    { id: "route_path_lbl2", type: "label", x: 230, y: 302, label: "app.com/ → svc-frontend", style: "font-size:10px;fill:var(--good)" },
+    { id: "route_path_lbl3", type: "label", x: 230, y: 322, label: "app.com/api → svc-api", style: "font-size:10px;fill:var(--good)" },
 
     // ── TLS panel ──
     { id: "tls_panel", type: "box", x: 130, y: 258, w: 340, h: 80, rx: 6, style: "fill:var(--accent-2);opacity:0.15;stroke:var(--accent-2);stroke-width:2" },
-    { id: "tls_lbl", type: "label", x: 300, y: 282, text: "TLS Termination no Ingress", style: "font-size:12px;font-weight:700;fill:var(--accent-2)" },
-    { id: "tls_lbl2", type: "label", x: 300, y: 302, text: "HTTPS → HTTP interno", style: "font-size:11px;fill:var(--ink-soft)" },
-    { id: "tls_lbl3", type: "label", x: 300, y: 322, text: "cert-manager renova TLS automático", style: "font-size:11px;fill:var(--accent-2)" },
+    { id: "tls_lbl", type: "label", x: 300, y: 282, label: "TLS Termination no Ingress", style: "font-size:12px;font-weight:700;fill:var(--accent-2)" },
+    { id: "tls_lbl2", type: "label", x: 300, y: 302, label: "HTTPS → HTTP interno", style: "font-size:11px;fill:var(--ink-soft)" },
+    { id: "tls_lbl3", type: "label", x: 300, y: 322, label: "cert-manager renova TLS automático", style: "font-size:11px;fill:var(--accent-2)" },
 
     // ── Gateway API comparison ──
     { id: "gwa_panel", type: "box", x: 130, y: 540, w: 860, h: 110, rx: 10, style: "fill:var(--surface);stroke:var(--line);stroke-width:1.5" },
-    { id: "gwa_title", type: "label", x: 560, y: 560, text: "Ingress vs Gateway API (futuro)", style: "font-size:13px;font-weight:700;fill:var(--ink)" },
-    { id: "gwa_l1", type: "label", x: 300, y: 585, text: "Ingress: simples, annotations para configuração", style: "font-size:11px;fill:var(--ink-soft)" },
-    { id: "gwa_l2", type: "label", x: 300, y: 604, text: "Gateway API: tipado, extensível, mais expressivo", style: "font-size:11px;fill:var(--accent)" },
-    { id: "gwa_l3", type: "label", x: 300, y: 622, text: "Ingress está sendo substituído gradualmente pelo Gateway API (sig-network)", style: "font-size:11px;fill:var(--ink-soft)" },
-    { id: "gwa_r1", type: "label", x: 820, y: 585, text: "Ingress → annotations", style: "font-size:11px;fill:var(--ink-soft)" },
-    { id: "gwa_r2", type: "label", x: 820, y: 604, text: "Gateway → HTTPRoute CRD", style: "font-size:11px;fill:var(--accent)" },
-    { id: "gwa_r3", type: "label", x: 820, y: 622, text: "GRPCRoute, TCPRoute, etc.", style: "font-size:11px;fill:var(--ink-soft)" },
+    { id: "gwa_title", type: "label", x: 560, y: 560, label: "Ingress vs Gateway API (futuro)", style: "font-size:13px;font-weight:700;fill:var(--ink)" },
+    { id: "gwa_l1", type: "label", x: 300, y: 585, label: "Ingress: simples, annotations para configuração", style: "font-size:11px;fill:var(--ink-soft)" },
+    { id: "gwa_l2", type: "label", x: 300, y: 604, label: "Gateway API: tipado, extensível, mais expressivo", style: "font-size:11px;fill:var(--accent)" },
+    { id: "gwa_l3", type: "label", x: 300, y: 622, label: "Ingress está sendo substituído gradualmente pelo Gateway API (sig-network)", style: "font-size:11px;fill:var(--ink-soft)" },
+    { id: "gwa_r1", type: "label", x: 820, y: 585, label: "Ingress → annotations", style: "font-size:11px;fill:var(--ink-soft)" },
+    { id: "gwa_r2", type: "label", x: 820, y: 604, label: "Gateway → HTTPRoute CRD", style: "font-size:11px;fill:var(--accent)" },
+    { id: "gwa_r3", type: "label", x: 820, y: 622, label: "GRPCRoute, TCPRoute, etc.", style: "font-size:11px;fill:var(--ink-soft)" },
 
     // ── Quiz ──
     { id: "quiz_panel", type: "box", x: 160, y: 80, w: 960, h: 540, rx: 12, style: "fill:var(--surface);stroke:var(--accent-2);stroke-width:2" },
-    { id: "quiz_title", type: "label", x: 640, y: 110, text: "Quiz — Kubernetes Ingress", style: "font-size:18px;font-weight:700;fill:var(--ink)" },
-    { id: "q1", type: "label", x: 640, y: 165, text: "Q: Qual a diferença entre NodePort e Ingress?", style: "font-size:13px;fill:var(--ink)" },
-    { id: "q1a", type: "label", x: 640, y: 195, text: "A: NodePort expõe porta no nó; Ingress é roteamento HTTP L7 com 1 IP", style: "font-size:12px;fill:var(--good)" },
-    { id: "q2", type: "label", x: 640, y: 245, text: "Q: Quem implementa as regras do Ingress Resource?", style: "font-size:13px;fill:var(--ink)" },
-    { id: "q2a", type: "label", x: 640, y: 275, text: "A: O Ingress Controller (nginx, traefik...) que roda como pod no cluster", style: "font-size:12px;fill:var(--good)" },
-    { id: "q3", type: "label", x: 640, y: 325, text: "Q: Como fazer TLS com Ingress?", style: "font-size:13px;fill:var(--ink)" },
-    { id: "q3a", type: "label", x: 640, y: 355, text: "A: Seção tls: no YAML + Secret com cert; cert-manager automatiza renovação", style: "font-size:12px;fill:var(--good)" },
-    { id: "q4", type: "label", x: 640, y: 405, text: "Q: O que é path-based routing?", style: "font-size:13px;fill:var(--ink)" },
-    { id: "q4a", type: "label", x: 640, y: 435, text: "A: Roteamento baseado no path da URL — /api → svc-api, / → svc-frontend", style: "font-size:12px;fill:var(--good)" },
-    { id: "q5", type: "label", x: 640, y: 485, text: "Q: Por que Ingress é preferível a vários LoadBalancers?", style: "font-size:13px;fill:var(--ink)" },
-    { id: "q5a", type: "label", x: 640, y: 515, text: "A: 1 IP/LB externo para N services = custo menor, gestão centralizada de TLS", style: "font-size:12px;fill:var(--good)" },
+    { id: "quiz_title", type: "label", x: 640, y: 110, label: "Quiz — Kubernetes Ingress", style: "font-size:18px;font-weight:700;fill:var(--ink)" },
+    { id: "q1", type: "label", x: 640, y: 165, label: "Q: Qual a diferença entre NodePort e Ingress?", style: "font-size:13px;fill:var(--ink)" },
+    { id: "q1a", type: "label", x: 640, y: 195, label: "A: NodePort expõe porta no nó; Ingress é roteamento HTTP L7 com 1 IP", style: "font-size:12px;fill:var(--good)" },
+    { id: "q2", type: "label", x: 640, y: 245, label: "Q: Quem implementa as regras do Ingress Resource?", style: "font-size:13px;fill:var(--ink)" },
+    { id: "q2a", type: "label", x: 640, y: 275, label: "A: O Ingress Controller (nginx, traefik...) que roda como pod no cluster", style: "font-size:12px;fill:var(--good)" },
+    { id: "q3", type: "label", x: 640, y: 325, label: "Q: Como fazer TLS com Ingress?", style: "font-size:13px;fill:var(--ink)" },
+    { id: "q3a", type: "label", x: 640, y: 355, label: "A: Seção tls: no YAML + Secret com cert; cert-manager automatiza renovação", style: "font-size:12px;fill:var(--good)" },
+    { id: "q4", type: "label", x: 640, y: 405, label: "Q: O que é path-based routing?", style: "font-size:13px;fill:var(--ink)" },
+    { id: "q4a", type: "label", x: 640, y: 435, label: "A: Roteamento baseado no path da URL — /api → svc-api, / → svc-frontend", style: "font-size:12px;fill:var(--good)" },
+    { id: "q5", type: "label", x: 640, y: 485, label: "Q: Por que Ingress é preferível a vários LoadBalancers?", style: "font-size:13px;fill:var(--ink)" },
+    { id: "q5a", type: "label", x: 640, y: 515, label: "A: 1 IP/LB externo para N services = custo menor, gestão centralizada de TLS", style: "font-size:12px;fill:var(--good)" },
 
     // ── Summary ──
     { id: "sum_panel", type: "box", x: 130, y: 70, w: 1020, h: 560, rx: 12, style: "fill:var(--surface);stroke:var(--line);stroke-width:1.5" },
-    { id: "sum_title", type: "label", x: 640, y: 100, text: "Kubernetes Ingress — Resumo", style: "font-size:20px;font-weight:700;fill:var(--ink)" },
-    { id: "sum1t", type: "label", x: 340, y: 140, text: "O que faz", style: "font-size:13px;font-weight:700;fill:var(--accent)" },
-    { id: "sum1d", type: "label", x: 340, y: 160, text: "Expõe services HTTP/HTTPS externamente", style: "font-size:12px;fill:var(--ink-soft)" },
-    { id: "sum1d2", type: "label", x: 340, y: 178, text: "Um único IP para múltiplos services", style: "font-size:12px;fill:var(--ink-soft)" },
-    { id: "sum1d3", type: "label", x: 340, y: 196, text: "Host-based + path-based routing", style: "font-size:12px;fill:var(--ink-soft)" },
-    { id: "sum1d4", type: "label", x: 340, y: 214, text: "TLS termination centralizado", style: "font-size:12px;fill:var(--ink-soft)" },
-    { id: "sum2t", type: "label", x: 840, y: 140, text: "Componentes", style: "font-size:13px;font-weight:700;fill:var(--accent-2)" },
-    { id: "sum2d", type: "label", x: 840, y: 160, text: "Ingress Resource: declaração das regras", style: "font-size:12px;fill:var(--ink-soft)" },
-    { id: "sum2d2", type: "label", x: 840, y: 178, text: "Ingress Controller: executa as regras", style: "font-size:12px;fill:var(--ink-soft)" },
-    { id: "sum2d3", type: "label", x: 840, y: 196, text: "IngressClass: qual controller usar", style: "font-size:12px;fill:var(--ink-soft)" },
-    { id: "sum2d4", type: "label", x: 840, y: 214, text: "Annotations: configuração específica do controller", style: "font-size:12px;fill:var(--ink-soft)" },
+    { id: "sum_title", type: "label", x: 640, y: 100, label: "Kubernetes Ingress — Resumo", style: "font-size:20px;font-weight:700;fill:var(--ink)" },
+    { id: "sum1t", type: "label", x: 340, y: 140, label: "O que faz", style: "font-size:13px;font-weight:700;fill:var(--accent)" },
+    { id: "sum1d", type: "label", x: 340, y: 160, label: "Expõe services HTTP/HTTPS externamente", style: "font-size:12px;fill:var(--ink-soft)" },
+    { id: "sum1d2", type: "label", x: 340, y: 178, label: "Um único IP para múltiplos services", style: "font-size:12px;fill:var(--ink-soft)" },
+    { id: "sum1d3", type: "label", x: 340, y: 196, label: "Host-based + path-based routing", style: "font-size:12px;fill:var(--ink-soft)" },
+    { id: "sum1d4", type: "label", x: 340, y: 214, label: "TLS termination centralizado", style: "font-size:12px;fill:var(--ink-soft)" },
+    { id: "sum2t", type: "label", x: 840, y: 140, label: "Componentes", style: "font-size:13px;font-weight:700;fill:var(--accent-2)" },
+    { id: "sum2d", type: "label", x: 840, y: 160, label: "Ingress Resource: declaração das regras", style: "font-size:12px;fill:var(--ink-soft)" },
+    { id: "sum2d2", type: "label", x: 840, y: 178, label: "Ingress Controller: executa as regras", style: "font-size:12px;fill:var(--ink-soft)" },
+    { id: "sum2d3", type: "label", x: 840, y: 196, label: "IngressClass: qual controller usar", style: "font-size:12px;fill:var(--ink-soft)" },
+    { id: "sum2d4", type: "label", x: 840, y: 214, label: "Annotations: configuração específica do controller", style: "font-size:12px;fill:var(--ink-soft)" },
     { id: "sum_div", type: "box", x: 200, y: 238, w: 840, h: 1, rx: 0, style: "fill:var(--line)" },
-    { id: "sum3t", type: "label", x: 640, y: 262, text: "Fluxo de uma requisição HTTP", style: "font-size:13px;font-weight:700;fill:var(--good)" },
-    { id: "sum_flow", type: "label", x: 640, y: 286, text: "Internet → LB → Ingress Controller → Service → Pod", style: "font-size:13px;fill:var(--ink)" },
-    { id: "sum_flow2", type: "label", x: 640, y: 308, text: "O controller lê o Ingress Resource e configura o proxy (nginx/traefik) automaticamente", style: "font-size:12px;fill:var(--ink-soft)" },
-    { id: "sum_flow3", type: "label", x: 640, y: 342, text: "Futuro: Gateway API substitui Ingress com mais expressividade e tipos CRD", style: "font-size:12px;fill:var(--accent)" },
+    { id: "sum3t", type: "label", x: 640, y: 262, label: "Fluxo de uma requisição HTTP", style: "font-size:13px;font-weight:700;fill:var(--good)" },
+    { id: "sum_flow", type: "label", x: 640, y: 286, label: "Internet → LB → Ingress Controller → Service → Pod", style: "font-size:13px;fill:var(--ink)" },
+    { id: "sum_flow2", type: "label", x: 640, y: 308, label: "O controller lê o Ingress Resource e configura o proxy (nginx/traefik) automaticamente", style: "font-size:12px;fill:var(--ink-soft)" },
+    { id: "sum_flow3", type: "label", x: 640, y: 342, label: "Futuro: Gateway API substitui Ingress com mais expressividade e tipos CRD", style: "font-size:12px;fill:var(--accent)" },
   ];
 
   const ALL_IDS = elements.map(e => e.id);

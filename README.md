@@ -162,16 +162,24 @@ window.MEU_DIAGRAMA = {
 
 | `type`   | Para quê | Campos principais |
 |----------|----------|-------------------|
-| `box`    | caixa/etapa | `x, y, w, h, label` (string ou array de linhas), `fill`, `mono`, `rx` |
+| `box`    | caixa/etapa | `x, y, w, h, label` (string, string com `\n`, ou array de linhas), `fill`, `mono`, `rx` |
 | `token`  | "chip" de token | igual ao box, com estilo de token |
 | `label`  | texto solto | `x, y, label, anchor` (`start`/`middle`/`end`), `size`, `sub`, `mono` |
 | `arrow`  | seta/conector | `x1,y1,x2,y2` **ou** `path`; opções `color`, `noHead`, `dashed` |
 | `vector` | coluna de barras (ex.: embedding) | `x, y, w, h, values:[0..1], color` |
 | `matrix` | grade de células (ex.: atenção) | `x, y, rows, cols, cell, color` |
 
+**Atenção ao nome do campo:** o texto de `box`/`token`/`label` é sempre
+`label` — **não** `text` (esse nome é reservado ao corpo do balão,
+`step.balloon.text`). Um elemento com `text` em vez de `label` é aceito sem
+erro (não quebra `npm test`), mas renderiza um `<text>` vazio — é um bug
+silencioso, fique atento ao revisar/criar `.data.js`.
+
 Por padrão todo elemento começa **oculto**. Use `base: true` para já nascer
 visível. Todo elemento aceita também `group: "nome"` para ser revelado em
-lote (ver `ctx.reveal` e o uso de `@nome` abaixo).
+lote (ver `ctx.reveal` e o uso de `@nome` abaixo), e um `style` (string CSS
+crua, ex.: `"opacity:0.05;stroke-dasharray:6,4"`) como escape hatch genérico
+quando `fill`/`stroke`/`size` não cobrirem o caso.
 
 **Cenas** (`steps`). Campos de cada cena:
 

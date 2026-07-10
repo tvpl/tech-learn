@@ -14,29 +14,29 @@
 
   const elements = [
     // ── Title label ──
-    { id: "title_main", type: "label", x: W / 2, y: 36, text: "Rate Limiting", style: "font-size:22px;font-weight:700;fill:var(--ink)" },
+    { id: "title_main", type: "label", x: W / 2, y: 36, label: "Rate Limiting", style: "font-size:22px;font-weight:700;fill:var(--ink)" },
 
     // ── Bucket outline ──
     { id: "bucket_outline", type: "box", x: BKX, y: BKY, w: BKW, h: BKH, rx: 8, style: "fill:none;stroke:var(--ink-soft);stroke-width:2;stroke-dasharray:6,4" },
-    { id: "bucket_label", type: "label", x: BKX + BKW / 2, y: BKY - 18, text: "Token Bucket", style: "font-size:13px;font-weight:600;fill:var(--ink-soft)" },
+    { id: "bucket_label", type: "label", x: BKX + BKW / 2, y: BKY - 18, label: "Token Bucket", style: "font-size:13px;font-weight:600;fill:var(--ink-soft)" },
 
     // ── Token fill (vector / bar that grows) ──
     { id: "bucket_fill", type: "box", x: FILL_X, y: fillY(1), w: FILL_W, h: fillH(1), rx: 4, style: "fill:var(--accent);opacity:0.25" },
     { id: "bucket_fill_bar", type: "vector", x: FILL_X, y: BKY + 20, w: FILL_W, h: BKH - 40, values: [1], style: "fill:var(--accent);opacity:0.5", vertical: true },
 
     // ── Token count label ──
-    { id: "token_count", type: "label", x: BKX + BKW / 2, y: BKY + BKH / 2, text: "10 / 10 tokens", style: "font-size:16px;font-weight:600;fill:var(--accent)" },
+    { id: "token_count", type: "label", x: BKX + BKW / 2, y: BKY + BKH / 2, label: "10 / 10 tokens", style: "font-size:16px;font-weight:600;fill:var(--accent)" },
 
     // ── Refill rate note ──
-    { id: "refill_note", type: "label", x: BKX + BKW / 2, y: BKY + BKH + 24, text: "+ 2 tokens / second", style: "font-size:12px;fill:var(--ink-soft)" },
+    { id: "refill_note", type: "label", x: BKX + BKW / 2, y: BKY + BKH + 24, label: "+ 2 tokens / second", style: "font-size:12px;fill:var(--ink-soft)" },
 
     // ── Request arrows (3 requests) ──
     { id: "req1_box", type: "box", x: REQ_X, y: 180, w: 160, h: 42, rx: 8, style: "fill:var(--accent-2);opacity:0.85" },
-    { id: "req1_lbl", type: "label", x: REQ_X + 80, y: 201 + 10, text: "GET /api/data", style: "font-size:12px;fill:#fff;font-weight:600" },
+    { id: "req1_lbl", type: "label", x: REQ_X + 80, y: 201 + 10, label: "GET /api/data", style: "font-size:12px;fill:#fff;font-weight:600" },
     { id: "req2_box", type: "box", x: REQ_X, y: 260, w: 160, h: 42, rx: 8, style: "fill:var(--accent-2);opacity:0.85" },
-    { id: "req2_lbl", type: "label", x: REQ_X + 80, y: 281 + 10, text: "POST /api/order", style: "font-size:12px;fill:#fff;font-weight:600" },
+    { id: "req2_lbl", type: "label", x: REQ_X + 80, y: 281 + 10, label: "POST /api/order", style: "font-size:12px;fill:#fff;font-weight:600" },
     { id: "req3_box", type: "box", x: REQ_X, y: 340, w: 160, h: 42, rx: 8, style: "fill:var(--hot);opacity:0.9" },
-    { id: "req3_lbl", type: "label", x: REQ_X + 80, y: 361 + 10, text: "GET /api/data", style: "font-size:12px;fill:#fff;font-weight:600" },
+    { id: "req3_lbl", type: "label", x: REQ_X + 80, y: 361 + 10, label: "GET /api/data", style: "font-size:12px;fill:#fff;font-weight:600" },
 
     // ── Arrows req → bucket ──
     { id: "arr_req1", type: "arrow", x1: REQ_X + 160, y1: 201, x2: BKX, y2: BKY + 100, style: "stroke:var(--accent-2);stroke-width:2" },
@@ -45,11 +45,11 @@
 
     // ── Responses ──
     { id: "resp_ok1", type: "box", x: RESP_X, y: 180, w: 130, h: 42, rx: 8, style: "fill:var(--good);opacity:0.85" },
-    { id: "resp_ok1_lbl", type: "label", x: RESP_X + 65, y: 201 + 10, text: "200 OK ✓", style: "font-size:12px;fill:#fff;font-weight:600" },
+    { id: "resp_ok1_lbl", type: "label", x: RESP_X + 65, y: 201 + 10, label: "200 OK ✓", style: "font-size:12px;fill:#fff;font-weight:600" },
     { id: "resp_ok2", type: "box", x: RESP_X, y: 260, w: 130, h: 42, rx: 8, style: "fill:var(--good);opacity:0.85" },
-    { id: "resp_ok2_lbl", type: "label", x: RESP_X + 65, y: 281 + 10, text: "200 OK ✓", style: "font-size:12px;fill:#fff;font-weight:600" },
+    { id: "resp_ok2_lbl", type: "label", x: RESP_X + 65, y: 281 + 10, label: "200 OK ✓", style: "font-size:12px;fill:#fff;font-weight:600" },
     { id: "resp_429", type: "box", x: RESP_X, y: 340, w: 130, h: 42, rx: 8, style: "fill:var(--hot);opacity:0.9" },
-    { id: "resp_429_lbl", type: "label", x: RESP_X + 65, y: 361 + 10, text: "429 Too Many ✗", style: "font-size:11px;fill:#fff;font-weight:600" },
+    { id: "resp_429_lbl", type: "label", x: RESP_X + 65, y: 361 + 10, label: "429 Too Many ✗", style: "font-size:11px;fill:#fff;font-weight:600" },
 
     // ── Arrows bucket → resp ──
     { id: "arr_resp1", type: "arrow", x1: BKX + BKW, y1: BKY + 100, x2: RESP_X, y2: 201, style: "stroke:var(--good);stroke-width:2" },
@@ -59,72 +59,72 @@
     // ── Detail panels (right side, revealed per step) ──
     // Leaky bucket
     { id: "leaky_panel", type: "box", x: DETAIL_X, y: 120, w: 420, h: 220, rx: 10, style: "fill:var(--surface);stroke:var(--line);stroke-width:1.5" },
-    { id: "leaky_title", type: "label", x: DETAIL_X + 210, y: 138, text: "Leaky Bucket", style: "font-size:14px;font-weight:700;fill:var(--ink)" },
-    { id: "leaky_desc", type: "label", x: DETAIL_X + 210, y: 165, text: "Requests enter at any rate", style: "font-size:12px;fill:var(--ink-soft)" },
-    { id: "leaky_desc2", type: "label", x: DETAIL_X + 210, y: 185, text: "but drain at constant rate.", style: "font-size:12px;fill:var(--ink-soft)" },
-    { id: "leaky_desc3", type: "label", x: DETAIL_X + 210, y: 218, text: "Smooths out bursts.", style: "font-size:12px;fill:var(--accent)" },
-    { id: "leaky_vs", type: "label", x: DETAIL_X + 210, y: 248, text: "vs Token Bucket: burst allowed", style: "font-size:12px;fill:var(--ink-soft)" },
-    { id: "leaky_vs2", type: "label", x: DETAIL_X + 210, y: 268, text: "in token bucket up to capacity", style: "font-size:12px;fill:var(--ink-soft)" },
-    { id: "leaky_vs3", type: "label", x: DETAIL_X + 210, y: 295, text: "but leaky enforces steady rate", style: "font-size:12px;fill:var(--hot)" },
+    { id: "leaky_title", type: "label", x: DETAIL_X + 210, y: 138, label: "Leaky Bucket", style: "font-size:14px;font-weight:700;fill:var(--ink)" },
+    { id: "leaky_desc", type: "label", x: DETAIL_X + 210, y: 165, label: "Requests enter at any rate", style: "font-size:12px;fill:var(--ink-soft)" },
+    { id: "leaky_desc2", type: "label", x: DETAIL_X + 210, y: 185, label: "but drain at constant rate.", style: "font-size:12px;fill:var(--ink-soft)" },
+    { id: "leaky_desc3", type: "label", x: DETAIL_X + 210, y: 218, label: "Smooths out bursts.", style: "font-size:12px;fill:var(--accent)" },
+    { id: "leaky_vs", type: "label", x: DETAIL_X + 210, y: 248, label: "vs Token Bucket: burst allowed", style: "font-size:12px;fill:var(--ink-soft)" },
+    { id: "leaky_vs2", type: "label", x: DETAIL_X + 210, y: 268, label: "in token bucket up to capacity", style: "font-size:12px;fill:var(--ink-soft)" },
+    { id: "leaky_vs3", type: "label", x: DETAIL_X + 210, y: 295, label: "but leaky enforces steady rate", style: "font-size:12px;fill:var(--hot)" },
 
     // Sliding window
     { id: "sliding_panel", type: "box", x: DETAIL_X, y: 360, w: 420, h: 200, rx: 10, style: "fill:var(--surface);stroke:var(--line);stroke-width:1.5" },
-    { id: "sliding_title", type: "label", x: DETAIL_X + 210, y: 378, text: "Sliding Window Counter", style: "font-size:14px;font-weight:700;fill:var(--ink)" },
-    { id: "sliding_desc", type: "label", x: DETAIL_X + 210, y: 405, text: "Count requests in rolling time window", style: "font-size:12px;fill:var(--ink-soft)" },
-    { id: "sliding_desc2", type: "label", x: DETAIL_X + 210, y: 428, text: "e.g. 100 req per 60 seconds", style: "font-size:12px;fill:var(--ink-soft)" },
+    { id: "sliding_title", type: "label", x: DETAIL_X + 210, y: 378, label: "Sliding Window Counter", style: "font-size:14px;font-weight:700;fill:var(--ink)" },
+    { id: "sliding_desc", type: "label", x: DETAIL_X + 210, y: 405, label: "Count requests in rolling time window", style: "font-size:12px;fill:var(--ink-soft)" },
+    { id: "sliding_desc2", type: "label", x: DETAIL_X + 210, y: 428, label: "e.g. 100 req per 60 seconds", style: "font-size:12px;fill:var(--ink-soft)" },
     { id: "sliding_bar", type: "vector", x: DETAIL_X + 20, y: 450, w: 380, h: 40, values: [0.3, 0.7, 0.5, 0.9, 0.6], style: "fill:var(--accent-2);rx:4" },
-    { id: "sliding_now", type: "label", x: DETAIL_X + 210, y: 520, text: "← 60s window → now", style: "font-size:11px;fill:var(--ink-soft)" },
-    { id: "sliding_more_accurate", type: "label", x: DETAIL_X + 210, y: 545, text: "More accurate than fixed window", style: "font-size:12px;fill:var(--good)" },
+    { id: "sliding_now", type: "label", x: DETAIL_X + 210, y: 520, label: "← 60s window → now", style: "font-size:11px;fill:var(--ink-soft)" },
+    { id: "sliding_more_accurate", type: "label", x: DETAIL_X + 210, y: 545, label: "More accurate than fixed window", style: "font-size:12px;fill:var(--good)" },
 
     // Headers panel
     { id: "headers_panel", type: "box", x: DETAIL_X, y: 580, w: 420, h: 120, rx: 10, style: "fill:var(--surface);stroke:var(--line);stroke-width:1.5" },
-    { id: "headers_title", type: "label", x: DETAIL_X + 210, y: 598, text: "Rate Limit Headers", style: "font-size:13px;font-weight:700;fill:var(--ink)" },
-    { id: "hdr1", type: "label", x: DETAIL_X + 30, y: 622, text: "X-RateLimit-Limit: 100", style: "font-size:11px;font-family:monospace;fill:var(--accent)" },
-    { id: "hdr2", type: "label", x: DETAIL_X + 30, y: 642, text: "X-RateLimit-Remaining: 43", style: "font-size:11px;font-family:monospace;fill:var(--good)" },
-    { id: "hdr3", type: "label", x: DETAIL_X + 30, y: 662, text: "X-RateLimit-Reset: 1719489600", style: "font-size:11px;font-family:monospace;fill:var(--warn)" },
-    { id: "hdr4", type: "label", x: DETAIL_X + 30, y: 682, text: "Retry-After: 15", style: "font-size:11px;font-family:monospace;fill:var(--hot)" },
+    { id: "headers_title", type: "label", x: DETAIL_X + 210, y: 598, label: "Rate Limit Headers", style: "font-size:13px;font-weight:700;fill:var(--ink)" },
+    { id: "hdr1", type: "label", x: DETAIL_X + 30, y: 622, label: "X-RateLimit-Limit: 100", style: "font-size:11px;font-family:monospace;fill:var(--accent)" },
+    { id: "hdr2", type: "label", x: DETAIL_X + 30, y: 642, label: "X-RateLimit-Remaining: 43", style: "font-size:11px;font-family:monospace;fill:var(--good)" },
+    { id: "hdr3", type: "label", x: DETAIL_X + 30, y: 662, label: "X-RateLimit-Reset: 1719489600", style: "font-size:11px;font-family:monospace;fill:var(--warn)" },
+    { id: "hdr4", type: "label", x: DETAIL_X + 30, y: 682, label: "Retry-After: 15", style: "font-size:11px;font-family:monospace;fill:var(--hot)" },
 
     // Burst capacity highlight
     { id: "burst_box", type: "box", x: BKX - 10, y: BKY - 10, w: BKW + 20, h: 50, rx: 6, style: "fill:none;stroke:var(--warn);stroke-width:2.5;stroke-dasharray:5,4" },
-    { id: "burst_lbl", type: "label", x: BKX + BKW / 2, y: BKY + 20, text: "Burst capacity = full bucket", style: "font-size:12px;fill:var(--warn);font-weight:600" },
+    { id: "burst_lbl", type: "label", x: BKX + BKW / 2, y: BKY + 20, label: "Burst capacity = full bucket", style: "font-size:12px;fill:var(--warn);font-weight:600" },
 
     // Empty bucket warning
     { id: "empty_warn", type: "box", x: BKX, y: BKY + BKH - 60, w: BKW, h: 50, rx: 6, style: "fill:var(--hot);opacity:0.15" },
-    { id: "empty_warn_lbl", type: "label", x: BKX + BKW / 2, y: BKY + BKH - 28, text: "Bucket empty → 429!", style: "font-size:13px;font-weight:700;fill:var(--hot)" },
+    { id: "empty_warn_lbl", type: "label", x: BKX + BKW / 2, y: BKY + BKH - 28, label: "Bucket empty → 429!", style: "font-size:13px;font-weight:700;fill:var(--hot)" },
 
     // Quiz
     { id: "quiz_panel", type: "box", x: 200, y: 140, w: 880, h: 440, rx: 12, style: "fill:var(--surface);stroke:var(--accent);stroke-width:2" },
-    { id: "quiz_title", type: "label", x: 640, y: 168, text: "Quiz — Rate Limiting", style: "font-size:18px;font-weight:700;fill:var(--ink)" },
-    { id: "q1", type: "label", x: 640, y: 220, text: "Q: O que acontece quando o bucket está vazio?", style: "font-size:14px;fill:var(--ink)" },
-    { id: "q1a", type: "label", x: 640, y: 255, text: "A: A requisição recebe 429 Too Many Requests", style: "font-size:13px;fill:var(--good)" },
-    { id: "q2", type: "label", x: 640, y: 305, text: "Q: Qual a diferença Token Bucket vs Leaky Bucket?", style: "font-size:14px;fill:var(--ink)" },
-    { id: "q2a", type: "label", x: 640, y: 340, text: "A: Token permite burst; Leaky drena em taxa constante", style: "font-size:13px;fill:var(--good)" },
-    { id: "q3", type: "label", x: 640, y: 390, text: "Q: O que o header X-RateLimit-Reset indica?", style: "font-size:14px;fill:var(--ink)" },
-    { id: "q3a", type: "label", x: 640, y: 425, text: "A: Timestamp Unix quando o limite é resetado", style: "font-size:13px;fill:var(--good)" },
-    { id: "q4", type: "label", x: 640, y: 475, text: "Q: Por que Sliding Window é mais preciso que Fixed Window?", style: "font-size:14px;fill:var(--ink)" },
-    { id: "q4a", type: "label", x: 640, y: 510, text: "A: Evita spike na virada do janela fixa", style: "font-size:13px;fill:var(--good)" },
+    { id: "quiz_title", type: "label", x: 640, y: 168, label: "Quiz — Rate Limiting", style: "font-size:18px;font-weight:700;fill:var(--ink)" },
+    { id: "q1", type: "label", x: 640, y: 220, label: "Q: O que acontece quando o bucket está vazio?", style: "font-size:14px;fill:var(--ink)" },
+    { id: "q1a", type: "label", x: 640, y: 255, label: "A: A requisição recebe 429 Too Many Requests", style: "font-size:13px;fill:var(--good)" },
+    { id: "q2", type: "label", x: 640, y: 305, label: "Q: Qual a diferença Token Bucket vs Leaky Bucket?", style: "font-size:14px;fill:var(--ink)" },
+    { id: "q2a", type: "label", x: 640, y: 340, label: "A: Token permite burst; Leaky drena em taxa constante", style: "font-size:13px;fill:var(--good)" },
+    { id: "q3", type: "label", x: 640, y: 390, label: "Q: O que o header X-RateLimit-Reset indica?", style: "font-size:14px;fill:var(--ink)" },
+    { id: "q3a", type: "label", x: 640, y: 425, label: "A: Timestamp Unix quando o limite é resetado", style: "font-size:13px;fill:var(--good)" },
+    { id: "q4", type: "label", x: 640, y: 475, label: "Q: Por que Sliding Window é mais preciso que Fixed Window?", style: "font-size:14px;fill:var(--ink)" },
+    { id: "q4a", type: "label", x: 640, y: 510, label: "A: Evita spike na virada do janela fixa", style: "font-size:13px;fill:var(--good)" },
 
     // Summary
     { id: "sum_panel", type: "box", x: 160, y: 100, w: 960, h: 520, rx: 12, style: "fill:var(--surface);stroke:var(--line);stroke-width:1.5" },
-    { id: "sum_title", type: "label", x: 640, y: 130, text: "Rate Limiting — Resumo", style: "font-size:20px;font-weight:700;fill:var(--ink)" },
+    { id: "sum_title", type: "label", x: 640, y: 130, label: "Rate Limiting — Resumo", style: "font-size:20px;font-weight:700;fill:var(--ink)" },
     { id: "s1", type: "box", x: 200, y: 160, w: 380, h: 150, rx: 8, style: "fill:var(--accent);opacity:0.12" },
-    { id: "s1t", type: "label", x: 390, y: 180, text: "Token Bucket", style: "font-size:13px;font-weight:700;fill:var(--accent)" },
-    { id: "s1d", type: "label", x: 390, y: 200, text: "Tokens acumulam até capacity", style: "font-size:12px;fill:var(--ink-soft)" },
-    { id: "s1d2", type: "label", x: 390, y: 220, text: "Burst permitido", style: "font-size:12px;fill:var(--ink-soft)" },
-    { id: "s1d3", type: "label", x: 390, y: 240, text: "Reposição a taxa fixa", style: "font-size:12px;fill:var(--ink-soft)" },
-    { id: "s1d4", type: "label", x: 390, y: 268, text: "Mais comum em APIs públicas", style: "font-size:12px;fill:var(--accent)" },
+    { id: "s1t", type: "label", x: 390, y: 180, label: "Token Bucket", style: "font-size:13px;font-weight:700;fill:var(--accent)" },
+    { id: "s1d", type: "label", x: 390, y: 200, label: "Tokens acumulam até capacity", style: "font-size:12px;fill:var(--ink-soft)" },
+    { id: "s1d2", type: "label", x: 390, y: 220, label: "Burst permitido", style: "font-size:12px;fill:var(--ink-soft)" },
+    { id: "s1d3", type: "label", x: 390, y: 240, label: "Reposição a taxa fixa", style: "font-size:12px;fill:var(--ink-soft)" },
+    { id: "s1d4", type: "label", x: 390, y: 268, label: "Mais comum em APIs públicas", style: "font-size:12px;fill:var(--accent)" },
     { id: "s2", type: "box", x: 700, y: 160, w: 380, h: 150, rx: 8, style: "fill:var(--accent-2);opacity:0.12" },
-    { id: "s2t", type: "label", x: 890, y: 180, text: "Sliding Window", style: "font-size:13px;font-weight:700;fill:var(--accent-2)" },
-    { id: "s2d", type: "label", x: 890, y: 200, text: "Janela deslizante no tempo", style: "font-size:12px;fill:var(--ink-soft)" },
-    { id: "s2d2", type: "label", x: 890, y: 220, text: "Sem spike na virada", style: "font-size:12px;fill:var(--ink-soft)" },
-    { id: "s2d3", type: "label", x: 890, y: 240, text: "Mais preciso, mais memória", style: "font-size:12px;fill:var(--ink-soft)" },
-    { id: "s2d4", type: "label", x: 890, y: 268, text: "Implementado no Redis tipicamente", style: "font-size:12px;fill:var(--accent-2)" },
+    { id: "s2t", type: "label", x: 890, y: 180, label: "Sliding Window", style: "font-size:13px;font-weight:700;fill:var(--accent-2)" },
+    { id: "s2d", type: "label", x: 890, y: 200, label: "Janela deslizante no tempo", style: "font-size:12px;fill:var(--ink-soft)" },
+    { id: "s2d2", type: "label", x: 890, y: 220, label: "Sem spike na virada", style: "font-size:12px;fill:var(--ink-soft)" },
+    { id: "s2d3", type: "label", x: 890, y: 240, label: "Mais preciso, mais memória", style: "font-size:12px;fill:var(--ink-soft)" },
+    { id: "s2d4", type: "label", x: 890, y: 268, label: "Implementado no Redis tipicamente", style: "font-size:12px;fill:var(--accent-2)" },
     { id: "s3", type: "box", x: 200, y: 340, w: 880, h: 100, rx: 8, style: "fill:var(--good);opacity:0.1" },
-    { id: "s3t", type: "label", x: 640, y: 360, text: "Por que Rate Limiting?", style: "font-size:13px;font-weight:700;fill:var(--good)" },
-    { id: "s3d", type: "label", x: 640, y: 382, text: "Protege contra abuso, DoS, e esgotamento de recursos downstream", style: "font-size:12px;fill:var(--ink-soft)" },
-    { id: "s3d2", type: "label", x: 640, y: 402, text: "Garante SLA para todos os clientes mesmo sob carga elevada", style: "font-size:12px;fill:var(--ink-soft)" },
-    { id: "s3d3", type: "label", x: 640, y: 422, text: "Implementação: API Gateway, middleware, Redis (INCR + EXPIRE)", style: "font-size:12px;fill:var(--good)" },
-    { id: "sum_note", type: "label", x: 640, y: 495, text: "Sempre retorne Retry-After para clientes saberem quando tentar novamente", style: "font-size:13px;font-weight:600;fill:var(--accent)" },
+    { id: "s3t", type: "label", x: 640, y: 360, label: "Por que Rate Limiting?", style: "font-size:13px;font-weight:700;fill:var(--good)" },
+    { id: "s3d", type: "label", x: 640, y: 382, label: "Protege contra abuso, DoS, e esgotamento de recursos downstream", style: "font-size:12px;fill:var(--ink-soft)" },
+    { id: "s3d2", type: "label", x: 640, y: 402, label: "Garante SLA para todos os clientes mesmo sob carga elevada", style: "font-size:12px;fill:var(--ink-soft)" },
+    { id: "s3d3", type: "label", x: 640, y: 422, label: "Implementação: API Gateway, middleware, Redis (INCR + EXPIRE)", style: "font-size:12px;fill:var(--good)" },
+    { id: "sum_note", type: "label", x: 640, y: 495, label: "Sempre retorne Retry-After para clientes saberem quando tentar novamente", style: "font-size:13px;font-weight:600;fill:var(--accent)" },
   ];
 
   const ALL_IDS = elements.map(e => e.id);
