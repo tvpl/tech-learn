@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { AbsoluteFill, continueRender, delayRender, useCurrentFrame, useVideoConfig } from "remotion";
-import { compileTimeline } from "@/core/timeline";
+import { AbsoluteFill, Audio, continueRender, delayRender, Sequence, useCurrentFrame, useVideoConfig } from "remotion";
+import { compileTimeline, type Timeline } from "@/core/timeline";
 import type { Explainer } from "@/schema/explainer";
 import { FORMATS, type FormatId } from "@/schema/formats";
 import { Stage } from "@/stage/Stage";
@@ -11,12 +11,18 @@ import { prepareExplainer } from "@/stage/highlight";
  * `calculateMetadata` — o Remotion exige que as duas fases compartilhem o
  * mesmo tipo. `explainer` nasce ausente e é preenchido pelo calculateMetadata
  * (ver Root.tsx) antes de qualquer frame ser de fato renderizado.
+ *
+ * `audio` é opcional (mapa sceneId → caminho absoluto do mp3 cacheado por
+ * `npm run tts`, montado em Node por `scripts/render.ts` — nunca calculado
+ * aqui, já que este componente roda no Chromium headless do Remotion, sem
+ * `node:fs`). Ausente/vazio = comportamento de sempre, sem áudio.
  */
 export type ExplainerCompositionProps = {
   slug: string;
   format: FormatId;
   theme?: "dark" | "light";
   explainer?: Explainer;
+  audio?: Record<string, string>;
 };
 
 /**
@@ -24,7 +30,7 @@ export type ExplainerCompositionProps = {
  * só que dirigido por `useCurrentFrame()` em vez do relógio do usuário — é
  * essa reutilização que garante paridade pixel-a-pixel entre site e vídeo.
  */
-export function ExplainerComposition({ explainer, format, theme = "dark" }: ExplainerCompositionProps) {
+export function ExplainerComposition({ explainer, format, theme = "dark", audio }: ExplainerCompositionProps) {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const timeline = useMemo(() => (explainer ? compileTimeline(explainer, format) : null), [explainer, format]);
@@ -57,6 +63,34 @@ export function ExplainerComposition({ explainer, format, theme = "dark" }: Expl
       <div style={{ width: spec.canvas.w, height: spec.canvas.h, transform: `scale(${scale})`, transformOrigin: "top left" }}>
         <Stage timeline={timeline} tMs={tMs} theme={theme} interactive={false} exporting />
       </div>
+      {audio ? <NarrationTracks timeline={timeline} audio={audio} fps={fps} /> : null}
     </AbsoluteFill>
+  );
+}
+
+/** Uma <Sequence>+<Audio> por cena com narração cacheada — silenciosa fora da própria janela. */
+function NarrationTracks({
+  timeline,
+  audio,
+  fps,
+}: {
+  timeline: Timeline;
+  audio: Record<string, string>;
+  fps: number;
+}) {
+  return (
+    <>
+      {timeline.scenes.map((scene) => {
+        const src = audio[scene.def.id];
+        if (!src) return null;
+        const from = Math.round((scene.startMs / 1000) * fps);
+        const durationInFrames = Math.max(1, Math.round(((scene.endMs - scene.startMs) / 1000) * fps));
+        return (
+          <Sequence key={scene.def.id} from={from} durationInFrames={durationInFrames}>
+            <Audio src={src} />
+          </Sequence>
+        );
+      })}
+    </>
   );
 }

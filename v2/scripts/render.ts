@@ -17,6 +17,7 @@ import { PDFDocument } from "pdf-lib";
 import { compileTimeline, fpsOf, posterTimeOf } from "../src/core/timeline";
 import { loaderFor, SLUGS } from "../src/content/index";
 import { FORMATS, type FormatId } from "../src/schema/formats";
+import { readAudioMap } from "./tts-cache";
 
 const ROOT = path.resolve(__dirname, "..");
 const ENTRY = path.join(ROOT, "src/remotion/index.ts");
@@ -33,12 +34,14 @@ function run(cmd: string, args: string[]) {
   execFileSync(cmd, args, { stdio: "inherit", cwd: ROOT });
 }
 
-function renderVideo(slug: string, fmt: "wide" | "reels" | "feed", outDir: string) {
+function renderVideo(slug: string, fmt: "wide" | "reels" | "feed", outDir: string, audio: Record<string, string>) {
   const compId = COMPOSITION_OF[fmt];
   const out = path.join(outDir, `${fmt}.mp4`);
+  // `audio` só tem entradas para cenas com narração já cacheada (ver `npm run
+  // tts`) — vazio na ausência de cache, sem regressão (vídeo sai igual a antes).
   run("npx", [
     "remotion", "render", ENTRY, compId, out,
-    `--props=${JSON.stringify({ slug })}`,
+    `--props=${JSON.stringify({ slug, audio })}`,
     "--codec=h264", "--crf=18", "--overwrite",
   ]);
 }
@@ -109,13 +112,18 @@ async function main() {
   const outDir = path.join(ROOT, "out", slug);
   mkdirSync(outDir, { recursive: true });
 
+  const loader = loaderFor(slug)!;
+  const explainer = await loader();
+  const audio = readAudioMap(slug, explainer.scenes.map((s) => s.id));
+  if (Object.keys(audio).length > 0) console.log(`🔊 narração cacheada: ${Object.keys(audio).join(", ")}`);
+
   const todo: Exclude<ExportFormat, "all">[] =
     formatArg === "all" ? ["wide", "reels", "feed", "gif", "carousel"] : [formatArg];
 
   for (const fmt of todo) {
     if (fmt === "gif") renderGif(slug, outDir);
     else if (fmt === "carousel") await renderCarousel(slug, outDir);
-    else renderVideo(slug, fmt, outDir);
+    else renderVideo(slug, fmt, outDir, audio);
   }
 
   console.log(`\nPronto — arquivos em ${outDir}`);
