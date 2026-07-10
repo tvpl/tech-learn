@@ -178,7 +178,7 @@ export function Player({ explainer }: { explainer: Explainer }) {
 
         <main className="relative flex flex-1 items-center justify-center overflow-hidden p-4">
           {ready ? (
-            <div className="aspect-[16/9] w-full max-w-5xl" style={{ containerType: "inline-size" }}>
+            <div className="aspect-[16/9] w-full max-w-5xl overflow-hidden" style={{ containerType: "inline-size" }}>
               <div
                 style={{
                   width: 1600,
