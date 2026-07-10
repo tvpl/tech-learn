@@ -1,0 +1,27 @@
+/* Chrome do player (controles, quiz, sidebar) — CSS puro para casar com o
+ * tema do palco (não usa Tailwind: precisa das mesmas variáveis --tl-*). */
+
+.tl-quiz {
+  padding: 16px 18px;
+  background: var(--tl-panel);
+  border: 1px solid var(--tl-line);
+  border-radius: 14px;
+}
+.tl-quiz-q { font-weight: 700; font-size: 16px; margin-bottom: 12px; }
+.tl-quiz-options { display: flex; flex-direction: column; gap: 8px; }
+.tl-quiz-opt {
+  text-align: left;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--tl-line);
+  background: var(--tl-bg);
+  color: var(--tl-ink);
+  cursor: pointer;
+  font-size: 14px;
+  transition: border-color 0.15s, background 0.15s;
+}
+.tl-quiz-opt:hover:not(:disabled) { border-color: var(--tl-accent); }
+.tl-quiz-correct { border-color: var(--tl-good); background: color-mix(in srgb, var(--tl-good) 15%, var(--tl-bg)); }
+.tl-quiz-wrong { border-color: var(--tl-hot); background: color-mix(in srgb, var(--tl-hot) 15%, var(--tl-bg)); }
+.tl-quiz-disabled { opacity: 0.55; }
+.tl-quiz-explain { margin-top: 12px; font-size: 13.5px; color: var(--tl-ink-soft); line-height: 1.5; }

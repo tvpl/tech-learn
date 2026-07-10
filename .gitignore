@@ -3,3 +3,7 @@ package-lock.json
 .DS_Store
 /screenshots/
 *.log
+
+# v2/ é um pacote npm independente e precisa do próprio lockfile versionado
+# (o CI da v2 roda `npm ci` a partir dele).
+!/v2/package-lock.json

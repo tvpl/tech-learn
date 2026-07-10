@@ -22,6 +22,11 @@ diagrama). Criar/alterar um diagrama = mexer **só** no arquivo de dados dele.
 **Não edite o motor para adicionar conteúdo de um diagrama específico.** Mudança no
 motor só se for um recurso genérico que beneficie todos os explicadores.
 
+> Existe também uma **v2** em Next.js (`v2/`), com motor próprio e dirigido por
+> tempo (paridade web + export de vídeo social). É um pacote independente com
+> seu próprio `v2/AGENTS.md` — leia-o antes de mexer em `v2/`. Este arquivo aqui
+> é só sobre a v1 (raiz do repo).
+
 ---
 
 ## 2. Mapa de arquivos
@@ -159,8 +164,8 @@ sobreposição visual. Ao mexer em posições, raciocine sobre as coordenadas.
 
 ## 7. Git e PRs
 
-- Branch de trabalho atual: `claude/transformer-network-animation-iaq161`.
-- `node_modules/` e `package-lock.json` estão no `.gitignore` — não commite.
+- `node_modules/` e `package-lock.json` estão no `.gitignore` — não commite
+  (exceção: `v2/package-lock.json`, versionado de propósito — ver `v2/AGENTS.md`).
 - Commits descritivos. **Só** abra PR se o usuário pedir explicitamente.
 - Não faça deploy nem mude settings sem combinar.
 
