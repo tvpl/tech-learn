@@ -5,9 +5,13 @@ export default defineConfig({
   timeout: 30_000,
   fullyParallel: true,
   retries: process.env.CI ? 1 : 0,
+  reporter: process.env.CI ? [["list"], ["html", { open: "never" }]] : "list",
   use: {
     baseURL: "http://localhost:4173",
     trace: "retain-on-failure",
+    // fixo p/ os snapshots de tests/e2e/visual.spec.ts serem reprodutíveis
+    // (o palco escala via container query — viewport diferente = pixels diferentes).
+    viewport: { width: 1400, height: 900 },
   },
   webServer: {
     // NEXT_PUBLIC_BASE_PATH="" força basePath vazio mesmo dentro do CI (onde
