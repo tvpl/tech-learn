@@ -366,8 +366,9 @@
       }));
       if (def.fill) g.querySelector(".xp-shape").style.fill = def.fill;
       if (def.stroke) g.querySelector(".xp-shape").style.stroke = def.stroke;
+      if (def.style) g.querySelector(".xp-shape").style.cssText += ";" + def.style;
       const cx = def.x + w / 2;
-      const lines = Array.isArray(def.label) ? def.label : (def.label != null ? [def.label] : []);
+      const lines = Array.isArray(def.label) ? def.label : (def.label != null ? def.label.split("\n") : []);
       const total = lines.length;
       lines.forEach((ln, k) => {
         const t = svg("text", {
@@ -386,6 +387,7 @@
         x: def.x, y: def.y, "text-anchor": def.anchor || "start",
       });
       if (def.size) t.style.fontSize = def.size + "px";
+      if (def.style) t.style.cssText += ";" + def.style;
       t.textContent = def.label || "";
       g.appendChild(t);
     }

@@ -9,10 +9,10 @@
   const LY1 = 80, LY2 = H - 40;   // lifeline Y range
 
   function box(id, x, y, w, h, text, color) {
-    return { id, type: 'box', x, y, w, h, text, color };
+    return { id, type: 'box', x, y, w, h, label: text, stroke: color };
   }
   function lbl(id, x, y, text, color) {
-    return { id, type: 'label', x, y, text, color: color || 'var(--muted)', fontSize: 12 };
+    return { id, type: 'label', x, y, label: text, style: `fill:${color || 'var(--muted)'}`, size: 12 };
   }
   function lifeline(id, x) {
     return { id, type: 'arrow', x1: x, y1: LY1 + COL_H, x2: x, y2: LY2, noHead: true, dashed: true, color: 'var(--line)' };
@@ -21,7 +21,7 @@
     const mid = (x1 + x2) / 2;
     return [
       { id, type: 'arrow', x1, y1: y, x2, y2: y, color: color || 'var(--accent)' },
-      { id: id + '_l', type: 'label', x: mid, y: y - 12, text, color: color || 'var(--accent)', fontSize: 11 },
+      { id: id + '_l', type: 'label', x: mid, y: y - 12, label: text, style: `fill:${color || 'var(--accent)'}`, size: 11 },
     ];
   }
 

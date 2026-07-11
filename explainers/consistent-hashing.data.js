@@ -2,15 +2,15 @@
   const W = 1280, H = 720;
 
   function box(id, x, y, w, h, text, color) {
-    return { id, type: 'box', x, y, w, h, text, color };
+    return { id, type: 'box', x, y, w, h, label: text, stroke: color };
   }
   function lbl(id, x, y, text, color) {
-    return { id, type: 'label', x, y, text, color: color || 'var(--muted)', fontSize: 12 };
+    return { id, type: 'label', x, y, label: text, style: `fill:${color || 'var(--muted)'}`, size: 12 };
   }
   function arr(id, x1, y1, x2, y2, text, color) {
     return [
       { id, type: 'arrow', x1, y1, x2, y2, color: color || 'var(--accent)' },
-      { id: id + '_l', type: 'label', x: (x1 + x2) / 2, y: (y1 + y2) / 2 - 12, text, color: color || 'var(--accent)', fontSize: 11 },
+      { id: id + '_l', type: 'label', x: (x1 + x2) / 2, y: (y1 + y2) / 2 - 12, label: text, style: `fill:${color || 'var(--accent)'}`, size: 11 },
     ];
   }
 

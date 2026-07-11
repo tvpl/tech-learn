@@ -24,8 +24,10 @@
  * @property {string} [className]   Classe CSS extra.
  * @property {number} [x] @property {number} [y]
  * @property {number} [w] @property {number} [h] @property {number} [rx]
- * @property {string|string[]} [label]  Texto (string ou linhas).
+ * @property {string|string[]} [label]  Texto (string, linhas, ou string com "\n").
  * @property {string} [fill] @property {string} [stroke]
+ * @property {string} [style]       CSS bruto extra (escape hatch genérico; prefira
+ *                                  fill/stroke/size/anchor quando cobrirem o caso).
  * @property {boolean} [mono] @property {boolean} [sub]
  * @property {number} [size]        Tamanho de fonte (label).
  * @property {"start"|"middle"|"end"} [anchor]  Alinhamento (label).
