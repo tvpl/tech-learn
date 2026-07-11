@@ -62,6 +62,7 @@
       this.root.innerHTML = "";
       try { this._baseTitle = document.title; } catch {}
       this._applyTheme(store.get("xp-theme", "dark"));
+      this._applyBalloonAlpha(parseFloat(store.get("xp-balloon-alpha", "0.9")));
 
       // cabeçalho + ferramentas (tema, link, apresentação)
       const head = el("header", { class: "xp-header" });
@@ -72,16 +73,21 @@
       this.btnMap = el("button", { class: "xp-icon", title: "Minimapa (m)", "aria-label": "Mostrar ou ocultar o minimapa" }, "🗺️");
       this.btnLink = el("button", { class: "xp-icon", title: "Copiar link desta cena", "aria-label": "Copiar link desta cena" }, "🔗");
       this.btnFull = el("button", { class: "xp-icon", title: "Modo apresentação (f)", "aria-label": "Entrar no modo apresentação" }, "⛶");
+      this.btnPeek = el("button", { class: "xp-icon", title: "Espiar diagrama (tecla v)", "aria-label": "Mostrar diagrama sem os balões", "aria-pressed": "false" }, "👁️");
+      this.btnOpacity = el("button", { class: "xp-icon", title: "Transparência do balão", "aria-label": "Ajustar transparência do balão", "aria-expanded": "false" }, "🎚️");
       this.btnHelp = el("button", { class: "xp-icon", title: "Atalhos de teclado (?)", "aria-label": "Mostrar atalhos de teclado" }, "⌨️");
       const home = el("a", { class: "xp-home", href: this.d.homeHref || "../index.html" }, "↩ Todos");
       this.btnTheme.addEventListener("click", () => this._toggleTheme());
       this.btnMap.addEventListener("click", () => this._toggleMinimap());
       this.btnLink.addEventListener("click", () => this._copyLink());
       this.btnFull.addEventListener("click", () => this._togglePresent());
+      this.btnPeek.addEventListener("click", () => this._togglePeek());
+      this.btnOpacity.addEventListener("click", () => this._toggleOpacity());
       this.btnHelp.addEventListener("click", () => this._toggleHelp());
-      tools.append(this.btnTheme, this.btnMap, this.btnLink, this.btnFull, this.btnHelp, home);
+      tools.append(this.btnTheme, this.btnMap, this.btnLink, this.btnFull, this.btnPeek, this.btnOpacity, this.btnHelp, home);
       head.appendChild(tools);
       this.root.appendChild(head);
+      this._buildOpacityPanel(head);
 
       // índice lateral (acessível por teclado)
       const side = el("aside", { class: "xp-side" });
@@ -160,14 +166,18 @@
       // teclado
       this._onKey = (e) => {
         if (e.target && /^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;
-        // Esc fecha a ajuda (e só ela) antes de qualquer outro atalho
+        // Esc fecha a ajuda/painel de opacidade (e só eles) antes de qualquer outro atalho
         if (e.key === "Escape" && this.root.classList.contains("show-help")) { this._toggleHelp(false); return; }
+        if (e.key === "Escape" && this.root.classList.contains("show-opacity")) { this._toggleOpacity(false); return; }
         if (e.key === "ArrowRight") this.next();
         else if (e.key === "ArrowLeft") this.prev();
         else if (e.key === " ") { e.preventDefault(); this.togglePlay(); }
         else if (e.key === "f") this._togglePresent();
         else if (e.key === "m") this._toggleMinimap();
         else if (e.key === "d") this._toggleDebug();
+        else if (e.key === "v") this._togglePeek();
+        else if (e.key === "[") this._nudgeBalloonAlpha(-0.05);
+        else if (e.key === "]") this._nudgeBalloonAlpha(0.05);
         else if (e.key === "?" || e.key === "h") this._toggleHelp();
         else if (e.key === "+" || e.key === "=") this._zoomBy(1.2);
         else if (e.key === "-" || e.key === "_") this._zoomBy(1 / 1.2);
@@ -179,6 +189,10 @@
       // deep-link: navegação por #cena=N
       this._onHash = () => { const idx = this._readHash(); if (idx !== this.i) this.go(idx, true); };
       window.addEventListener("hashchange", this._onHash);
+
+      // reposiciona o balão se a janela mudar de tamanho
+      this._onResize = () => this._repositionBalloon();
+      window.addEventListener("resize", this._onResize);
 
       // contexto exposto aos hooks enter() das cenas
       this.ctx = {
@@ -543,7 +557,7 @@
       const b = s.balloon || {};
       const node = el("div", { class: "xp-balloon" + (s.quiz ? " is-quiz" : "") });
       let html = "";
-      if (s.title) html += `<h3><span class="xp-badge">${this.i + 1}</span>${s.title}<span class="xp-drag-grip" aria-hidden="true">⠿</span></h3>`;
+      if (s.title) html += `<h3><span class="xp-badge">${this.i + 1}</span>${s.title}<button type="button" class="xp-balloon-collapse" aria-label="Recolher ou expandir balão" title="Recolher/expandir">▾</button><span class="xp-drag-grip" aria-hidden="true">⠿</span></h3>`;
       if (b.text) html += `<p>${b.text}</p>`;
       if (b.why) html += `<div class="xp-why">${b.why}</div>`;
       node.innerHTML = html;
@@ -554,6 +568,7 @@
       node._dragDx = 0;
       node._dragDy = 0;
       this._bindBalloonDrag(node);
+      this._bindBalloonCollapse(node);
       this.balloons.appendChild(node);
 
       requestAnimationFrame(() => {
@@ -620,6 +635,22 @@
         this._placeBalloon(node);
         e.stopPropagation();
       });
+    }
+
+    // recolhe o balão a uma pílula (só o título) pra não tampar o diagrama;
+    // nasce recolhido em telas estreitas (mesmo ponto de corte do CSS responsivo)
+    _bindBalloonCollapse(node) {
+      const btn = node.querySelector(".xp-balloon-collapse");
+      if (!btn) return;
+      btn.addEventListener("pointerdown", (e) => e.stopPropagation());
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        node.classList.toggle("is-collapsed");
+        this._placeBalloon(node);
+      });
+      try {
+        if (window.matchMedia("(max-width: 880px)").matches) node.classList.add("is-collapsed");
+      } catch {}
     }
 
     _buildQuiz(node, q, stepIdx) {
@@ -763,6 +794,42 @@
         else if (!on && document.fullscreenElement && document.exitFullscreen) document.exitFullscreen();
       } catch {}
     }
+    // esconde/mostra os balões sem sair da cena atual, pra ver o diagrama inteiro
+    _togglePeek(force) {
+      const on = force != null ? force : !this.root.classList.contains("is-peeking");
+      this.root.classList.toggle("is-peeking", on);
+      this.btnPeek.setAttribute("aria-pressed", String(on));
+      this.btnPeek.title = on ? "Voltar a mostrar os balões (tecla v)" : "Espiar diagrama (tecla v)";
+    }
+    // painel flutuante com o slider de transparência do balão
+    _buildOpacityPanel(head) {
+      this.opacityPanel = el("div", { class: "xp-opacity-pop", role: "dialog", "aria-label": "Transparência do balão" });
+      const label = el("label", null, "Transparência do balão");
+      this.opacitySlider = el("input", { type: "range", min: "55", max: "100", step: "5" });
+      this.opacitySlider.value = String(Math.round((this._balloonAlpha ?? .9) * 100));
+      this.opacitySlider.addEventListener("input", () => {
+        this._applyBalloonAlpha(this.opacitySlider.value / 100, true);
+      });
+      label.appendChild(this.opacitySlider);
+      this.opacityPanel.appendChild(label);
+      head.appendChild(this.opacityPanel);
+    }
+    _toggleOpacity(force) {
+      const on = force != null ? force : !this.root.classList.contains("show-opacity");
+      this.root.classList.toggle("show-opacity", on);
+      this.btnOpacity.setAttribute("aria-expanded", String(on));
+      if (on) this.opacitySlider?.focus();
+    }
+    _applyBalloonAlpha(v, persist) {
+      v = clamp(v, .55, 1);
+      this._balloonAlpha = v;
+      this.root.style.setProperty("--balloon-alpha", v);
+      if (this.opacitySlider) this.opacitySlider.value = String(Math.round(v * 100));
+      if (persist) store.set("xp-balloon-alpha", String(v));
+    }
+    _nudgeBalloonAlpha(delta) {
+      this._applyBalloonAlpha((this._balloonAlpha ?? .9) + delta, true);
+    }
     _copyLink() {
       const url = location.href;
       const done = () => { this.btnLink.textContent = "✓"; setTimeout(() => (this.btnLink.textContent = "🔗"), 1200); };
@@ -787,6 +854,8 @@
         ["f", "Modo apresentação (tela cheia)"],
         ["m", "Minimapa"],
         ["d", "Modo debug (grade + ids)"],
+        ["v", "Espiar diagrama (esconder balões)"],
+        ["[ ]", "Diminuir / aumentar transparência do balão"],
         ["+ −", "Zoom; arraste para mover"],
         ["0", "Resetar zoom"],
         ["? h", "Esta ajuda"],

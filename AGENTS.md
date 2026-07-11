@@ -92,15 +92,23 @@ Deep-link `#cena=N`, autoplay + barra, tema claro/escuro, modo apresentação,
 minimapa, **zoom/pan** (roda/pinça/teclado `+ - 0`, arrasto) e **swipe** no toque,
 **retomar** última cena (localStorage), **modo debug** (tecla `d`: grade + ids),
 **quiz** (`step.quiz`, lembra a resposta na sessão), **glossário** (`<span
-class="xp-term" data-tip="...">`), teclado (← → espaço f m d + − 0), `aria-live`,
-`prefers-reduced-motion`, validador que avisa no console sobre ids inexistentes.
+class="xp-term" data-tip="...">`), teclado (← → espaço f m d v [ ] + − 0),
+`aria-live`, `prefers-reduced-motion`, validador que avisa no console sobre ids
+inexistentes, reposicionamento do balão no `resize` da janela, e o "próximos
+explicadores" injetado por `engine/related.js` (mapa de relações por página,
+independente do motor).
 
 Cuidado ao mexer em balões: a posição é calculada em `_placeBalloon` via
 `getBoundingClientRect`/`getScreenCTM` (reflete zoom/pan). Não recrie o balão para
 reposicionar — use `_repositionBalloon()`. O balão é **translúcido** (fundo
-`rgba` + `backdrop-filter`) e **arrastável** pelo título (`h3`, ver
-`_bindBalloonDrag`) — o arraste soma um offset (`node._dragDx/_dragDy`) por
-cima da posição ancorada, e reseta sozinho a cada nova cena (novo `node`).
+`rgba` + `backdrop-filter`, alpha em `--balloon-alpha` — ajustável via botão 🎚️
+ou teclas `[`/`]`, persistido em `xp-balloon-alpha`) e **arrastável** pelo
+título (`h3`, ver `_bindBalloonDrag`) — o arraste soma um offset
+(`node._dragDx/_dragDy`) por cima da posição ancorada, e reseta sozinho a cada
+nova cena (novo `node`). Também dá pra **recolher** o balão a uma pílula
+(botão ▾ no título, `_bindBalloonCollapse`) — nasce recolhido em telas
+≤880px — e **esconder todos os balões** temporariamente com o botão 👁️/tecla
+`v` (classe `is-peeking` em `.xp-app`).
 
 ### 3.7 Tipos (autocomplete sem TypeScript)
 `engine/explainer.types.js` traz `@typedef`s do contrato. Comece um `.data.js` com

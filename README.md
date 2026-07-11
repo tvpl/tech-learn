@@ -37,6 +37,13 @@ dados. Isso é a prova de que a estrutura se reaproveita.
   (efeito vidro fosco) para não esconder o diagrama atrás dele, e dá para
   arrastá-lo pelo título (segure e mova) quando ele ainda assim atrapalhar a
   vista — duplo-clique no título volta ao lugar original.
+- 🎚️ **Opacidade ajustável** (botão no cabeçalho ou teclas `[`/`]`), persiste
+  entre sessões · 👁️ **espiar diagrama** (tecla `v`): esconde todos os balões
+  na hora, sem sair da cena · 🔽 **balão recolhível** (clique no título): vira
+  uma pílula compacta — nasce recolhido em telas estreitas.
+- 🧩 **Reposiciona sozinho** ao redimensionar a janela.
+- 🧭 **Links "Próximos →"**: barra com explicadores relacionados perto do fim
+  de cada leitura (`engine/related.js`).
 - ♿ **Acessível**: navegação por teclado, foco visível, `aria-live` e
   `prefers-reduced-motion`.
 - ✅ **Testado**: `npm test` percorre todas as cenas de todos os diagramas (jsdom).
@@ -62,12 +69,17 @@ o índice lateral de etapas, ou o teclado:
 | **m** | mostra/oculta o minimapa |
 | **+ / − / 0** | zoom: aproxima / afasta / reseta |
 | **d** | modo debug (grade de coordenadas + ids) — ajuda a posicionar elementos |
+| **v** | espiar diagrama (esconde os balões sem sair da cena) |
+| **[ / ]** | diminui / aumenta a transparência do balão |
 | **? / h** | mostra os atalhos de teclado (Esc fecha) |
 
 Com **mouse**: roda do mouse dá zoom, arrastar (com zoom) faz *pan*, duplo-clique
-reseta. No **toque**: *swipe* horizontal troca de cena, pinça dá zoom e arrastar faz
-*pan*. No cabeçalho há botões para **tema** (🌓), **minimapa** (🗺️), **copiar link
-da cena** (🔗), **apresentação** (⛶) e **atalhos** (⌨️). A última cena vista é
+reseta; segure o **título do balão** para arrastá-lo (duplo-clique nele recoloca no
+lugar) e clique no ▾ pra recolher/expandir. No **toque**: *swipe* horizontal troca
+de cena, pinça dá zoom e arrastar faz *pan*. No cabeçalho há botões para **tema**
+(🌓), **minimapa** (🗺️), **copiar link da cena** (🔗), **apresentação** (⛶),
+**espiar diagrama** (👁️), **opacidade do balão** (🎚️) e **atalhos** (⌨️). A última
+cena vista é
 **retomada** ao reabrir.
 
 ## 🧪 Testes
