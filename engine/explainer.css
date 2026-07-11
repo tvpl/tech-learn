@@ -24,7 +24,7 @@
   --radius: 14px;
   --radius-sm: 9px;
   --shadow: 0 18px 50px rgba(0, 0, 0, .45);
-  --balloon-bg: #f7f9ff;
+  --balloon-bg: rgba(247, 249, 255, .9);
   --balloon-ink: #16203d;
 
   --ease: cubic-bezier(.22, 1, .36, 1);
@@ -51,7 +51,7 @@
   --hot: #e0436a;
 
   --shadow: 0 18px 50px rgba(40, 60, 120, .18);
-  --balloon-bg: #ffffff;
+  --balloon-bg: rgba(255, 255, 255, .9);
   --balloon-ink: #16203d;
 }
 
@@ -245,6 +245,8 @@ body {
   position: absolute;
   max-width: 320px;
   background: var(--balloon-bg);
+  backdrop-filter: blur(10px) saturate(160%);
+  -webkit-backdrop-filter: blur(10px) saturate(160%);
   color: var(--balloon-ink);
   padding: 14px 16px;
   border-radius: 14px;
@@ -257,11 +259,26 @@ body {
   pointer-events: auto;
 }
 .xp-balloon.is-visible { opacity: 1; transform: translateY(0) scale(1); }
+.xp-balloon.is-dragging { transition: none; }
 .xp-balloon h3 {
-  margin: 0 0 6px;
+  margin: -4px -4px 6px;
   font-size: 14px;
   color: var(--accent);
   display: flex; align-items: center; gap: 7px;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  border-radius: 6px;
+  padding: 4px;
+}
+.xp-balloon h3:active { cursor: grabbing; }
+.xp-balloon.is-dragging h3 { cursor: grabbing; }
+.xp-balloon h3 .xp-drag-grip {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 1px;
+  opacity: .6;
 }
 .xp-balloon h3 .xp-badge {
   font-size: 11px;

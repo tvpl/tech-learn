@@ -15,6 +15,3 @@ Resumo de bolso (detalhes no `AGENTS.md`):
 - **PRs/deploy:** só quando o usuário pedir.
 
 Documentação para humanos (uso e contrato de dados): **[`README.md`](README.md)**.
-
-Há também uma **v2** (Next.js) em **[`v2/`](v2/)** — pacote independente, com
-seu próprio `v2/AGENTS.md` e `v2/README.md`. Este arquivo aqui é só sobre a v1.

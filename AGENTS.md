@@ -10,7 +10,9 @@ e rapidez. Leia isto **antes** de editar. Para a documentação voltada a humano
 
 `tech-learn` é uma coleção de **explicadores interativos** (diagramas animados que
 ensinam um conceito de tecnologia passo a passo, com balões explicativos). Hoje há
-5: **Transformer, HTTP, TCP/IP, Git, Hash map**.
+39, cobrindo IA/Agentes, Web/Protocolos, Segurança/Auth, Sistemas Distribuídos,
+Infra/Cloud, Mensageria/Async, Runtime e Algoritmos (lista completa e sempre
+atualizada em `index.html`).
 
 Stack: **HTML + CSS + JavaScript vanilla**. Sem framework, sem bundler, sem passo de
 build. Abre direto no navegador (`file://`) ou via `python3 -m http.server`. A única
@@ -21,11 +23,6 @@ Existe **um motor genérico** (`engine/`) e **vários arquivos de dados** (um po
 diagrama). Criar/alterar um diagrama = mexer **só** no arquivo de dados dele.
 **Não edite o motor para adicionar conteúdo de um diagrama específico.** Mudança no
 motor só se for um recurso genérico que beneficie todos os explicadores.
-
-> Existe também uma **v2** em Next.js (`v2/`), com motor próprio e dirigido por
-> tempo (paridade web + export de vídeo social). É um pacote independente com
-> seu próprio `v2/AGENTS.md` — leia-o antes de mexer em `v2/`. Este arquivo aqui
-> é só sobre a v1 (raiz do repo).
 
 ---
 
@@ -100,7 +97,10 @@ class="xp-term" data-tip="...">`), teclado (← → espaço f m d + − 0), `ari
 
 Cuidado ao mexer em balões: a posição é calculada em `_placeBalloon` via
 `getBoundingClientRect`/`getScreenCTM` (reflete zoom/pan). Não recrie o balão para
-reposicionar — use `_repositionBalloon()`.
+reposicionar — use `_repositionBalloon()`. O balão é **translúcido** (fundo
+`rgba` + `backdrop-filter`) e **arrastável** pelo título (`h3`, ver
+`_bindBalloonDrag`) — o arraste soma um offset (`node._dragDx/_dragDy`) por
+cima da posição ancorada, e reseta sozinho a cada nova cena (novo `node`).
 
 ### 3.7 Tipos (autocomplete sem TypeScript)
 `engine/explainer.types.js` traz `@typedef`s do contrato. Comece um `.data.js` com
@@ -164,8 +164,7 @@ sobreposição visual. Ao mexer em posições, raciocine sobre as coordenadas.
 
 ## 7. Git e PRs
 
-- `node_modules/` e `package-lock.json` estão no `.gitignore` — não commite
-  (exceção: `v2/package-lock.json`, versionado de propósito — ver `v2/AGENTS.md`).
+- `node_modules/` e `package-lock.json` estão no `.gitignore` — não commite.
 - Commits descritivos. **Só** abra PR se o usuário pedir explicitamente.
 - Não faça deploy nem mude settings sem combinar.
 

@@ -543,7 +543,7 @@
       const b = s.balloon || {};
       const node = el("div", { class: "xp-balloon" + (s.quiz ? " is-quiz" : "") });
       let html = "";
-      if (s.title) html += `<h3><span class="xp-badge">${this.i + 1}</span>${s.title}</h3>`;
+      if (s.title) html += `<h3><span class="xp-badge">${this.i + 1}</span>${s.title}<span class="xp-drag-grip" aria-hidden="true">⠿</span></h3>`;
       if (b.text) html += `<p>${b.text}</p>`;
       if (b.why) html += `<div class="xp-why">${b.why}</div>`;
       node.innerHTML = html;
@@ -551,6 +551,9 @@
       const place = (b.anchor && b.placement) || b.placement || "right";
       node.dataset.place = place;
       node._anchor = b.anchor;
+      node._dragDx = 0;
+      node._dragDy = 0;
+      this._bindBalloonDrag(node);
       this.balloons.appendChild(node);
 
       requestAnimationFrame(() => {
@@ -569,6 +572,8 @@
       else if (place === "left") { left = pt.x - bw - gap; top = pt.y - bh / 2; }
       else if (place === "top") { left = pt.x - bw / 2; top = pt.y - bh - gap; }
       else if (place === "bottom") { left = pt.x - bw / 2; top = pt.y + gap; }
+      left += node._dragDx || 0;
+      top += node._dragDy || 0;
       const rect = this.stage.getBoundingClientRect();
       left = clamp(left, 12, rect.width - bw - 12);
       top = clamp(top, 12, rect.height - bh - 12);
@@ -580,6 +585,41 @@
     _repositionBalloon() {
       const node = this.balloons.querySelector(".xp-balloon:not([data-leaving])");
       if (node) this._placeBalloon(node);
+    }
+
+    // arrastar o balão pelo cabeçalho (h3) para não atrapalhar a leitura do diagrama
+    _bindBalloonDrag(node) {
+      const handle = node.querySelector("h3");
+      if (!handle) return;
+      let drag = null;
+      handle.addEventListener("pointerdown", (e) => {
+        if (e.pointerType === "mouse" && e.button !== 0) return;
+        drag = { x: e.clientX, y: e.clientY, dx: node._dragDx || 0, dy: node._dragDy || 0 };
+        node.classList.add("is-dragging");
+        try { handle.setPointerCapture(e.pointerId); } catch {}
+        e.stopPropagation();
+      });
+      handle.addEventListener("pointermove", (e) => {
+        if (!drag) return;
+        node._dragDx = drag.dx + (e.clientX - drag.x);
+        node._dragDy = drag.dy + (e.clientY - drag.y);
+        this._placeBalloon(node);
+        e.stopPropagation();
+      });
+      const endDrag = (e) => {
+        if (!drag) return;
+        drag = null;
+        node.classList.remove("is-dragging");
+        e.stopPropagation();
+      };
+      handle.addEventListener("pointerup", endDrag);
+      handle.addEventListener("pointercancel", endDrag);
+      handle.addEventListener("dblclick", (e) => {
+        node._dragDx = 0;
+        node._dragDy = 0;
+        this._placeBalloon(node);
+        e.stopPropagation();
+      });
     }
 
     _buildQuiz(node, q, stepIdx) {
