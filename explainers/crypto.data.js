@@ -124,7 +124,9 @@
       balloon: {
         anchor: 'sym_bg', placement: 'right',
         text: 'Alice quer mandar mensagem secreta para Bob pela internet. O problema: como combinam a chave secreta sem que Eve (no meio) intercepte? Criptografia simétrica é rápida mas exige chave pré-compartilhada.',
-      },
+        deep: `<p>Esse é literalmente o problema que toda a criptografia moderna resolve, dividido em duas abordagens complementares: uma rápida mas que exige combinar um segredo antes (simétrica), outra mais lenta mas que não exige nenhum segredo prévio (assimétrica).</p>
+<div class="xp-example"><strong>O paradoxo de Alice e Bob</strong>Se Alice e Bob já tivessem um canal 100% seguro para combinar a chave secreta, eles não precisariam de criptografia — já poderiam trocar a mensagem direto por esse canal.</div>
+<p>É exatamente esse paradoxo que a criptografia assimétrica resolve (cenas seguintes): permite negociar um segredo compartilhado através de um canal público, mesmo com Eve escutando tudo.</p>` },
     },
     {
       title: 'Criptografia Simétrica: 1 chave, 2 operações',
@@ -135,7 +137,9 @@
         anchor: 'sym_bg', placement: 'right',
         text: 'A mesma chave cifra e decifra. AES é o padrão atual: 128-256 bits, acelerado por hardware (AES-NI). O modo importa muito: **GCM** é o correto para dados (AEAD = cifra + autentica em 1 passo).',
         why: 'ECB é inseguro porque blocos idênticos produzem ciphertext idêntico — padrões ficam visíveis (a "imagem do pinguim" do Linux).',
-      },
+        deep: `<p>O "modo de operação" de um block cipher como o AES importa tanto quanto a própria chave — o mesmo AES-256 pode ser seguro ou trivialmente quebrável dependendo do modo.</p>
+<div class="xp-bad"><strong>AES-ECB (não use)</strong>Cada bloco de 128 bits é cifrado de forma independente e idêntica — dois blocos de texto plano iguais viram dois blocos cifrados iguais. Dá pra ver a estrutura da imagem original numa foto cifrada em ECB.</div>
+<div class="xp-good"><strong>AES-GCM (use este)</strong>Combina um contador (nunca repete o mesmo padrão) com autenticação integrada — além de esconder padrões, detecta se alguém alterou o ciphertext.</div>` },
     },
     {
       title: 'AES-GCM: o modo correto para dados',
@@ -145,7 +149,11 @@
       balloon: {
         anchor: 'aes_bg', placement: 'right',
         text: '**GCM (Galois/Counter Mode)**: combina Counter Mode (stream cipher) com GHASH (MAC). AEAD = "Authenticated Encryption with Associated Data". Resultado: ciphertext autenticado — adulteração detectada imediatamente.',
-      },
+        deep: `<p>AEAD resolve dois problemas de uma vez: confidencialidade (ninguém lê sem a chave) e integridade (ninguém altera sem ser detectado) — sem AEAD, seria preciso implementar essas duas garantias separadamente, e é fácil errar nessa combinação.</p>
+<div class="xp-example"><strong>Saída do AES-GCM</strong>ciphertext = AES-GCM-Encrypt(plaintext, key, nonce)
+→ retorna: {ciphertext, auth_tag}
+Decifrar sem validar o auth_tag primeiro = vulnerabilidade grave</div>
+<p>Um erro comum e perigoso: reusar o mesmo nonce (número usado uma vez) duas vezes com a mesma chave — isso quebra completamente a segurança do GCM, permitindo recuperar o plaintext.</p>` },
     },
     {
       title: 'ChaCha20-Poly1305: quando não há AES-NI',
@@ -155,7 +163,10 @@
       balloon: {
         anchor: 'cha_bg', placement: 'right',
         text: 'Em dispositivos sem aceleração de hardware AES (ARM antigos, IoT), **ChaCha20** é mais rápido e igualmente seguro. Poly1305 é o MAC integrado. É o cipher suite padrão no **TLS 1.3 mobile** e no **WireGuard VPN**.',
-      },
+        deep: `<p>Antes de existir aceleração de hardware para AES (instrução AES-NI, presente em CPUs Intel/AMD desde ~2010), rodar AES em software puro era lento — especialmente em celulares antigos e microcontroladores. ChaCha20 foi desenhado para ser rápido em software puro, sem depender de hardware especializado.</p>
+<div class="xp-example"><strong>Onde aparece na prática</strong>TLS 1.3: cipher suite TLS_CHACHA20_POLY1305_SHA256
+WireGuard VPN: usa ChaCha20-Poly1305 como único cipher (por design, sem escolha)</div>
+<p>Hoje, com AES-NI onipresente em servidores e celulares modernos, a escolha entre AES-GCM e ChaCha20-Poly1305 é mais sobre política/compatibilidade do que performance — ambos são considerados igualmente seguros.</p>` },
     },
     {
       title: 'O Key Distribution Problem',
@@ -165,7 +176,12 @@
       balloon: {
         anchor: 'sym_con', placement: 'right',
         text: 'Alice e Bob precisam combinar a chave secreta **antecipadamente** por um canal já seguro. Mas se já têm um canal seguro, para que precisam de criptografia? A solução é usar **criptografia assimétrica** apenas para trocar a chave simétrica.',
-      },
+        deep: `<p>Esse problema foi considerado praticamente insolúvel até 1976, quando Diffie e Hellman publicaram um método para dois lados combinarem um segredo compartilhado trocando apenas informação pública — sem nunca transmitir a chave em si.</p>
+<div class="xp-example"><strong>Ideia (simplificada) do Diffie-Hellman</strong>Alice e Bob combinam publicamente uma "cor base"
+Cada um mistura sua "cor secreta" própria e manda o resultado pro outro
+Cada um mistura de novo com sua cor secreta → chegam à MESMA cor final
+Eve, vendo só as misturas trocadas, não consegue "desmisturar" a cor final</div>
+<p>Esse é o princípio por trás do ECDHE usado no handshake do TLS moderno — cada conexão HTTPS negocia uma chave de sessão nova sem nunca transmiti-la.</p>` },
     },
     {
       title: 'RSA: chaves públicas e privadas',
@@ -176,7 +192,13 @@
         anchor: 'asym_bg', placement: 'left',
         text: 'Bob publica sua **chave pública**. Alice cifra com ela. Só Bob (com a **chave privada**) consegue decifrar. A segurança do RSA depende da dificuldade de fatorar `n = p × q` sendo `p` e `q` primos muito grandes.',
         why: '2048 bits é o mínimo seguro; 4096 bits recomendado para chaves de longa duração.',
-      },
+        deep: `<p>A segurança do RSA se apoia numa assimetria computacional: multiplicar dois primos grandes é rápido, mas fatorar o resultado de volta nos dois primos originais é, na prática, inviável para números grandes o suficiente.</p>
+<div class="xp-example"><strong>RSA em números pequenos (didático, nunca use em produção)</strong>p=61, q=53 → n = p×q = 3233
+Chave pública: (e=17, n=3233)
+Chave privada: (d=2753, n=3233)
+Cifrar m=65: c = 65^17 mod 3233 = 2790
+Decifrar: m = 2790^2753 mod 3233 = 65 ✓</div>
+<p>Na prática, p e q têm centenas de dígitos — fatorar n de volta em p×q levaria mais tempo do que o esperado de vida do universo com os computadores clássicos atuais.</p>` },
     },
     {
       title: 'ECC: mesma segurança, chaves muito menores',
@@ -187,7 +209,10 @@
         anchor: 'ecc_bg', placement: 'left',
         text: '**Curva elíptica**: equação `y² = x³ + ax + b`. A chave é um ponto na curva. ECDH permite troca de chave segura. ECDSA assina. **Chave ECC de 256 bits = RSA de 3072 bits** — muito menor para mesma segurança. Padrão no TLS 1.3.',
         why: 'Post-quantum: RSA e ECC são vulneráveis ao algoritmo de Shor em computadores quânticos. NIST padronizou algoritmos PQC (Kyber, Dilithium) em 2024.',
-      },
+        deep: `<p>Chaves menores não são só uma questão de economia de espaço — elas significam handshakes TLS mais rápidos, menos dados trafegando e menos processamento, o que importa muito em escala (milhões de conexões HTTPS por segundo).</p>
+<div class="xp-good"><strong>Comparação de tamanho para segurança equivalente</strong>RSA 3072 bits ≈ ECC 256 bits ≈ AES 128 bits (nível de segurança)
+RSA 15360 bits ≈ ECC 521 bits ≈ AES 256 bits</div>
+<p>Curve25519 (usada em X25519 para troca de chave e Ed25519 para assinatura) é hoje a escolha padrão em protocolos modernos como Signal, SSH e TLS 1.3 — desenhada especificamente para evitar classes inteiras de erros de implementação que afetavam curvas mais antigas.</p>` },
     },
     {
       title: 'Hybrid Encryption: o melhor dos dois mundos',
@@ -198,7 +223,12 @@
       balloon: {
         anchor: 'hyb_bg', placement: 'top',
         text: 'Ninguém cifra dados grandes com RSA — é lento demais. A solução padrão: **gerar uma AES key aleatória (DEK)**, cifrar o payload com AES-GCM, e cifrar a DEK com a chave pública do destinatário. Isso é o que TLS, PGP e AWS KMS fazem.',
-      },
+        deep: `<p>É o padrão que praticamente toda comunicação segura na internet usa — a criptografia assimétrica nunca cifra o conteúdo real, só a chave que vai cifrar o conteúdo.</p>
+<div class="xp-example"><strong>Fluxo completo (simplificado do TLS)</strong>1. Cliente e servidor negociam uma AES key (DEK) via ECDHE
+2. (ou: remetente cifra a DEK com a chave pública do destinatário — caso PGP/JWE)
+3. Payload inteiro é cifrado com AES-GCM usando a DEK
+4. Destinatário recupera a DEK e decifra o payload</div>
+<p>O ganho de performance é enorme: cifrar 1 MB com AES-GCM leva microssegundos; com RSA puro, seria centenas de vezes mais lento — inviável para tráfego real.</p>` },
     },
     {
       title: 'Assinaturas Digitais: autenticidade + integridade',
@@ -209,7 +239,9 @@
         anchor: 'sig_bg', placement: 'left',
         text: 'Alice assina com **chave privada** — qualquer um pode verificar com sua **chave pública**. O `hash(msg)` garante que a mensagem não foi alterada. Usado em X.509 (TLS certs), JWT (RS256), Git commits assinados.',
         why: 'Ao contrário da cifração, na assinatura a privada ASSINA e a pública VERIFICA — o inverso do padrão de cifração.',
-      },
+        deep: `<p>Assinatura digital resolve um problema diferente de cifração: não é sobre esconder o conteúdo, é sobre provar quem escreveu algo e que ninguém alterou depois.</p>
+<div class="xp-bad"><strong>Erro conceitual comum</strong>Achar que cifrar uma mensagem com a chave privada "assina" ela — na prática, algoritmos de assinatura (RSA-PSS, ECDSA, EdDSA) são matematicamente distintos de cifração, mesmo usando o mesmo par de chaves em RSA clássico.</div>
+<div class="xp-good"><strong>Uso típico</strong>Um certificado TLS (X.509) é assinado pela CA (Autoridade Certificadora) — seu navegador verifica essa assinatura com a chave pública da CA, já embutida no sistema operacional.</div>` },
     },
     {
       title: 'Hash Functions: impressão digital one-way',
@@ -218,7 +250,10 @@
       balloon: {
         anchor: 'hash_bg', placement: 'right',
         text: '**SHA-256**: 256 bits, base do Bitcoin, X.509, TLS. **BLAKE3**: mais rápido, ideal para checksums. **HMAC**: hash com chave secreta (ex: JWT HS256). **MD5 e SHA-1 estão quebrados** — não usar para segurança, apenas para checksums não-críticos.',
-      },
+        deep: `<p>Uma boa função hash criptográfica precisa de três propriedades ao mesmo tempo — determinismo, unidirecionalidade e resistência a colisão — perder qualquer uma delas compromete todo sistema que depende dela.</p>
+<div class="xp-bad"><strong>Por que MD5/SHA-1 foram aposentados</strong>Pesquisadores encontraram formas de gerar dois inputs diferentes com o mesmo hash MD5/SHA-1 (colisão) — o que quebra qualquer sistema que confie no hash como "impressão digital única" do conteúdo (ex.: verificação de certificados, assinaturas de commit).</div>
+<div class="xp-example"><strong>HMAC vs hash simples</strong>hash(msg) — qualquer um pode recalcular, não prova quem mandou
+HMAC(secret, msg) — só quem tem o secret consegue gerar/verificar → prova autoria e integridade juntas</div>` },
     },
     {
       title: 'Key Derivation Functions: senhas → chaves fortes',
@@ -228,7 +263,10 @@
         anchor: 'kdf_bg', placement: 'left',
         text: 'Senhas são fracas e previsíveis. KDFs as transformam em chaves criptograficamente fortes: **salt** (único por usuário, evita rainbow tables) + **iterations** (custo alto dificulta brute-force). **Argon2id** é o padrão moderno (OWASP recomendado).',
         why: 'bcrypt e Argon2 são memory-hard: mesmo com GPUs/ASICs, o ataque de força bruta fica caro porque requer muita RAM.',
-      },
+        deep: `<p>KDFs existem porque humanos escolhem senhas previsíveis (padrões, palavras do dicionário, datas) — usar a senha direto como chave criptográfica herdaria essa fraqueza; um KDF injeta trabalho computacional deliberado para tornar a força bruta cara mesmo contra senhas fracas.</p>
+<div class="xp-bad"><strong>Nunca faça isso</strong>Guardar senha em texto puro, ou aplicar um hash rápido único como SHA-256(senha) — GPUs modernas calculam bilhões de SHA-256 por segundo, tornando brute-force viável.</div>
+<div class="xp-good"><strong>Faça isso</strong>Argon2id(senha, salt_único, custo_de_memória_e_cpu) — cada tentativa de brute-force custa memória e tempo real, tornando ataques em massa economicamente inviáveis.</div>
+<p>O "salt" único por usuário existe para impedir rainbow tables (tabelas pré-computadas de hash→senha): sem salt, quebrar UMA senha comum quebra todas as contas que a usam.</p>` },
     },
     {
       title: 'Quiz',

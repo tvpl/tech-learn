@@ -294,10 +294,10 @@ AAS = 8, maior parte em "Lock:tuple" → contenção de lock, revisar transaçõ
     },
     {
       title: "Resumo",
-      text: "RDS = banco relacional gerenciado com Multi-AZ para HA, Read Replicas para escala, PITR para recovery, e segurança na VPC.",
-      why: "",
-      balloonAnchor: { x: 640, y: 680 },
-      placement: "top",
+      balloon: {
+        anchor: { x: 640, y: 680 }, placement: "top",
+        text: "RDS = banco relacional gerenciado com Multi-AZ para HA, Read Replicas para escala, PITR para recovery, e segurança na VPC.",
+      },
       enter(ctx) {
         ALL_IDS.forEach(id => ctx.hide(id));
         ctx.show("sum_panel"); ctx.show("sum_title");

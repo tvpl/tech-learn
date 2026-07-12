@@ -199,10 +199,14 @@
   const steps = [
     {
       title: "Platform Threads: 1:1 com OS Threads",
-      text: "Cada Thread Java tradicional mapeia 1:1 para um OS thread. Criar uma thread cria um OS thread com ~1 MB de stack alocada fixamente.",
-      why: "Criação cara, memória cara, context switch cara. Em aplicações I/O-bound, a maioria dos threads fica bloqueada esperando.",
-      balloonAnchor: { x: LEFT_X + LEFT_W / 2, y: COL_Y + 480 },
-      placement: "right",
+      balloon: {
+        anchor: { x: LEFT_X + LEFT_W / 2, y: COL_Y + 480 }, placement: "right",
+        text: "Cada Thread Java tradicional mapeia 1:1 para um OS thread. Criar uma thread cria um OS thread com ~1 MB de stack alocada fixamente.",
+        why: "Criação cara, memória cara, context switch cara. Em aplicações I/O-bound, a maioria dos threads fica bloqueada esperando.",
+        deep: `<p>Esse mapeamento 1:1 é herdado do desenho original de threads em Java (anos 90) — na época, servidores lidavam com dezenas ou centenas de conexões, não dezenas de milhares. O modelo simplesmente não foi desenhado para a escala de I/O concorrente que APIs web modernas exigem.</p>
+<div class="xp-example"><strong>Criando uma Platform Thread</strong>Thread t = new Thread(() -> handleRequest(socket));
+t.start(); // aloca ~1 MB de stack no OS, cria um kernel thread real</div>
+<p>Cada thread criada é uma alocação cara no kernel do sistema operacional — diferente de um objeto Java comum, que o GC gerencia livremente.</p>` },
       enter(ctx) {
         showBase(ctx);
         PT_BOXES.forEach(e => ctx.show(e.id));
@@ -211,10 +215,13 @@
     },
     {
       title: "OS Thread é Pesado: ~1MB Stack + Context Switch",
-      text: "Uma OS thread ocupa ~1 MB de stack. Context switch requer syscall (ring 0), save/restore de registradores. Com 1000 threads = 1 GB só de stack.",
-      why: "Servidores com milhares de conexões simultâneas precisam de thread pool muito grande — ineficiente.",
-      balloonAnchor: "os_left",
-      placement: "right",
+      balloon: {
+        anchor: "os_left", placement: "right",
+        text: "Uma OS thread ocupa ~1 MB de stack. Context switch requer syscall (ring 0), save/restore de registradores. Com 1000 threads = 1 GB só de stack.",
+        why: "Servidores com milhares de conexões simultâneas precisam de thread pool muito grande — ineficiente.",
+        deep: `<p>O "context switch caro" não é só uma questão de velocidade — é uma troca de modo de execução: o processador sai do modo usuário, entra no modo kernel (ring 0), salva todos os registradores da thread atual e carrega os da próxima. Isso acontece toda vez que o scheduler do OS decide trocar de thread.</p>
+<div class="xp-bad"><strong>Custo em escala</strong>1.000 Platform Threads bloqueadas em I/O = ~1 GB de RAM só em stacks, a maior parte ociosa esperando resposta de rede/disco.</div>
+<p>É esse desperdício de memória e CPU em threads que só estão "esperando" que motivou a criação de Virtual Threads.</p>` },
       enter(ctx) {
         showBase(ctx);
         PT_BOXES.forEach(e => ctx.show(e.id));
@@ -223,10 +230,16 @@
     },
     {
       title: "Thread Pool Esgota sob Carga I/O",
-      text: "Com thread pool de 200 e 1000 requests simultâneos, 800 ficam na fila esperando. Se cada request faz query de banco (50ms), throughput máximo ≈ 200/0.05 = 4000 req/s.",
-      why: "A solução tradicional: reactive programming (WebFlux) — mas código difícil de ler, debugar e manter.",
-      balloonAnchor: `pt4_box`,
-      placement: "right",
+      balloon: {
+        anchor: "pt4_box", placement: "right",
+        text: "Com thread pool de 200 e 1000 requests simultâneos, 800 ficam na fila esperando. Se cada request faz query de banco (50ms), throughput máximo ≈ 200/0.05 = 4000 req/s.",
+        why: "A solução tradicional: reactive programming (WebFlux) — mas código difícil de ler, debugar e manter.",
+        deep: `<p>O throughput fica limitado pelo tamanho do pool, não pela capacidade real do banco ou da rede — mesmo que o banco aguente 50.000 req/s, o servidor Java não consegue explorar isso com só 200 threads.</p>
+<div class="xp-bad"><strong>Reactive programming (WebFlux) resolve, mas...</strong>Mono.fromCallable(() -> fetchUser(id))
+  .flatMap(user -> fetchOrders(user.id))
+  .doOnError(e -> log.error(...))
+  .subscribe(...)</div>
+<p>Código reativo evita bloquear threads, mas troca um problema por outro: stack traces ficam ilegíveis, debugar fluxos assíncronos encadeados é difícil, e qualquer biblioteca "blocking" no meio do caminho quebra o modelo inteiro.</p>` },
       enter(ctx) {
         showBase(ctx);
         PT_BOXES.forEach(e => ctx.show(e.id));
@@ -235,10 +248,14 @@
     },
     {
       title: "Virtual Threads (Java 21 / Project Loom)",
-      text: "Virtual Threads são threads gerenciadas pela JVM, não pelo OS. São leves: stack começa em KB e cresce sob demanda via GC. Você pode ter milhões delas.",
-      why: "Código blocking simples (JDBC, HTTP client) com throughput de reactive. Melhor de dois mundos.",
-      balloonAnchor: { x: RIGHT_X + RIGHT_W / 2, y: COL_Y + 380 },
-      placement: "left",
+      balloon: {
+        anchor: { x: RIGHT_X + RIGHT_W / 2, y: COL_Y + 380 }, placement: "left",
+        text: "Virtual Threads são threads gerenciadas pela JVM, não pelo OS. São leves: stack começa em KB e cresce sob demanda via GC. Você pode ter milhões delas.",
+        why: "Código blocking simples (JDBC, HTTP client) com throughput de reactive. Melhor de dois mundos.",
+        deep: `<p>A ideia central do Project Loom: manter a API familiar de <code>Thread</code> (código sequencial, blocking, fácil de debugar) mas trocar a implementação por baixo — a JVM passa a gerenciar o agendamento, não mais o kernel do OS.</p>
+<div class="xp-good"><strong>Mesmo código, escala diferente</strong>Executors.newVirtualThreadPerTaskExecutor()
+  .submit(() -> handleRequest(socket)); // 1 VThread por request, sem limite de pool</div>
+<p>O código de negócio não muda nada — continua sendo JDBC, HttpClient, chamadas bloqueantes normais. Só a forma como a JVM executa essas threads por baixo dos panos é diferente.</p>` },
       enter(ctx) {
         showBase(ctx);
         VT_BOXES.forEach(e => ctx.show(e.id));
@@ -251,10 +268,14 @@
     },
     {
       title: "Virtual Thread ≠ OS Thread",
-      text: "Uma Virtual Thread é um objeto Java. A JVM mantém sua stack heap (não stack OS). Criar uma VThread = alocar um objeto leve, não syscall.",
-      why: "Thread.ofVirtual().start(() → ...) cria uma VThread em microssegundos, sem syscall. Crie milhões sem problema.",
-      balloonAnchor: { x: RIGHT_X + RIGHT_W / 2, y: COL_Y + 380 },
-      placement: "left",
+      balloon: {
+        anchor: { x: RIGHT_X + RIGHT_W / 2, y: COL_Y + 380 }, placement: "left",
+        text: "Uma Virtual Thread é um objeto Java. A JVM mantém sua stack heap (não stack OS). Criar uma VThread = alocar um objeto leve, não syscall.",
+        why: "Thread.ofVirtual().start(() → ...) cria uma VThread em microssegundos, sem syscall. Crie milhões sem problema.",
+        deep: `<p>Do ponto de vista do kernel do sistema operacional, uma Virtual Thread não existe — ele só enxerga as poucas Carrier Threads. A JVM que mantém, internamente, a ilusão de milhões de "threads" independentes.</p>
+<div class="xp-example"><strong>Custo de criação</strong>new Thread(...) → syscall, aloca ~1 MB no kernel
+Thread.ofVirtual().start(...) → aloca um objeto Java na heap, começa com poucos KB de stack</div>
+<p>Isso muda a ordem de grandeza do que é viável: criar 1 milhão de Platform Threads derrubaria qualquer servidor; 1 milhão de Virtual Threads é uma carga de memória perfeitamente razoável.</p>` },
       enter(ctx) {
         showBase(ctx);
         VT_BOXES.forEach(e => ctx.show(e.id));
@@ -267,10 +288,13 @@
     },
     {
       title: "Carrier Threads: OS Threads que Montam VThreads",
-      text: "Carrier Threads são Platform Threads que executam Virtual Threads. O número de Carriers = nCPUs (por padrão). Uma VThread é 'montada' num Carrier para rodar.",
-      why: "Apenas 2 Carriers podem servir 1 milhão de VThreads. O segredo: unmounting em I/O.",
-      balloonAnchor: { x: RIGHT_X + RIGHT_W / 2, y: CARRIER_Y + 22 },
-      placement: "left",
+      balloon: {
+        anchor: { x: RIGHT_X + RIGHT_W / 2, y: CARRIER_Y + 22 }, placement: "left",
+        text: "Carrier Threads são Platform Threads que executam Virtual Threads. O número de Carriers = nCPUs (por padrão). Uma VThread é 'montada' num Carrier para rodar.",
+        why: "Apenas 2 Carriers podem servir 1 milhão de VThreads. O segredo: unmounting em I/O.",
+        deep: `<p>Carrier Threads formam um pool pequeno e fixo (o <code>ForkJoinPool</code> padrão da JVM, tipicamente 1 por núcleo de CPU) — a mesma ideia de work-stealing pool usada internamente pelo Stream API paralelo do Java.</p>
+<div class="xp-example"><strong>Analogia</strong>Pense em Carriers como "mesas de atendimento" e VThreads como "clientes na fila". Um cliente só ocupa a mesa enquanto está sendo atendido; assim que precisa "pensar" (I/O), sai da mesa e libera para o próximo.</div>
+<p>Isso só funciona porque a maior parte do tempo de uma requisição típica é gasto esperando I/O (rede, disco, banco) — tempo de CPU real usado é uma fração pequena do tempo total.</p>` },
       enter(ctx) {
         showBase(ctx);
         VT_BOXES.forEach(e => ctx.show(e.id));
@@ -283,10 +307,13 @@
     },
     {
       title: "I/O Bloqueia: VThread Desmontada do Carrier",
-      text: "Quando uma VThread chama Socket.read() (ou JDBC, HttpClient), a JVM detecta o bloqueio e desmonta a VThread do Carrier. O Carrier fica livre imediatamente.",
-      why: "É como cooperative multitasking: VThread 'pausa', stack fica na heap, Carrier monta outra VThread.",
-      balloonAnchor: { x: RIGHT_X + RIGHT_W / 2, y: COL_Y + 340 },
-      placement: "left",
+      balloon: {
+        anchor: { x: RIGHT_X + RIGHT_W / 2, y: COL_Y + 340 }, placement: "left",
+        text: "Quando uma VThread chama Socket.read() (ou JDBC, HttpClient), a JVM detecta o bloqueio e desmonta a VThread do Carrier. O Carrier fica livre imediatamente.",
+        why: "É como cooperative multitasking: VThread 'pausa', stack fica na heap, Carrier monta outra VThread.",
+        deep: `<p>Essa interceptação acontece nas bibliotecas Java já preparadas para Loom (java.net, java.io, JDBC drivers atualizados) — elas foram reescritas para, ao bloquear, avisar a JVM em vez de travar a thread do OS diretamente.</p>
+<div class="xp-bad"><strong>Quando isso NÃO acontece: "pinning"</strong>Um bloco <code>synchronized</code> ou uma chamada JNI nativa não sabe "desmontar" a VThread — ela fica presa (pinned) ao Carrier até terminar, perdendo o benefício.</div>
+<p>Esse é o motivo pelo qual código legado com muito <code>synchronized</code> se beneficia menos de Virtual Threads até ser migrado para <code>ReentrantLock</code>.</p>` },
       enter(ctx) {
         showBase(ctx);
         ctx.show("io_anim"); ctx.show("io_t1");
@@ -296,10 +323,13 @@
     },
     {
       title: "Carrier Fica Livre para Outra VThread",
-      text: "O Carrier Thread não fica bloqueado esperando o I/O completar. Ele imediatamente monta e executa outra VThread. Quando o I/O completa, a VThread original é remontada.",
-      why: "Isso é o que permite 2 carriers servirem 1 milhão de VThreads em I/O-bound workloads.",
-      balloonAnchor: { x: RIGHT_X + RIGHT_W / 2, y: COL_Y + 340 },
-      placement: "left",
+      balloon: {
+        anchor: { x: RIGHT_X + RIGHT_W / 2, y: COL_Y + 340 }, placement: "left",
+        text: "O Carrier Thread não fica bloqueado esperando o I/O completar. Ele imediatamente monta e executa outra VThread. Quando o I/O completa, a VThread original é remontada.",
+        why: "Isso é o que permite 2 carriers servirem 1 milhão de VThreads em I/O-bound workloads.",
+        deep: `<p>A remontagem não necessariamente volta ao mesmo Carrier — a VThread pode ser retomada em qualquer Carrier disponível quando o I/O completa, de forma transparente para o código.</p>
+<div class="xp-example"><strong>O que fica preservado durante a desmontagem</strong>Variáveis locais, posição de execução (call stack), estado de qualquer try/catch em andamento — tudo fica guardado na heap, como se a VThread estivesse "congelada".</div>
+<p>Para o programador, essa pausa e retomada é completamente invisível — o código lê como uma chamada bloqueante comum, sem callbacks nem promises.</p>` },
       enter(ctx) {
         showBase(ctx);
         ctx.show("io_anim"); ctx.show("io_t1");
@@ -309,10 +339,14 @@
     },
     {
       title: "Milhões de Virtual Threads Possíveis",
-      text: "Com VThreads, o servidor web pode criar 1 VThread por request HTTP, sem limitar a 200-500 como com thread pools. Throughput sobe com o I/O wait time.",
-      why: "Em benchmark: 10k requests simultâneos com 50ms DB query → Platform Threads: ~4000 req/s. VThreads: ~50.000+ req/s.",
-      balloonAnchor: { x: RIGHT_X + RIGHT_W / 2, y: 400 },
-      placement: "left",
+      balloon: {
+        anchor: { x: RIGHT_X + RIGHT_W / 2, y: 400 }, placement: "left",
+        text: "Com VThreads, o servidor web pode criar 1 VThread por request HTTP, sem limitar a 200-500 como com thread pools. Throughput sobe com o I/O wait time.",
+        why: "Em benchmark: 10k requests simultâneos com 50ms DB query → Platform Threads: ~4000 req/s. VThreads: ~50.000+ req/s.",
+        deep: `<p>O ganho de throughput não vem de a CPU trabalhar "mais rápido" — vem de parar de desperdiçar tempo com threads bloqueadas ocupando slots do pool sem fazer nada além de esperar.</p>
+<div class="xp-example"><strong>Por que o número de threads deixa de ser o gargalo</strong>Antes: throughput ≈ tamanho_do_pool / tempo_médio_de_resposta
+Depois: throughput limitado pela capacidade real do banco/rede/CPU, não mais pelo tamanho do pool</div>
+<p>Na prática isso simplifica também o dimensionamento de capacidade: em vez de calibrar cuidadosamente o tamanho do thread pool, você deixa a JVM criar quantas VThreads forem necessárias.</p>` },
       enter(ctx) {
         showBase(ctx);
         VT_BOXES.forEach(e => ctx.show(e.id));
@@ -325,10 +359,15 @@
     },
     {
       title: "Structured Concurrency",
-      text: "StructuredTaskScope agrupa VThreads em um escopo com lifecycle controlado. ShutdownOnFailure cancela todas se uma falha. Stack traces são inteligíveis.",
-      why: "Resolve o problema de CompletableFuture: quando um subtask falha, os outros são cancelados automaticamente. Sem resource leaks.",
-      balloonAnchor: { x: W / 2, y: 510 },
-      placement: "top",
+      balloon: {
+        anchor: { x: W / 2, y: 510 }, placement: "top",
+        text: "StructuredTaskScope agrupa VThreads em um escopo com lifecycle controlado. ShutdownOnFailure cancela todas se uma falha. Stack traces são inteligíveis.",
+        why: "Resolve o problema de CompletableFuture: quando um subtask falha, os outros são cancelados automaticamente. Sem resource leaks.",
+        deep: `<p>O princípio da concorrência estruturada: o tempo de vida de uma tarefa filha nunca ultrapassa o tempo de vida do escopo que a criou — se o bloco <code>try</code> termina (por sucesso, falha ou exceção), nenhuma tarefa filha continua rodando sozinha "por aí".</p>
+<div class="xp-bad"><strong>Problema clássico sem structured concurrency</strong>CompletableFuture<User> f1 = CompletableFuture.supplyAsync(() -> fetchUser(id));
+CompletableFuture<Orders> f2 = CompletableFuture.supplyAsync(() -> fetchOrders(id));
+// se f2 falhar, f1 continua rodando "solto" — resource leak</div>
+<p><code>ShutdownOnFailure</code> cancela automaticamente todas as tarefas irmãs assim que uma falha, evitando esse vazamento de tarefas órfãs — e o stack trace do erro mostra a hierarquia completa, não um encadeamento confuso de callbacks.</p>` },
       enter(ctx) {
         ALL_IDS.forEach(id => ctx.hide(id));
         ctx.show("title_main");
@@ -340,10 +379,13 @@
     },
     {
       title: "Quando NÃO usar Virtual Threads",
-      text: "VThreads não ajudam workloads CPU-bound. Criptografia pesada, ML inference, rendering — o Carrier fica ocupado 100% sem I/O para desmontagem.",
-      why: "Cuidado com synchronized blocks: eles 'pinnam' a VThread ao Carrier, perdendo o benefício. Use ReentrantLock.",
-      balloonAnchor: { x: W / 2, y: 480 },
-      placement: "top",
+      balloon: {
+        anchor: { x: W / 2, y: 480 }, placement: "top",
+        text: "VThreads não ajudam workloads CPU-bound. Criptografia pesada, ML inference, rendering — o Carrier fica ocupado 100% sem I/O para desmontagem.",
+        why: "Cuidado com synchronized blocks: eles 'pinnam' a VThread ao Carrier, perdendo o benefício. Use ReentrantLock.",
+        deep: `<p>Virtual Threads resolvem um problema de <em>concorrência de I/O</em>, não de <em>paralelismo de CPU</em> — se a tarefa nunca "espera" nada (é só cálculo puro), não existe momento de desmontagem, e ter mais VThreads que Carriers só aumenta o overhead de troca de contexto no mesmo núcleo.</p>
+<div class="xp-bad"><strong>Não ajuda</strong>Hash de senha com Argon2, compressão de vídeo, inferência de ML local — cada VThread fica presa 100% do tempo ao seu Carrier, então 1000 VThreads CPU-bound competem pelos mesmos poucos núcleos.</div>
+<div class="xp-good"><strong>Ajuda muito</strong>Chamar uma API REST externa, fazer query no banco, ler um arquivo — a maior parte do tempo é espera, exatamente o cenário que Virtual Threads foram desenhadas para otimizar.</div>` },
       enter(ctx) {
         ALL_IDS.forEach(id => ctx.hide(id));
         ctx.show("title_main");
@@ -369,10 +411,10 @@
     },
     {
       title: "Resumo",
-      text: "VThreads = concorrência I/O-bound sem reactive hell. Carrier threads desacoplam VThreads de OS threads. Código blocking + throughput alto.",
-      why: "",
-      balloonAnchor: { x: 640, y: 680 },
-      placement: "top",
+      balloon: {
+        anchor: { x: 640, y: 680 }, placement: "top",
+        text: "VThreads = concorrência I/O-bound sem reactive hell. Carrier threads desacoplam VThreads de OS threads. Código blocking + throughput alto.",
+      },
       enter(ctx) {
         ALL_IDS.forEach(id => ctx.hide(id));
         ctx.show("sum_panel"); ctx.show("sum_title");
