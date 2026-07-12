@@ -5,16 +5,24 @@ passo a passo, com animação, realces e **balões** que aparecem em cada etapa.
 Tudo em **HTML + CSS + JavaScript puro** — sem build, sem dependências. É só
 abrir no navegador.
 
-Explicadores disponíveis:
+39 explicadores disponíveis, agrupados por área (descrições completas, busca e
+trilhas sugeridas em [`index.html`](index.html)):
 
-- 🧠 **Rede Transformer** — do texto cru à próxima palavra (tokenização, embeddings,
-  positional encoding, self-attention Q/K/V, multi-head, residual, feed-forward, saída).
-- 🌐 **Requisição HTTP** — DNS → TCP → TLS → request → resposta → render (sequência).
-- 🔌 **TCP/IP** — three-way handshake, segmentos/ACKs, janela, perda+retransmissão, FIN.
-- 🌿 **Git** — as quatro áreas e o caminho de `add` → `commit` → `push` → `pull`.
-- #️⃣ **Hash Map** — chave → hash → índice → bucket, colisões, encadeamento e resize.
-- 🔎 **Busca Binária** — array ordenado, ponteiros lo/hi/mid, descartar metade a cada sonda e O(log n).
-- 🔁 **Recursão** — `fact(4)`: empilhar as chamadas, atingir o caso base, desempilhar os retornos e o stack overflow.
+- 🤖 **IA & Agentes** (10) — Rede Transformer, RAG, Model Context Protocol,
+  SubAgentes, Engenharia de Contexto, Engenharia de Prompt, Guardrails, Skills,
+  Spec-Driven Development, Specs para Agentes.
+- 🌐 **Web & Protocolos** (6) — Requisição HTTP, TCP/IP, ISO 8583, WebSocket,
+  gRPC, TLS/mTLS.
+- 🔐 **Segurança & Autenticação** (7) — OAuth 2.0/OIDC, JWT, SSO, Sessions &
+  Cookies, API Keys, MFA/2FA, Criptografia.
+- ⛓️ **Sistemas Distribuídos** (2) — Consistent Hashing, Blockchain.
+- ☁️ **Infraestrutura & Cloud** (7) — Kubernetes, Amazon EKS, Amazon RDS,
+  Ingress, Circuit Breaker, Rate Limiting, Load Balancer.
+- ⚡ **Mensageria & Processamento Async** (2) — Sync → Async (Redis/Kafka),
+  Kafka Serialization + Schema Registry.
+- ☕ **Runtime & Linguagens** (1) — Virtual Threads (Java).
+- 🔢 **Algoritmos & Estruturas de Dados** (3) — Hash Map, Busca Binária, Recursão.
+- 🛠️ **Ferramentas** (1) — Git: do `add` ao `push`.
 
 Todos compartilham o **mesmo motor** (`engine/`): cada um é apenas um arquivo de
 dados. Isso é a prova de que a estrutura se reaproveita.
