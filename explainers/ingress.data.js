@@ -190,20 +190,27 @@
   const steps = [
     {
       title: "O Problema: Expor Services no K8s",
-      text: "Um Service ClusterIP só é acessível dentro do cluster. NodePort abre uma porta em cada nó. LoadBalancer cria um LB externo por service — caro e ingerenciável em escala.",
-      why: "Precisamos de uma camada L7 que centraliza o acesso externo com roteamento inteligente.",
-      balloonAnchor: { x: 640, y: 680 },
-      placement: "top",
+      balloon: { anchor: { x: 640, y: 680 }, placement: "top",
+        text: "Um Service ClusterIP só é acessível dentro do cluster. NodePort abre uma porta em cada nó. LoadBalancer cria um LB externo por service — caro e ingerenciável em escala.",
+        why: "Precisamos de uma camada L7 que centraliza o acesso externo com roteamento inteligente.",
+        deep: `<p>Cada alternativa de exposição resolve um problema, mas cria outro em escala: NodePort funciona mas expõe uma porta alta (30000-32767) em <em>todos</em> os nós, exigindo um LB externo apontando pra eles de qualquer forma. LoadBalancer resolve isso criando um LB de cloud dedicado — só que um por Service.</p>
+<div class="xp-bad"><strong>20 services, 20 LoadBalancers</strong>kubectl get svc → 20 LoadBalancer services
+20 IPs públicos, 20 cobranças de cloud LB, 20 certificados TLS para gerenciar</div>
+<div class="xp-good"><strong>Com Ingress</strong>1 LoadBalancer na borda → Ingress Controller → roteia para os 20 services internamente por host/path</div>
+<p>O Ingress não substitui o Service — ele complementa: o Service continua existindo (tipicamente como ClusterIP), e o Ingress adiciona a camada L7 de roteamento na frente.</p>` },
       enter(ctx) {
         showBase(ctx);
       }
     },
     {
       title: "ClusterIP vs NodePort vs LoadBalancer",
-      text: "ClusterIP: interno apenas. NodePort: porta fixa em cada nó (30000-32767). LoadBalancer: 1 LB externo por service (caro!). Ingress: 1 LB para todos.",
-      why: "Em um cluster com 20 services, 20 LoadBalancers = custo elevado. Ingress resolve com 1.",
-      balloonAnchor: "ic_box",
-      placement: "bottom",
+      balloon: { anchor: "ic_box", placement: "bottom",
+        text: "ClusterIP: interno apenas. NodePort: porta fixa em cada nó (30000-32767). LoadBalancer: 1 LB externo por service (caro!). Ingress: 1 LB para todos.",
+        why: "Em um cluster com 20 services, 20 LoadBalancers = custo elevado. Ingress resolve com 1.",
+        deep: `<p>Esses três tipos de Service formam uma escada de exposição, cada um construído sobre o anterior: NodePort é implementado usando ClusterIP por baixo, e LoadBalancer é implementado usando NodePort por baixo (o cloud provider aponta o LB para a porta do node).</p>
+<div class="xp-example"><strong>kubectl get svc</strong>NAME         TYPE           CLUSTER-IP     EXTERNAL-IP    PORT(S)
+svc-api      LoadBalancer   10.0.12.100    34.120.1.50    8080:31234/TCP</div>
+<p>Note a porta dupla no LoadBalancer: <code>8080</code> é a porta do Service (ClusterIP), <code>31234</code> é a NodePort alocada automaticamente por baixo — o LB externo do cloud provider encaminha para essa NodePort em qualquer nó saudável do cluster.</p>` },
       enter(ctx) {
         showBase(ctx);
         ctx.show("gwa_panel"); ctx.show("gwa_title");
@@ -213,10 +220,14 @@
     },
     {
       title: "Ingress Resource: Regras Declarativas",
-      text: "O Ingress Resource é um objeto YAML que declara regras de roteamento. Ele não faz o roteamento — apenas descreve o que deve acontecer.",
-      why: "Separação de concerns: devs definem regras, o controller as executa.",
-      balloonAnchor: { x: 1135, y: 280 },
-      placement: "left",
+      balloon: { anchor: { x: 1135, y: 280 }, placement: "left",
+        text: "O Ingress Resource é um objeto YAML que declara regras de roteamento. Ele não faz o roteamento — apenas descreve o que deve acontecer.",
+        why: "Separação de concerns: devs definem regras, o controller as executa.",
+        deep: `<p>Essa separação entre "declarar o quê" (Ingress Resource) e "executar como" (Ingress Controller) segue o mesmo princípio de outros recursos do Kubernetes, como Deployment vs ReplicaSet: você descreve o estado desejado, e um controller reconcilia a realidade para chegar lá.</p>
+<div class="xp-example"><strong>kubectl apply</strong>kubectl apply -f ingress.yaml
+ingress.networking.k8s.io/my-ingress created
+# nada acontece na rede até o controller notar esse objeto e reconfigurar o proxy</div>
+<p>Isso significa que aplicar um Ingress Resource sem nenhum Ingress Controller rodando no cluster é um no-op silencioso: o objeto fica salvo no etcd, mas nenhum tráfego é roteado — um erro comum em clusters recém-criados.</p>` },
       enter(ctx) {
         showBase(ctx);
         ctx.show("ing_res_panel"); ctx.show("ing_res_title");
@@ -225,10 +236,14 @@
     },
     {
       title: "Ingress Controller (nginx / traefik)",
-      text: "O Ingress Controller é um pod dentro do cluster que monitora os Ingress Resources e configura o proxy (nginx, traefik, HAProxy) automaticamente.",
-      why: "O controller traduz a declaração YAML em configuração de proxy real. Sem controller, o Ingress Resource não faz nada.",
-      balloonAnchor: "ic_box",
-      placement: "right",
+      balloon: { anchor: "ic_box", placement: "right",
+        text: "O Ingress Controller é um pod dentro do cluster que monitora os Ingress Resources e configura o proxy (nginx, traefik, HAProxy) automaticamente.",
+        why: "O controller traduz a declaração YAML em configuração de proxy real. Sem controller, o Ingress Resource não faz nada.",
+        deep: `<p>Diferente da maioria dos controllers do Kubernetes (que só atualizam o estado de outros objetos), o Ingress Controller normalmente também é um <strong>proxy real</strong> rodando como Pod — ele mesmo recebe e processa o tráfego HTTP, além de vigiar a API do Kubernetes por mudanças.</p>
+<div class="xp-good"><strong>Fluxo de reconciliação</strong>1. Controller observa a API: novo Ingress Resource criado
+2. Gera a config do proxy (nginx.conf, ou equivalente)
+3. Recarrega o proxy sem downtime (reload gracioso)</div>
+<p>Existem múltiplas implementações — nginx-ingress, Traefik, HAProxy, Contour (Envoy) — cada uma com seu próprio conjunto de annotations e capacidades específicas, por isso a <code>IngressClass</code> existe: para indicar qual controller deve processar qual Ingress Resource quando há mais de um instalado.</p>` },
       enter(ctx) {
         showBase(ctx);
         ctx.show("ing_res_panel"); ctx.show("ing_res_title");
@@ -237,10 +252,16 @@
     },
     {
       title: "Host-based Routing",
-      text: "Diferentes domínios são roteados para diferentes services: app.com → svc-frontend, api.app.com → svc-api. Tudo pelo mesmo IP externo.",
-      why: "Permite hospedar múltiplas aplicações com domínios separados sem múltiplos LBs.",
-      balloonAnchor: "route_host",
-      placement: "right",
+      balloon: { anchor: "route_host", placement: "right",
+        text: "Diferentes domínios são roteados para diferentes services: app.com → svc-frontend, api.app.com → svc-api. Tudo pelo mesmo IP externo.",
+        why: "Permite hospedar múltiplas aplicações com domínios separados sem múltiplos LBs.",
+        deep: `<p>Host-based routing funciona porque o controller inspeciona o header HTTP <code>Host</code> (ou a SNI do handshake TLS, para HTTPS) antes de decidir o backend — é uma decisão de camada de aplicação, não de rede, o que é impossível para um LoadBalancer L4 puro.</p>
+<div class="xp-example"><strong>Regras YAML</strong>rules:
+- host: app.com
+  http: {paths: [{path: /, backend: {service: {name: svc-frontend}}}]}
+- host: api.app.com
+  http: {paths: [{path: /, backend: {service: {name: svc-api}}}]}</div>
+<p>Isso permite hospedar dezenas de domínios diferentes atrás de um único IP externo e um único LoadBalancer de cloud — cada requisição chega no mesmo IP, e o Ingress Controller decide o destino olhando só o header <code>Host</code>.</p>` },
       enter(ctx) {
         showBase(ctx);
         ctx.show("route_host"); ctx.show("route_host_lbl"); ctx.show("route_host_lbl2"); ctx.show("route_host_lbl3");
@@ -248,10 +269,13 @@
     },
     {
       title: "Path-based Routing",
-      text: "Um único domínio com paths diferentes: app.com/ → svc-frontend, app.com/api → svc-api, app.com/admin → svc-admin.",
-      why: "Micro-frontends e micro-serviços expostos sob um único domínio. BFF pattern.",
-      balloonAnchor: "route_path",
-      placement: "right",
+      balloon: { anchor: "route_path", placement: "right",
+        text: "Um único domínio com paths diferentes: app.com/ → svc-frontend, app.com/api → svc-api, app.com/admin → svc-admin.",
+        why: "Micro-frontends e micro-serviços expostos sob um único domínio. BFF pattern.",
+        deep: `<p>Path-based routing é a base do padrão BFF (Backend For Frontend) e de arquiteturas de micro-frontends: um único domínio público esconde múltiplos serviços internos, cada um responsável por um prefixo de URL.</p>
+<div class="xp-example"><strong>pathType: Prefix vs Exact</strong>path: /api    pathType: Prefix   → casa /api, /api/users, /api/orders/5
+path: /health pathType: Exact    → casa só /health, não /health/live</div>
+<div class="xp-good"><strong>Boa prática</strong>Ordenar regras da mais específica para a mais genérica, e usar rewrite-target quando o backend não espera o prefixo (ex: /api/users → /users no backend)</div>` },
       enter(ctx) {
         showBase(ctx);
         ctx.show("route_path"); ctx.show("route_path_lbl"); ctx.show("route_path_lbl2"); ctx.show("route_path_lbl3");
@@ -259,10 +283,17 @@
     },
     {
       title: "TLS Termination",
-      text: "O Ingress termina TLS: recebe HTTPS do usuário e repassa HTTP internamente. O certificado fica num Secret do K8s. cert-manager automatiza renovação.",
-      why: "Centraliza TLS em um ponto — os services internos não precisam gerenciar certificados.",
-      balloonAnchor: "tls_panel",
-      placement: "right",
+      balloon: { anchor: "tls_panel", placement: "right",
+        text: "O Ingress termina TLS: recebe HTTPS do usuário e repassa HTTP internamente. O certificado fica num Secret do K8s. cert-manager automatiza renovação.",
+        why: "Centraliza TLS em um ponto — os services internos não precisam gerenciar certificados.",
+        deep: `<p>O Secret referenciado em <code>tls.secretName</code> precisa ter as chaves <code>tls.crt</code> e <code>tls.key</code> (tipo <code>kubernetes.io/tls</code>) — o controller monta esse Secret no proxy para servir o handshake TLS antes mesmo de saber qual backend vai atender a requisição.</p>
+<div class="xp-example"><strong>cert-manager: emissão automática</strong>apiVersion: cert-manager.io/v1
+kind: Certificate
+spec:
+  secretName: tls-cert
+  issuerRef: {name: letsencrypt-prod}
+  dnsNames: [app.com]</div>
+<p>Sem cert-manager, alguém precisaria renovar certificados manualmente antes de expirarem (Let's Encrypt expira em 90 dias) — o operator do cert-manager monitora a validade e reemite automaticamente, atualizando o Secret que o Ingress já está usando.</p>` },
       enter(ctx) {
         showBase(ctx);
         ctx.show("tls_panel"); ctx.show("tls_lbl"); ctx.show("tls_lbl2"); ctx.show("tls_lbl3");
@@ -272,10 +303,13 @@
     },
     {
       title: "Annotations: Configuração Avançada",
-      text: "Annotations permitem configurar comportamentos específicos do controller: rewrite, rate limiting, autenticação, timeouts e muito mais.",
-      why: "A flexibilidade das annotations é grande — mas tornam o YAML acoplado ao controller específico.",
-      balloonAnchor: { x: 1135, y: 440 },
-      placement: "left",
+      balloon: { anchor: { x: 1135, y: 440 }, placement: "left",
+        text: "Annotations permitem configurar comportamentos específicos do controller: rewrite, rate limiting, autenticação, timeouts e muito mais.",
+        why: "A flexibilidade das annotations é grande — mas tornam o YAML acoplado ao controller específico.",
+        deep: `<p>Annotations existem porque o objeto <code>Ingress</code> do Kubernetes core é deliberadamente enxuto — só cobre roteamento básico e TLS. Qualquer funcionalidade específica de um controller (rewrite, rate limit, auth, CORS, timeouts) precisa ser expressa fora do schema padrão, e annotations são o mecanismo de extensão escolhido.</p>
+<div class="xp-bad"><strong>Acoplamento ao controller</strong>nginx.ingress.k8s.io/rate-limit: "100rps"
+# essa annotation só funciona com nginx-ingress; migrar para Traefik exige reescrever tudo</div>
+<p>Esse é exatamente o motivo pelo qual o Gateway API (visto na próxima cena) substitui annotations por CRDs tipados — trocar de controller sem reescrever toda a configuração de roteamento avançado.</p>` },
       enter(ctx) {
         showBase(ctx);
         ctx.show("ing_res_panel"); ctx.show("ing_res_title");
@@ -284,20 +318,30 @@
     },
     {
       title: "Um IP para Múltiplos Services",
-      text: "O grande benefício: todos os services (frontend, API, admin) ficam atrás de um único endpoint externo, com TLS centralizado e roteamento inteligente.",
-      why: "Reduz custo de cloud (menos LBs), simplifica DNS e gestão de certificados.",
-      balloonAnchor: "lb_box",
-      placement: "right",
+      balloon: { anchor: "lb_box", placement: "right",
+        text: "O grande benefício: todos os services (frontend, API, admin) ficam atrás de um único endpoint externo, com TLS centralizado e roteamento inteligente.",
+        why: "Reduz custo de cloud (menos LBs), simplifica DNS e gestão de certificados.",
+        deep: `<p>A economia não é só de custo direto do LB — é também operacional: um único IP significa um único registro DNS apex, um único conjunto de regras de firewall/security group, e um único ponto de observabilidade (logs de acesso, métricas) para todo o tráfego HTTP externo do cluster.</p>
+<div class="xp-good"><strong>Consolidado</strong>1 LoadBalancer de cloud + 1 Ingress Controller → N services, N domínios, TLS centralizado</div>
+<div class="xp-bad"><strong>Sem Ingress</strong>N LoadBalancers de cloud → N IPs, N registros DNS, N certificados, N pontos de configuração de firewall</div>` },
       enter(ctx) {
         showBase(ctx);
       }
     },
     {
       title: "Ingress vs Gateway API",
-      text: "O Ingress está sendo gradualmente substituído pelo Gateway API (sig-network), que usa CRDs tipados (HTTPRoute, GRPCRoute) em vez de annotations genéricas.",
-      why: "Gateway API é mais expressivo, extensível e permite separar concerns entre infra-ops e devs.",
-      balloonAnchor: { x: 560, y: 600 },
-      placement: "top",
+      balloon: { anchor: { x: 560, y: 600 }, placement: "top",
+        text: "O Ingress está sendo gradualmente substituído pelo Gateway API (sig-network), que usa CRDs tipados (HTTPRoute, GRPCRoute) em vez de annotations genéricas.",
+        why: "Gateway API é mais expressivo, extensível e permite separar concerns entre infra-ops e devs.",
+        deep: `<p>O Gateway API não é uma evolução do Ingress no sentido de "versão 2" — é um projeto separado e mais expressivo, desenhado para separar claramente as responsabilidades entre quem administra a infraestrutura (Gateway) e quem define as rotas de uma aplicação (HTTPRoute).</p>
+<div class="xp-example"><strong>HTTPRoute (Gateway API)</strong>apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+spec:
+  parentRefs: [{name: my-gateway}]
+  rules:
+  - matches: [{path: {value: /api}}]
+    backendRefs: [{name: svc-api, port: 8080}]</div>
+<p>Como é um CRD tipado (em vez de string livre em annotations), o schema é validado pelo próprio Kubernetes na hora do <code>apply</code> — erros de configuração são pegos antes de chegar ao controller, não depois em produção.</p>` },
       enter(ctx) {
         showBase(ctx);
         ctx.show("gwa_panel"); ctx.show("gwa_title");
@@ -322,10 +366,9 @@
     },
     {
       title: "Resumo",
-      text: "Ingress = roteamento L7 centralizado para serviços K8s. Controller executa, Resource declara.",
-      why: "",
-      balloonAnchor: { x: 640, y: 660 },
-      placement: "top",
+      balloon: { anchor: { x: 640, y: 660 }, placement: "top",
+        text: "Ingress = roteamento L7 centralizado para serviços K8s. Controller executa, Resource declara.",
+        why: "" },
       enter(ctx) {
         ALL_IDS.forEach(id => ctx.hide(id));
         ctx.show("sum_panel"); ctx.show("sum_title");

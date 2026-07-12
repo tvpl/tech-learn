@@ -53,14 +53,27 @@
       show: ["cli", "srv", "ll_c", "ll_s", "lay_app", "lay_tcp", "lay_ip", "lay_cap"], highlight: ["lay_tcp"],
       balloon: { anchor: "lay_tcp", placement: "right",
         text: "O <strong>IP</strong> entrega pacotes entre máquinas, mas pode perdê-los, duplicá-los ou trocá-los de ordem. O <strong>TCP</strong> roda em cima do IP e cria um canal <strong>confiável e ordenado</strong>.",
-        why: "Aplicações (como HTTP) querem um “cano” de bytes confiável; o TCP fornece isso usando números de sequência e confirmações (ACK)." },
+        why: "Aplicações (como HTTP) querem um “cano” de bytes confiável; o TCP fornece isso usando números de sequência e confirmações (ACK).",
+        deep: `<p>IP entrega datagramas "melhor esforço": pode perder, duplicar ou embaralhar pacotes, e não avisa ninguém quando isso acontece. TCP existe para esconder essa realidade da aplicação, expondo um fluxo de bytes que parece confiável.</p>
+<div class="xp-example"><strong>Camadas na prática</strong>Aplicação:  HTTP GET /index.html
+Transporte: TCP porta 443, seq=1000
+Rede:       IP 93.184.216.34 → 200.1.2.3
+Enlace:     Ethernet/Wi-Fi frame</div>
+<div class="xp-good"><strong>TCP</strong> — confiável, ordenado, com controle de fluxo (HTTP, SSH, banco de dados)</div>
+<div class="xp-bad"><strong>UDP</strong> — sem garantias, mas sem overhead de handshake/retransmissão (DNS, streaming, jogos em tempo real)</div>` },
     },
     {
       title: "Handshake: SYN",
       show: ["m_syn", "m_syn_l"], highlight: ["m_syn_l"],
       balloon: { anchor: "m_syn_l", placement: "bottom",
         text: "O cliente envia um <strong>SYN</strong> com um número de sequência inicial aleatório (seq=x), pedindo para abrir conexão.",
-        why: "Escolher um seq inicial sincroniza a contagem de bytes dos dois lados e dificulta falsificação." },
+        why: "Escolher um seq inicial sincroniza a contagem de bytes dos dois lados e dificulta falsificação.",
+        deep: `<p>O número de sequência inicial (ISN) não começa em zero por razões de segurança: um atacante que adivinhasse o próximo seq poderia injetar dados numa conexão alheia. Sistemas modernos geram o ISN de forma pseudo-aleatória.</p>
+<div class="xp-example"><strong>Segmento SYN</strong>Flags: SYN=1 ACK=0
+Seq: 3510000123
+Window: 65535
+Options: MSS=1460, SACK_PERMITTED, WS=7</div>
+<p>O campo <strong>MSS</strong> (Maximum Segment Size) já viaja nesse primeiro pacote: cada lado informa o maior segmento que consegue receber, evitando fragmentação de pacotes IP mais tarde.</p>` },
       enter: (ctx) => ctx.drawArrow("m_syn"),
     },
     {
@@ -68,7 +81,12 @@
       show: ["m_synack", "m_synack_l"],
       balloon: { anchor: "m_synack_l", placement: "bottom",
         text: "O servidor responde com <strong>SYN-ACK</strong>: confirma o seq do cliente (ack=x+1) e manda o seu próprio seq=y.",
-        why: "Cada lado precisa anunciar e ter confirmado seu número inicial — por isso são <strong>três</strong> mensagens." },
+        why: "Cada lado precisa anunciar e ter confirmado seu número inicial — por isso são <strong>três</strong> mensagens.",
+        deep: `<p>SYN-ACK é tecnicamente dois flags no mesmo segmento: o servidor confirma o seq do cliente (ACK) e ao mesmo tempo propõe o seu próprio seq inicial (SYN) — por isso o handshake tem só três mensagens, não quatro.</p>
+<div class="xp-example"><strong>Segmento SYN-ACK</strong>Flags: SYN=1 ACK=1
+Seq: 8820000456
+Ack: 3510000124   (= seq do cliente + 1)</div>
+<p>Se o servidor não tiver a porta aberta (nenhum processo escutando), ele responde com <strong>RST</strong> em vez de SYN-ACK — é assim que um scanner de portas descobre serviços abertos.</p>` },
       enter: (ctx) => ctx.drawArrow("m_synack"),
     },
     {
@@ -76,7 +94,11 @@
       show: ["m_ack", "m_ack_l", "est"], highlight: ["est"],
       balloon: { anchor: "est", placement: "bottom",
         text: "O cliente confirma o seq do servidor (ack=y+1). Pronto: o <strong>three-way handshake</strong> terminou e a conexão está aberta nos dois sentidos.",
-        why: "Agora ambos sabem por qual número a contagem de bytes começa — podem trocar dados com segurança de ordem." },
+        why: "Agora ambos sabem por qual número a contagem de bytes começa — podem trocar dados com segurança de ordem.",
+        deep: `<p>Tecnicamente já é possível o cliente enviar dados junto com esse ACK final (TCP Fast Open faz isso), mas na maioria das conexões o ACK vai vazio e os dados só começam no segmento seguinte.</p>
+<div class="xp-example"><strong>Estado da conexão nos dois lados</strong>Cliente:  ESTABLISHED  (enviou ACK)
+Servidor: ESTABLISHED  (recebeu ACK)</div>
+<p>Esses estados (SYN_SENT, SYN_RECEIVED, ESTABLISHED...) fazem parte da máquina de estados do TCP — dá para observá-los ao vivo com <code>netstat -tan</code> ou <code>ss -tan</code> no terminal.</p>` },
       enter: (ctx) => ctx.drawArrow("m_ack"),
     },
     {
@@ -84,7 +106,11 @@
       show: ["m_d1", "m_d1_l", "m_a1", "m_a1_l"],
       balloon: { anchor: "m_a1_l", placement: "top",
         text: "Os dados vão em <strong>segmentos numerados</strong> pelo byte (seq=1, 100 bytes). O receptor confirma com <strong>ACK=101</strong> = “já recebi até o byte 100, mande o próximo”.",
-        why: "Numerar por byte deixa o receptor remontar tudo na ordem certa, mesmo que os pacotes cheguem embaralhados." },
+        why: "Numerar por byte deixa o receptor remontar tudo na ordem certa, mesmo que os pacotes cheguem embaralhados.",
+        deep: `<p>O ACK não confirma "recebi o segmento X" — confirma "recebi tudo até o byte Y, continuamente". Se um segmento no meio se perder, o receptor continua confirmando o último byte contíguo recebido, não os que vieram depois dele fora de ordem.</p>
+<div class="xp-example"><strong>Numeração cumulativa</strong>Envia:  seq=1,  100 bytes (bytes 1-100)
+Recebe: ACK=101  → "quero o byte 101 agora"</div>
+<p>É por isso que <strong>ACKs duplicados</strong> são um sinal de perda: se o receptor manda vários ACK=101 seguidos, é porque está recebendo segmentos além do buraco, mas o buraco (byte 101) ainda não chegou.</p>` },
       enter: (ctx) => { ctx.drawArrow("m_d1"); setTimeout(() => ctx.drawArrow("m_a1"), 350); },
     },
     {
@@ -92,14 +118,26 @@
       show: ["win"], highlight: ["win"],
       balloon: { anchor: "win", placement: "top",
         text: "O emissor não espera o <span class=\"xp-term\" tabindex=\"0\" data-tip=\"Acknowledgement: confirmação de que os bytes até certo número chegaram.\">ACK</span> de cada segmento: manda vários de uma vez, até o limite da <strong>janela</strong> anunciada pelo receptor.",
-        why: "Isso enche o “cano” e dá vazão. A janela também serve de <strong>controle de fluxo</strong>: o receptor freia o emissor se estiver sobrecarregado." },
+        why: "Isso enche o “cano” e dá vazão. A janela também serve de <strong>controle de fluxo</strong>: o receptor freia o emissor se estiver sobrecarregado.",
+        deep: `<p>A janela anunciada pelo receptor não é fixa — ela muda a cada ACK, refletindo o espaço livre no buffer de recepção naquele instante. Isso evita que um emissor rápido afogue um receptor lento (ex.: um celular numa rede fraca).</p>
+<div class="xp-example"><strong>Janela anunciada no ACK</strong>ACK=4001  Window=8192
+
+"Já recebi até o byte 4000. Pode mandar até
+mais 8192 bytes sem esperar novo ACK."</div>
+<p>Controle de fluxo (janela do receptor) é diferente de <strong>controle de congestionamento</strong> (algoritmos como Cubic ou BBR, que limitam o envio com base na condição da <em>rede</em>, não do receptor) — o TCP aplica os dois ao mesmo tempo.</p>` },
     },
     {
       title: "Perda e retransmissão",
       show: ["m_lost", "m_lost_l", "x_lost", "lost_cap", "m_retx", "m_retx_l"], highlight: ["m_retx_l"],
       balloon: { anchor: "lost_cap", placement: "right",
         text: "Se um segmento se perde, o ACK esperado não chega. Ao estourar o <strong>timeout</strong> (ou ver ACKs duplicados), o emissor <strong>retransmite</strong> o segmento.",
-        why: "É isso que torna o TCP <em>confiável</em> sobre um IP não-confiável: nada é dado como entregue sem ACK." },
+        why: "É isso que torna o TCP <em>confiável</em> sobre um IP não-confiável: nada é dado como entregue sem ACK.",
+        deep: `<p>Esperar o timeout completo para retransmitir é lento. Por isso o TCP moderno também usa <strong>fast retransmit</strong>: três ACKs duplicados seguidos (pedindo o mesmo byte) já disparam a retransmissão, sem esperar o timer estourar.</p>
+<div class="xp-example"><strong>Fast retransmit</strong>Recebe: ACK=201, ACK=201, ACK=201  (3x duplicado)
+→ emissor retransmite seq=201 imediatamente,
+  sem esperar o timeout</div>
+<div class="xp-bad"><strong>Só timeout</strong>Pode levar centenas de ms a segundos para perceber a perda — trava a aplicação esperando.</div>
+<div class="xp-good"><strong>Fast retransmit</strong>Detecta a perda em poucos round-trips, muito mais rápido que esperar o timer.</div>` },
       enter: (ctx) => { ctx.drawArrow("m_lost"); setTimeout(() => ctx.drawArrow("m_retx"), 500); },
     },
     {
@@ -107,7 +145,13 @@
       show: ["m_fin", "m_fin_l"],
       balloon: { anchor: "m_fin_l", placement: "top",
         text: "Para fechar, cada lado manda um <strong>FIN</strong> e recebe o <strong>ACK</strong> correspondente — encerrando os dois sentidos de forma ordenada.",
-        why: "O fechamento também é negociado para garantir que nenhum dado em trânsito seja perdido na hora de desligar." },
+        why: "O fechamento também é negociado para garantir que nenhum dado em trânsito seja perdido na hora de desligar.",
+        deep: `<p>Fechar uma conexão TCP não é simétrico como abrir: cada direção é encerrada separadamente (às vezes chamado de "four-way close" — FIN/ACK de um lado, depois FIN/ACK do outro). Isso permite que um lado pare de enviar mas ainda receba dados.</p>
+<div class="xp-example"><strong>Encerramento completo</strong>Cliente  → Servidor: FIN  seq=500
+Servidor → Cliente:  ACK  ack=501
+Servidor → Cliente:  FIN  seq=900
+Cliente  → Servidor: ACK  ack=901</div>
+<p>Depois do último ACK, o lado que fechou primeiro entra no estado <strong>TIME_WAIT</strong> por um tempo — evita que pacotes atrasados de uma conexão antiga sejam confundidos com uma nova conexão na mesma porta.</p>` },
       enter: (ctx) => ctx.drawArrow("m_fin"),
     },
     {

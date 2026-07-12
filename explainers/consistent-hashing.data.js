@@ -144,7 +144,11 @@
       balloon: {
         anchor: 'naive_bg', placement: 'left',
         text: 'Com `hash(key) % N`, adicionar ou remover um servidor muda o denominador N — quase todas as chaves precisam ser remapeadas. Para um cache distribuído, isso é catastrófico.',
-      },
+        deep: `<p>O problema não é o hash em si, mas a operação módulo: qualquer mudança em N recalcula o destino de quase toda chave, porque o resto da divisão muda de forma imprevisível para a maioria dos valores.</p>
+<div class="xp-example"><strong>Cálculo direto</strong>hash("user:42") = 118372
+Com N=3: 118372 % 3 = 1 → Nó 1
+Com N=4: 118372 % 4 = 0 → Nó 0 (mudou!)</div>
+<p>Esse efeito cascata é o motivo pelo qual sistemas com cache (Memcached, CDN) sofrem tanto com scale up/down usando hash % N: uma operação de rotina de infraestrutura vira uma tempestade de cache misses no backend.</p>` },
     },
     {
       title: 'Exemplo concreto: 3 → 4 nós, 75% remapeado',
@@ -153,7 +157,10 @@
       balloon: {
         anchor: 'naive_bg', placement: 'left',
         text: 'Com 3 nós: chave `user:42` → hash mod 3 = 1 → Nó 1. Adicionamos Nó 4: agora hash mod 4 = 2 → Nó 2. A chave mudou de nó! 75% das chaves mudam de destino — cache miss em massa.',
-      },
+        deep: `<p>É possível estimar a fração de chaves remapeadas analiticamente: ao trocar de N para N+1 nós, em média apenas 1/(N+1) das chaves permanecem no lugar — ou seja, cerca de N/(N+1) chaves mudam de nó.</p>
+<div class="xp-bad"><strong>hash % N, 3→4 nós</strong>~75% das chaves remapeadas (3/4)</div>
+<div class="xp-bad"><strong>hash % N, 10→11 nós</strong>~91% das chaves remapeadas (10/11)</div>
+<p>Contra-intuitivo: quanto mais nós o cluster já tem, pior fica o naive hashing a cada novo nó adicionado — exatamente o oposto do que se espera de um sistema pensado para escalar.</p>` },
     },
     {
       title: 'Hash Ring: espaço circular 0..2³²',
@@ -164,7 +171,11 @@
       balloon: {
         anchor: 'ring', placement: 'right',
         text: 'O espaço de hash (0 a 2³²) é disposto em um anel circular. Nós são posicionados no anel com `hash(node_id)`. As chaves também são mapeadas no anel com `hash(key)`.',
-      },
+        deep: `<p>Na prática, o "espaço 0..2³²" vem de truncar a saída de uma função de hash (MD5, SHA-1, MurmurHash) para 32 bits. Nós e chaves usam a <strong>mesma</strong> função de hash, o que garante que ambos caiam no mesmo espaço contínuo e sejam comparáveis.</p>
+<div class="xp-example"><strong>Posicionando nós no ring</strong>hash("node-A") = 3221000000 → posição no ring
+hash("node-B") = 890000000  → posição no ring
+hash("node-C") = 1700500000 → posição no ring</div>
+<p>O anel é só uma forma visual de tratar o espaço de hash como circular: depois do maior valor (2³²−1), volta-se ao zero — por isso "andar clockwise" sempre encontra um nó, mesmo perto do fim do espaço.</p>` },
     },
     {
       title: 'Lookup: avançar clockwise até o próximo nó',
@@ -176,7 +187,11 @@
         anchor: 'ring', placement: 'right',
         text: 'Para encontrar o nó dono de uma chave: avança-se no sentido horário até o primeiro nó encontrado. `user:42` (60°) → avança até Node B (150°). Lookup em O(log N) com busca binária.',
         why: 'Cada nó é responsável pelo arco de ring entre o nó anterior e ele mesmo.',
-      },
+        deep: `<p>Na implementação real, as posições dos nós ficam num array ordenado (ou estrutura tipo skip list/TreeMap). Buscar o dono de uma chave é: calcular hash(key), buscar o primeiro valor ≥ hash(key) — se não achar, "dá a volta" e pega o primeiro da lista.</p>
+<div class="xp-example"><strong>Busca binária no ring</strong>Nós ordenados: [B:150°, C:270°, A:30°+360°]
+hash("user:42") → 60°
+Primeiro nó ≥ 60° → B (150°) ✓</div>
+<p>Complexidade O(log N) por lookup — no naive <code>hash % N</code> o lookup também é O(1)/O(log N), a diferença real está no custo de rebalancear quando N muda, não no custo do lookup em si.</p>` },
     },
     {
       title: 'Adicionar nó: só rouba do vizinho',
@@ -188,7 +203,10 @@
       balloon: {
         anchor: 'nd_bg', placement: 'top',
         text: 'Ao inserir Node D entre C e A: apenas as chaves que estavam no arco C→D migram para D. Todos os outros arcos (A→B, B→C) ficam inalterados. Isso é ~1/N chaves remapeadas.',
-      },
+        deep: `<p>Ao inserir um nó, ele "recorta" um pedaço do arco que pertencia ao seu vizinho clockwise imediato — nenhum outro nó do ring é afetado, porque cada nó só é dono do arco entre ele e o nó anterior.</p>
+<div class="xp-good"><strong>Consistent hashing</strong>Inserir Node D entre C(270°) e A(30°+360°) em, digamos, 340°.
+Só as chaves entre C e D (270°→340°) migram para D.</div>
+<div class="xp-bad"><strong>hash % N equivalente</strong>A mesma operação com naive hashing remapearia a maioria das chaves do cluster inteiro.</div>` },
     },
     {
       title: 'Remover nó: migração localizada',
@@ -199,7 +217,10 @@
       balloon: {
         anchor: 'ring', placement: 'right',
         text: 'Se Node B é removido (falha ou scale-down): suas chaves (`user:42`, `sess:99`) migram apenas para o próximo nó clockwise (Node C). Nodes A e C não são afetados entre si.',
-      },
+        deep: `<p>Do ponto de vista do ring, "nó falhou" e "nó foi removido deliberadamente" são o mesmo evento: o arco que era dele passa a pertencer ao próximo nó clockwise. A diferença prática é apenas <em>quando</em> o cluster percebe a ausência (heartbeat/timeout) e reconfigura o ring.</p>
+<div class="xp-example"><strong>Antes</strong>B (150°) dono de user:42, sess:99
+<strong>Depois de B cair</strong>C (270°) passa a ser dono de user:42, sess:99 — sem afetar A</div>
+<p>Sistemas como Cassandra detectam a falha via gossip protocol e atualizam o ring automaticamente; até lá, requisições para as chaves órfãs podem usar réplicas em outros nós.</p>` },
     },
     {
       title: 'Problema sem vnodes: distribuição irregular',
@@ -210,7 +231,9 @@
       balloon: {
         anchor: 'vn_bg', placement: 'left',
         text: 'Com apenas 3 nós no ring, o espaço pode ficar desbalanceado — um nó pode ter o dobro de chaves dos outros. Virtual nodes resolvem isso.',
-      },
+        deep: `<p>Com poucos nós reais, os pontos aleatórios no ring não se distribuem uniformemente — é estatística básica: 3 pontos aleatórios num círculo raramente o dividem em 3 arcos iguais. Um nó pode acabar "dono" de bem mais da metade do espaço.</p>
+<div class="xp-bad"><strong>3 nós físicos, sem vnodes</strong>Node A: 55% do ring · Node B: 30% · Node C: 15% — sobrecarga em A</div>
+<p>Esse desbalanceamento tende a melhorar à medida que o número de nós cresce, mas ninguém quer depender de "esperar o cluster crescer" para ter distribuição justa desde o primeiro dia.</p>` },
     },
     {
       title: 'Virtual Nodes: K posições por nó físico',
@@ -222,7 +245,15 @@
         anchor: 'vn_bg', placement: 'left',
         text: 'Cada nó físico é mapeado K vezes no ring: `hash("A_1")`, `hash("A_2")`, ..., `hash("A_150")`. Com muitas posições, a distribuição se torna estatisticamente uniforme. Cassandra usa 256 vnodes por padrão.',
         why: 'Nós mais poderosos podem receber mais vnodes — balanceamento heterogêneo.',
-      },
+        deep: `<p>Cada posição virtual vem de aplicar hash a uma variação determinística do id do nó (<code>"A#1"</code>, <code>"A#2"</code>, ...), espalhada pelo ring como se fosse um nó independente. Para o lookup não existe diferença entre um vnode e um nó físico — a tradução vnode→nó físico é só uma tabela auxiliar.</p>
+<div class="xp-example"><strong>Gerando vnodes</strong>for i in range(150):
+    pos = hash(f"node-A#{i}")
+    ring[pos] = "node-A"</div>
+<h4>Benefícios extras dos vnodes</h4>
+<ul>
+<li>Ao adicionar um nó, as chaves migradas vêm de <em>muitos</em> nós diferentes (não só do vizinho), espalhando o custo do rebalanceamento</li>
+<li>Nós heterogêneos (mais RAM/CPU) recebem proporcionalmente mais vnodes</li>
+</ul>` },
     },
     {
       title: 'Replicação com o Hash Ring',
@@ -232,8 +263,12 @@
       highlight: ['rep_bg'],
       balloon: {
         anchor: 'rep_bg', placement: 'left',
-        text: 'Para replicação com fator 3: a chave é copiada para os **próximos 3 nós** no ring. Se o nó primário falhar, as réplicas assumem sem reconfiguração. Quorum R+W > N garante consistência.',
-      },
+        text: 'Para replicação com fator 3: a chave é copiada para os <strong>próximos 3 nós</strong> no ring. Se o nó primário falhar, as réplicas assumem sem reconfiguração. Quorum R+W > N garante consistência.',
+        deep: `<p>A réplica não precisa de nenhuma estrutura extra — é só continuar andando clockwise a partir do nó primário e pegar os próximos N-1 nós <em>distintos</em> (pulando vnodes do mesmo nó físico).</p>
+<div class="xp-example"><strong>Replication factor 3</strong>key → Node B (primary)
+              → Node C (replica 1)
+              → Node A (replica 2)</div>
+<p>Quorum: com N=3 réplicas, um write com W=2 e read com R=2 garante R+W &gt; N, o que assegura que toda leitura enxergue ao menos uma cópia do último write confirmado — mesmo com 1 réplica temporariamente indisponível.</p>` },
     },
     {
       title: 'Onde é usado na prática',
@@ -244,8 +279,11 @@
              'rep_bg', 'rep_title', 'r1', 'r3'],
       balloon: {
         anchor: 'con_bg', placement: 'left',
-        text: '**Cassandra & DynamoDB**: particionamento + replicação. **Redis Cluster**: 16384 hash slots distribuídos. **CDNs (Akamai, Fastly)**: roteamento de requisições para edge servers. **Memcached**: balanceamento de cache.',
-      },
+        text: '<strong>Cassandra & DynamoDB</strong>: particionamento + replicação. <strong>Redis Cluster</strong>: 16384 hash slots distribuídos. <strong>CDNs (Akamai, Fastly)</strong>: roteamento de requisições para edge servers. <strong>Memcached</strong>: balanceamento de cache.',
+        deep: `<p>Apesar de partirem do mesmo princípio, cada sistema adapta o hash ring ao seu contexto: o Redis Cluster, por exemplo, não usa um ring contínuo — usa 16.384 "hash slots" fixos, distribuídos entre os nós, o que simplifica resharding manual sem perder a ideia central de remapeamento mínimo.</p>
+<div class="xp-example"><strong>Redis Cluster</strong>slot = CRC16(key) % 16384
+Cada nó é dono de um intervalo de slots (ex: 0–5460)</div>
+<p>DynamoDB e Cassandra usam o ring "clássico" com vnodes; CDNs usam variantes para rotear requisições ao edge server mais próximo sem reconfigurar todo o mapa a cada mudança de capacidade.</p>` },
     },
     {
       title: 'Quiz',

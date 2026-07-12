@@ -153,8 +153,11 @@
              'a_ccli1', 'a_ccli2', 'a_ccli3'],
       balloon: {
         anchor: 'srv1', placement: 'right',
-        text: 'Um único servidor: **gargalo** de capacidade, **SPOF** (falha = downtime total), sem escala horizontal. Adicionar mais servidores sem coordenação → qual servidor o cliente acessa?',
-      },
+        text: 'Um único servidor: <strong>gargalo</strong> de capacidade, <strong>SPOF</strong> (falha = downtime total), sem escala horizontal. Adicionar mais servidores sem coordenação → qual servidor o cliente acessa?',
+        deep: `<p>Escalar verticalmente (servidor maior) tem um teto físico e um custo que cresce mais rápido que linear. Escalar horizontalmente (mais servidores) resolve isso, mas cria um novo problema: o cliente só conhece um endereço — sem um ponto central, ele precisaria saber de todos os servidores e decidir sozinho qual usar.</p>
+<div class="xp-bad"><strong>Sem LB: DNS round-robin ingênuo</strong>app.com → [IP1, IP2, IP3] (cliente escolhe, geralmente o primeiro)
+Servidor do IP1 cai → parte dos clientes continua tentando IP1 até o TTL do DNS expirar</div>
+<p>Sem um componente ativo entre cliente e servidores — que saiba quais estão saudáveis e distribua a carga — cada mudança na topologia (deploy, falha, scale) exige reconfigurar todo cliente.</p>` },
     },
     {
       title: 'Load Balancer: 1 IP, N servidores',
@@ -165,8 +168,11 @@
       highlight: ['lb'],
       balloon: {
         anchor: 'lb', placement: 'right',
-        text: 'O LB recebe todas as requests no **VIP** (Virtual IP), decide qual backend atender, e encaminha. Clientes sempre falam com o mesmo IP — o LB é o ponto de entrada único.',
-      },
+        text: 'O LB recebe todas as requests no <strong>VIP</strong> (Virtual IP), decide qual backend atender, e encaminha. Clientes sempre falam com o mesmo IP — o LB é o ponto de entrada único.',
+        deep: `<p>O VIP não pertence fisicamente a nenhuma máquina só — é um endereço IP que o LB anuncia (via ARP/gratuitous ARP ou BGP, dependendo da implementação), e que pode "migrar" para outra instância do LB em caso de failover, sem o cliente perceber.</p>
+<div class="xp-example"><strong>Configuração conceitual</strong>VIP: 203.0.113.10 → pool: [10.0.1.5, 10.0.1.6, 10.0.1.7]
+Cliente sempre resolve app.com → 203.0.113.10, nunca vê os IPs internos</div>
+<p>Isso também é o que permite trocar, adicionar ou remover servidores do pool sem qualquer mudança de DNS ou reconfiguração do lado do cliente — a indireção do VIP é o que dá liberdade operacional ao backend.</p>` },
     },
     {
       title: 'L4 vs L7: onde a decisão acontece',
@@ -177,8 +183,11 @@
       highlight: ['l4_bg', 'lb'],
       balloon: {
         anchor: 'l4_bg', placement: 'left',
-        text: '**L4**: decisão por IP:port — sem abrir o payload TCP/UDP. Mais rápido, menor latência. **L7**: abre o HTTP e decide por header/URL/cookie. Mais funcional, permite SSL termination e roteamento semântico.',
-      },
+        text: '<strong>L4</strong>: decisão por IP:port — sem abrir o payload TCP/UDP. Mais rápido, menor latência. <strong>L7</strong>: abre o HTTP e decide por header/URL/cookie. Mais funcional, permite SSL termination e roteamento semântico.',
+        deep: `<p>A diferença de desempenho vem de quanto trabalho o LB faz por pacote: L4 só olha o cabeçalho IP/TCP e encaminha (por vezes nem termina a conexão TCP, só faz NAT) — é essencialmente roteamento de rede. L7 precisa remontar o stream TCP, parsear HTTP, decidir a rota e então abrir uma nova conexão com o backend escolhido.</p>
+<div class="xp-good"><strong>Use L4 quando</strong>Protocolo não-HTTP (TCP puro, gRPC de baixo nível), latência é crítica, ou o roteamento não depende do conteúdo</div>
+<div class="xp-good"><strong>Use L7 quando</strong>Precisa rotear por host/path, quer terminar TLS centralmente, ou quer recursos como sticky sessions e WAF</div>
+<p>Muitas arquiteturas usam os dois em camadas: um L4 (AWS NLB) na borda por resiliência e baixa latência, e um L7 (Envoy, nginx) atrás dele para roteamento inteligente.</p>` },
     },
     {
       title: 'Round Robin e Weighted Round Robin',
@@ -189,8 +198,14 @@
       highlight: ['lb', 'srv1', 'srv2', 'srv3'],
       balloon: {
         anchor: 'alg_bg', placement: 'left',
-        text: '**Round Robin**: distribui requests em sequência circular 1→2→3→1→... Simples e justo quando os servidores têm a mesma capacidade.\n**Weighted**: se Server 1 tem 4 vCPUs e Server 2 tem 2 vCPUs, usar weights 2:1.',
-      },
+        text: '<strong>Round Robin</strong>: distribui requests em sequência circular 1→2→3→1→... Simples e justo quando os servidores têm a mesma capacidade.\n<strong>Weighted</strong>: se Server 1 tem 4 vCPUs e Server 2 tem 2 vCPUs, usar weights 2:1.',
+        deep: `<p>Round Robin assume implicitamente que toda requisição custa o mesmo — o que raramente é verdade na prática (um upload demora mais que um GET simples), mas funciona bem como default por ser previsível e não exigir nenhum estado compartilhado entre os LBs.</p>
+<div class="xp-example"><strong>nginx: weighted round robin</strong>upstream backend {
+  server 10.0.1.5 weight=2;
+  server 10.0.1.6 weight=1;
+}
+# server 1 recebe ~2x mais requests que server 2</div>
+<p>Weighted Round Robin é a ferramenta certa quando os servidores têm capacidades diferentes por design (ex.: durante uma migração gradual para instâncias maiores) — sem isso, o servidor mais fraco recebe a mesma carga que os outros e vira gargalo.</p>` },
     },
     {
       title: 'Least Connections e IP Hash',
@@ -201,9 +216,12 @@
       highlight: ['lb'],
       balloon: {
         anchor: 'alg_bg', placement: 'left',
-        text: '**Least Connections**: envia para o servidor com menos conexões ativas — ideal quando requests têm durações muito diferentes (ex: upload vs query simples).\n**IP Hash**: `hash(IP) % N` → mesmo cliente sempre vai para o mesmo servidor. Útil para cache com affinity.',
+        text: '<strong>Least Connections</strong>: envia para o servidor com menos conexões ativas — ideal quando requests têm durações muito diferentes (ex: upload vs query simples).\n<strong>IP Hash</strong>: `hash(IP) % N` → mesmo cliente sempre vai para o mesmo servidor. Útil para cache com affinity.',
         why: 'IP Hash tem um problema: se um servidor cai, há redistribuição desigual — o Consistent Hash é mais robusto para isso.',
-      },
+        deep: `<p>Least Connections exige que o LB mantenha estado (contador de conexões abertas por backend), diferente de Round Robin que é totalmente stateless. Esse estado é o que permite reagir em tempo real a servidores lentos, sem precisar saber a priori a duração de cada request.</p>
+<div class="xp-bad"><strong>IP Hash com pool instável</strong>hash(IP) % 3 → muda de resultado sempre que N muda (add/remove server)
+Servidor cai: praticamente todos os clientes são remapeados para outro servidor, não só os do servidor perdido</div>
+<p>Esse remapeamento em massa do IP Hash tradicional é justamente o problema que o Consistent Hash resolve — ele redistribui só a fração de chaves que pertenciam ao nó removido, mantendo o resto estável.</p>` },
     },
     {
       title: 'Health Checks: detectar servidores falhos',
@@ -213,9 +231,16 @@
       highlight: ['srv4', 'srv4_x', 'alg_hc_h'],
       balloon: {
         anchor: 'srv4', placement: 'right',
-        text: '**Active health check**: LB envia `GET /health` a cada 5s → 2 falhas consecutivas → servidor marcado como unhealthy → removido do pool. **Passive**: monitorar erros nas requisições reais.',
+        text: '<strong>Active health check</strong>: LB envia `GET /health` a cada 5s → 2 falhas consecutivas → servidor marcado como unhealthy → removido do pool. <strong>Passive</strong>: monitorar erros nas requisições reais.',
         why: '`/health` deve verificar dependências (banco, cache) — responder 200 só se o servidor consegue processar requests com sucesso.',
-      },
+        deep: `<p>Existe uma armadilha comum: um <code>/health</code> "raso" que só responde 200 se o processo está de pé, mesmo que a conexão com o banco esteja quebrada. Isso faz o LB continuar enviando tráfego para um servidor que não consegue de fato processar nada.</p>
+<div class="xp-bad"><strong>Health check raso</strong>app.get('/health', (req, res) => res.sendStatus(200)); // sempre 200!</div>
+<div class="xp-good"><strong>Health check profundo</strong>app.get('/health', async (req, res) => {
+  await db.ping();
+  await cache.ping();
+  res.sendStatus(200);
+});</div>
+<p>O contrapeso é não exagerar: um health check que verifica dependências demais pode marcar o servidor como unhealthy por um problema temporário e transitório em uma dependência não-crítica, tirando capacidade do pool desnecessariamente.</p>` },
     },
     {
       title: 'SSL Termination: centralizando TLS no LB',
@@ -224,8 +249,13 @@
       highlight: ['lb', 'ssl_bg'],
       balloon: {
         anchor: 'ssl_bg', placement: 'left',
-        text: 'LB decifra TLS e encaminha HTTP para o backend. Vantagens: **1 único certificado** gerenciado no LB, **offload de CPU** (handshake TLS é computacionalmente caro), e permite ao L7 inspecionar o conteúdo HTTP.',
-      },
+        text: 'LB decifra TLS e encaminha HTTP para o backend. Vantagens: <strong>1 único certificado</strong> gerenciado no LB, <strong>offload de CPU</strong> (handshake TLS é computacionalmente caro), e permite ao L7 inspecionar o conteúdo HTTP.',
+        deep: `<p>Terminar TLS no LB significa que o tráfego entre LB e backend trafega como HTTP puro — o que é aceitável dentro de uma rede privada confiável (VPC), mas é considerado inseguro em ambientes que exigem criptografia ponta a ponta (compliance, zero-trust).</p>
+<div class="xp-good"><strong>SSL Termination</strong>Cliente --TLS--> LB --HTTP--> Backend
+1 certificado, renovação centralizada (ex: cert-manager, ACM)</div>
+<div class="xp-good"><strong>Re-encryption / mTLS end-to-end</strong>Cliente --TLS--> LB --TLS interno (mTLS)--> Backend
+Mais seguro, exige gerenciar certificados internos também</div>
+<p>SSL Passthrough é o meio-termo oposto: o LB nem decifra, só encaminha os bytes TCP — o backend é quem termina o TLS. Usado quando o LB não deve (ou não pode) ver o conteúdo, mas perde a capacidade de rotear por conteúdo HTTP.</p>` },
     },
     {
       title: 'Layer 7: roteamento por conteúdo HTTP',
@@ -235,8 +265,11 @@
       highlight: ['lb', 'l7f_bg'],
       balloon: {
         anchor: 'l7f_bg', placement: 'top',
-        text: 'L7 LB permite **host-based routing** (`api.empresa.com` → cluster API, `www.empresa.com` → frontend), **path routing** (`/images/` → CDN origin), **sticky sessions** via cookie, e até WAF, rate limiting e canary deploys.',
-      },
+        text: 'L7 LB permite <strong>host-based routing</strong> (`api.empresa.com` → cluster API, `www.empresa.com` → frontend), <strong>path routing</strong> (`/images/` → CDN origin), <strong>sticky sessions</strong> via cookie, e até WAF, rate limiting e canary deploys.',
+        deep: `<p>Sticky sessions merecem atenção especial: elas resolvem o problema de estado em memória (sessão de login, carrinho local) mas criam um acoplamento entre cliente e servidor específico — se esse servidor cair, a sessão daquele cliente se perde junto.</p>
+<div class="xp-example"><strong>Cookie de afinidade</strong>Set-Cookie: SERVERID=srv2; Path=/; HttpOnly
+# próximas requests do cliente sempre vão para srv2, enquanto o cookie existir</div>
+<p>A alternativa mais robusta é tornar os backends <strong>stateless</strong> (sessão em Redis/banco compartilhado) e evitar sticky sessions por completo — isso permite ao LB balancear livremente e simplifica deploys, já que qualquer instância pode atender qualquer requisição.</p>` },
     },
     {
       title: 'Consistent Hash e algoritmos avançados',
@@ -246,8 +279,11 @@
              'alg_rl_h', 'alg_rl1', 'alg_rl2'],
       balloon: {
         anchor: 'alg_bg', placement: 'left',
-        text: '**Consistent Hash** é superior ao IP Hash para cache affinity — quando um servidor cai, apenas ~1/N chaves precisam ser remapeadas (vs todos com `hash % N`). Perfeito para serviços stateful como cache.',
-      },
+        text: '<strong>Consistent Hash</strong> é superior ao IP Hash para cache affinity — quando um servidor cai, apenas ~1/N chaves precisam ser remapeadas (vs todos com `hash % N`). Perfeito para serviços stateful como cache.',
+        deep: `<p>A ideia central do Consistent Hashing é dispor os servidores (e as chaves) em um anel de hash — cada chave pertence ao primeiro servidor encontrado ao andar no sentido horário a partir da sua posição no anel. Adicionar ou remover um servidor só afeta a fatia do anel adjacente a ele.</p>
+<div class="xp-example"><strong>Anel conceitual</strong>hash(Server1) = 10, hash(Server2) = 40, hash(Server3) = 80
+hash(chaveX) = 25 → cai entre Server1(10) e Server2(40) → vai para Server2</div>
+<p>Na prática, cada servidor físico é representado por múltiplos pontos "virtuais" no anel (virtual nodes) para distribuir a carga de forma mais uniforme — sem isso, um servidor poderia acabar responsável por uma fatia desproporcional do anel só por sorte no hash.</p>` },
     },
     {
       title: 'Global Load Balancing',
@@ -257,8 +293,11 @@
       highlight: ['glb_bg'],
       balloon: {
         anchor: 'glb_bg', placement: 'left',
-        text: '**GeoDNS**: DNS resolve para o servidor mais próximo geograficamente. **Anycast**: mesmo IP anunciado em múltiplos data centers — BGP roteia para o mais próximo. Ambos reduzem latência global e permitem failover de região.',
-      },
+        text: '<strong>GeoDNS</strong>: DNS resolve para o servidor mais próximo geograficamente. <strong>Anycast</strong>: mesmo IP anunciado em múltiplos data centers — BGP roteia para o mais próximo. Ambos reduzem latência global e permitem failover de região.',
+        deep: `<p>GeoDNS opera na camada de resolução de nomes: o servidor DNS responde com um IP diferente dependendo de onde a consulta se origina. É simples de implementar, mas está sujeito ao cache de DNS — clientes com TTL alto continuam batendo na região antiga por um tempo após um failover.</p>
+<div class="xp-good"><strong>Anycast</strong>Mesmo IP anunciado via BGP em vários PoPs; roteadores da internet escolhem a rota mais curta automaticamente — failover quase instantâneo (segundos), sem depender de TTL de DNS</div>
+<div class="xp-bad"><strong>GeoDNS ingênuo em failover</strong>Região cai → DNS passa a apontar para outra região → clientes com cache de DNS ainda batem na região morta até o TTL expirar</div>
+<p>Serviços como Cloudflare e grandes CDNs combinam os dois: Anycast para chegar rápido ao PoP mais próximo, e roteamento inteligente por dentro da rede deles para lidar com falhas locais.</p>` },
     },
     {
       title: 'Quiz',
@@ -273,7 +312,7 @@
           'Random — escolha aleatória tem distribuição estatisticamente uniforme',
         ],
         answer: 1,
-        explain: '**Least Connections** é o melhor para workloads com durações variadas: um servidor que está processando um upload de 5 minutos recebe menos requests novas do que um servidor que só faz queries de 10ms. Round Robin seria injusto — enviaria a mesma quantidade de requests para ambos, sobrecarregando o servidor com o upload longo.',
+        explain: '<strong>Least Connections</strong> é o melhor para workloads com durações variadas: um servidor que está processando um upload de 5 minutos recebe menos requests novas do que um servidor que só faz queries de 10ms. Round Robin seria injusto — enviaria a mesma quantidade de requests para ambos, sobrecarregando o servidor com o upload longo.',
       },
     },
     {

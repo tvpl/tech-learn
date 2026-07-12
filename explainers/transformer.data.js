@@ -207,7 +207,10 @@
         anchor: "r1_text", placement: "bottom",
         text: "Tudo começa com texto cru: <strong>“O gato sentou no tapete”</strong>. Para o computador, isso é apenas uma sequência de caracteres.",
         why: "Uma rede neural só faz contas com números. Então o primeiro trabalho é transformar texto em números.",
-      },
+        deep: `<p>Do ponto de vista do modelo, a string é só uma sequência de bytes — sem "entendimento" nenhum embutido nela. Todo o "conhecimento" do Transformer vem de pesos numéricos aprendidos durante o treino, não de regras de linguagem escritas à mão.</p>
+<div class="xp-example"><strong>O que o modelo recebe de fato</strong>Texto: "O gato sentou no tapete"
+Depois de todo o pipeline (tokenizar → IDs → embeddings → atenção): uma sequência de vetores de números — nenhum caractere sobrevive além da primeira etapa</div>
+<p>Esse é o motivo do pipeline inteiro existir: cada etapa (tokenização, embedding, positional encoding) converte uma representação mais "humana" numa mais "matemática", até sobrar só álgebra linear que a rede consegue processar.</p>` },
       enter: (ctx) => reveal(ctx, ["r1_text", "r1_sub"], 120),
     },
     { // 2
@@ -218,7 +221,11 @@
         anchor: "tk_4", placement: "bottom",
         text: "O texto é quebrado em <strong>tokens</strong>. Palavras comuns viram 1 token; palavras raras se dividem em sub-palavras — aqui <strong>“tapete” → “tap” + “ete”</strong>.",
         why: "Um vocabulário fixo (~50 mil pedaços) cobre qualquer texto, inclusive palavras novas ou com erros, sem ficar gigante.",
-      },
+        deep: `<p>O algoritmo mais comum para construir esse vocabulário é <strong>BPE</strong> (Byte-Pair Encoding): parte de caracteres individuais e vai mesclando os pares mais frequentes no corpus de treino, repetidamente, até atingir o tamanho de vocabulário desejado. Palavras frequentes acabam virando 1 token inteiro; palavras raras ficam fragmentadas.</p>
+<div class="xp-example"><strong>Tokenização de palavras diferentes</strong>"gato" → 1 token (palavra comum)
+"tapete" → 2 tokens: "tap" + "ete" (menos frequente)
+"antidisconstitucionalissimamente" → vários tokens pequenos</div>
+<p>Essa estratégia resolve um problema real: um vocabulário de palavras inteiras nunca cobriria neologismos, erros de digitação ou nomes próprios raros. Com sub-palavras, qualquer string pode ser reconstruída — no pior caso, caractere por caractere.</p>` },
       enter: (ctx) => {
         reveal(ctx, ["tk_0", "tk_1", "tk_2", "tk_3"], 90);
         setTimeout(() => reveal(ctx, ["tk_4", "tk_5", "tk_brace"], 110), 420);
@@ -230,7 +237,10 @@
         anchor: "id_2", placement: "bottom",
         text: "Cada token vira um <strong>número inteiro</strong>: o índice dele na tabela de vocabulário. A frase agora é uma lista de IDs.",
         why: "IDs são apenas endereços — o significado ainda não está aí. É o próximo passo que dá sentido a eles.",
-      },
+        deep: `<p>O ID é arbitrário — só um índice numa lista fixa de dezenas de milhares de tokens possíveis, decidida uma vez durante o treino do tokenizador e nunca mudada depois. Dois tokens com IDs próximos (ex.: 41 e 42) não são necessariamente parecidos em significado.</p>
+<div class="xp-example"><strong>Frase virando IDs</strong>["O", "gato", "sentou", "no", "tap", "ete"]
+→ [41, 920, 1503, 17, 2087, 308]</div>
+<p>É por isso que o ID sozinho não serve de entrada útil para a rede: 1503 não "parece" mais com 1504 do que com 41 — não há noção de distância ou semelhança num simples índice. O próximo passo (embeddings) é o que resolve isso, mapeando cada ID a um vetor onde distância <em>importa</em>.</p>` },
       enter: (ctx) => {
         reveal(ctx, ["tk_0", "tk_1", "tk_2", "tk_3", "tk_4", "tk_5"], 40);
         setTimeout(() => reveal(ctx, ["id_0", "id_1", "id_2", "id_3", "id_4", "id_5"], 80), 250);
@@ -244,7 +254,11 @@
         anchor: "ve_2", placement: "bottom",
         text: "Cada ID consulta uma <strong>tabela de embeddings</strong> e vira um vetor denso de números (ex.: 512 ou 768 dimensões), mostrado aqui como barras.",
         why: "No espaço vetorial, palavras de sentido parecido ficam próximas — é assim que o modelo guarda significado, aprendido no treino.",
-      },
+        deep: `<p>A tabela de embeddings é literalmente uma matriz gigante (vocabulário × dimensões), uma linha por token possível. Consultar o embedding de um ID é só indexar essa matriz — mas os <em>valores</em> de cada linha foram ajustados durante o treino para capturar significado.</p>
+<div class="xp-example"><strong>Ilustração simplificada (3 dimensões, na prática são centenas)</strong>embed("gato")  = [0.81, 0.42, 0.05]
+embed("cão")   = [0.79, 0.39, 0.11]   ← próximo de "gato" (ambos são animais domésticos)
+embed("tapete") = [0.10, 0.88, 0.60]   ← distante de "gato" (contexto diferente)</div>
+<p>Essa proximidade não é programada manualmente — emerge do treino, porque palavras que aparecem em contextos parecidos (ex.: "gato" e "cão" costumam aparecer perto de "adotar", "raça", "veterinário") acabam recebendo vetores parecidos.</p>` },
       // demonstra os GRUPOS: revela todos os ids do grupo de uma vez
       enter: (ctx) => {
         ctx.reveal("toks", 30);
@@ -259,7 +273,11 @@
         anchor: { x: 855, y: 530 }, placement: "top",
         text: "Soma-se a cada embedding um <strong>padrão de posição</strong> (ondas de seno/cosseno), codificando se o token é o 1º, 2º, 3º…",
         why: "A atenção olha todos os tokens ao mesmo tempo e não tem noção de ordem. Sem isso, “gato mordeu cão” = “cão mordeu gato”.",
-      },
+        deep: `<p>A fórmula original usa senos e cossenos de frequências diferentes para cada posição — cada posição ganha uma "assinatura" única de ondas, e posições próximas geram assinaturas parecidas (mudança suave, não abrupta).</p>
+<div class="xp-example"><strong>Vetor de posição somado ao embedding</strong>embed("gato") original = [0.81, 0.42, 0.05, ...]
+pos_encoding(posição 1) = [0.84, 0.54, 0.00, ...]
+entrada final           = soma dos dois, elemento a elemento</div>
+<p>Alternativas mais recentes (como <strong>RoPE</strong>, usada em vários modelos atuais) codificam a posição rotacionando os vetores Q e K dentro da própria atenção, em vez de somar algo ao embedding de entrada — mas o objetivo é o mesmo: dar à rede, que processa tudo em paralelo, uma noção de ordem que ela não teria de outra forma.</p>` },
       enter: (ctx) => {
         reveal(ctx, ["ve_0", "ve_1", "ve_2", "ve_3", "ve_4", "ve_5"], 20);
         setTimeout(() => reveal(ctx, ["r5_wave", "r5_lab"], 150), 150);
@@ -274,7 +292,12 @@
         anchor: "r6_box", placement: "left",
         text: "Os vetores entram no <strong>bloco do encoder</strong>. Ele tem duas sub-camadas: <strong>Self-Attention</strong> e <strong>Feed-Forward</strong>, cada uma embrulhada por <strong>Add &amp; Norm</strong> (setas amarelas = atalhos residuais).",
         why: "Esse mesmo bloco é repetido N vezes. Vamos abrir cada parte dele a seguir.",
-      },
+        deep: `<p>Cada uma das duas sub-camadas tem um papel diferente e complementar: a atenção <strong>mistura informação entre tokens</strong> (o que "gato" aprende sobre "sentou"); o feed-forward <strong>processa cada token individualmente</strong>, em maior profundidade.</p>
+<div class="xp-example"><strong>Fluxo de dados dentro do bloco</strong>entrada (embeddings + posição)
+  → Self-Attention (mistura entre tokens) → Add & Norm
+  → Feed-Forward (processa cada token) → Add & Norm
+  → saída (mesma forma da entrada, pronta para o próximo bloco)</div>
+<p>A saída tem exatamente o mesmo formato da entrada (mesmo número de tokens, mesma dimensão de vetor) — por isso o bloco pode ser empilhado N vezes sem nenhuma mudança de "encanamento": a saída de um bloco encaixa direto na entrada do próximo.</p>` },
     },
     { // 7
       title: "Self-Attention: Q, K, V",
@@ -283,7 +306,12 @@
         anchor: "q_v", placement: "right",
         text: "Dentro da atenção, cada token gera 3 vetores via matrizes aprendidas: <strong>Q</strong> (o que eu procuro), <strong>K</strong> (o que eu ofereço) e <strong>V</strong> (a informação que entrego).",
         why: "Separar “procura” (Q), “rótulo” (K) e “conteúdo” (V) permite que cada palavra busque dinamicamente as outras relevantes.",
-      },
+        deep: `<p>Q, K e V vêm todos do <em>mesmo</em> vetor de entrada de "sentou" — só passam por três matrizes de pesos diferentes (Wq, Wk, Wv), aprendidas no treino. É uma simples multiplicação de matriz: <code>Q = entrada · Wq</code>, e igual para K e V.</p>
+<div class="xp-example"><strong>Uma analogia de busca</strong>Q("sentou") = "estou procurando: quem é o sujeito desta ação?"
+K("gato")   = "eu ofereço: sou um substantivo, sujeito em potencial"
+K("no")     = "eu ofereço: sou uma preposição"
+→ Q("sentou") combina muito mais com K("gato") do que com K("no")</div>
+<p>V é o que de fato é somado na saída depois que os pesos de atenção são calculados — Q e K só servem para decidir <em>quanto</em> de cada V entra na mistura final.</p>` },
       enter: (ctx) => {
         reveal(ctx, ["q_src", "q_srclab"], 60);
         setTimeout(() => {
@@ -299,7 +327,12 @@
         anchor: "m_box", placement: "left",
         text: "Multiplica-se cada <strong>Q</strong> por todos os <strong>K</strong> (Q·Kᵀ), escala por √dₖ e aplica <span class=\"xp-term\" tabindex=\"0\" data-tip=\"Transforma números quaisquer em probabilidades positivas que somam 1.\">softmax</span>. Resulta numa matriz de <strong>pesos</strong>: quanto cada token atende aos demais (cada linha soma 1).",
         why: "Assim “sentou” pode pesar forte em “gato” (o sujeito) e fraco em “no”. O resultado é a soma dos V ponderada por esses pesos.",
-      },
+        deep: `<p>O produto Q·K é um <strong>produto escalar</strong> — quanto mais alinhados dois vetores, maior o número. Dividir por √dₖ evita que esses números fiquem grandes demais (o que "achataria" o softmax, fazendo-o virar quase um one-hot). O softmax então transforma os números crus em pesos que somam exatamente 1 por linha.</p>
+<div class="xp-example"><strong>Scores brutos → pesos de atenção para a linha "sentou"</strong>Q(sentou)·K(gato) = 4.1   Q(sentou)·K(sentou) = 3.0
+Q(sentou)·K(no)   = 0.8   Q(sentou)·K(tapete) = 1.2
+↓ softmax
+peso(gato) = 0.55   peso(sentou) = 0.24   peso(no) = 0.05   peso(tapete) = 0.16</div>
+<p>A saída daquela linha é a soma ponderada: <code>0.55·V(gato) + 0.24·V(sentou) + 0.05·V(no) + 0.16·V(tapete)</code> — o vetor de "sentou" sai da atenção "carregado" de informação sobre "gato", proporcional ao peso.</p>` },
       enter: (ctx) => {
         reveal(ctx, ["m_box", "m_formula", "m_qy", "m_kx", "m_note"], 80);
         setTimeout(() => ctx.lightCells("m_box", [
@@ -315,7 +348,12 @@
         anchor: { x: 1080, y: 400 }, placement: "left",
         text: "Não há uma atenção só, mas <strong>várias cabeças em paralelo</strong>. Cada uma tem seus próprios Q/K/V e olha um aspecto diferente das relações.",
         why: "Uma cabeça pode seguir sintaxe; outra, correferência; outra, proximidade. As saídas são concatenadas e projetadas de volta.",
-      },
+        deep: `<p>Se a dimensão do modelo é 512 e há 8 cabeças, cada cabeça trabalha com vetores de 512/8 = 64 dimensões — a dimensão total é dividida entre as cabeças, não multiplicada. Cada uma tem seu próprio conjunto de matrizes Wq/Wk/Wv, aprendidas de forma independente.</p>
+<div class="xp-example"><strong>4 cabeças, 4 focos diferentes (ilustrativo)</strong>Cabeça 1: "sentou" → peso alto em "gato" (relação sujeito-verbo)
+Cabeça 2: "no" → peso alto em "tapete" (preposição-objeto)
+Cabeça 3: "sentou" → peso alto em posições próximas (localidade)
+Cabeça 4: padrão mais difuso, sem foco claro</div>
+<p>No fim, as saídas das cabeças são concatenadas lado a lado e passam por uma última matriz de projeção, que volta ao tamanho original — é assim que "8 visões parciais de 64 dimensões" viram de novo "1 visão combinada de 512 dimensões".</p>` },
       enter: (ctx) => {
         reveal(ctx, ["h_0", "h_1", "h_2", "h_3", "h_lab"], 110);
         ["h_0", "h_1", "h_2", "h_3"].forEach((id, k) =>
@@ -329,7 +367,10 @@
         anchor: "r6_res1", placement: "left",
         text: "A saída da atenção é <strong>somada à própria entrada</strong> (conexão residual, seta amarela) e passa por <strong>LayerNorm</strong>.",
         why: "O atalho residual deixa o gradiente fluir e preserva a informação original; o LayerNorm estabiliza os valores. Sem eles, redes profundas não treinam bem.",
-      },
+        deep: `<p>A conexão residual é literalmente <code>saída = entrada + atenção(entrada)</code> — a camada de atenção só precisa aprender a <em>diferença</em> (o "ajuste") em relação à entrada, em vez de reconstruir tudo do zero. Isso facilita muito o treino de redes com dezenas de blocos empilhados.</p>
+<div class="xp-example"><strong>Por que isso importa em redes profundas</strong>Sem atalho: sinal de erro precisa atravessar N blocos "puros" durante o treino → tende a desaparecer (vanishing gradient)
+Com atalho: existe um caminho direto entrada→saída em cada bloco → o sinal de erro sempre tem uma rota curta</div>
+<p>O LayerNorm, aplicado logo depois, reescala os valores de cada vetor para média e variância estáveis — evita que os números cresçam ou encolham descontroladamente à medida que atravessam blocos sucessivos.</p>` },
     },
     { // 11
       title: "Feed-Forward (MLP)",
@@ -338,7 +379,12 @@
         anchor: "f_mid", placement: "bottom",
         text: "Cada posição passa, de forma independente, por um <strong>MLP</strong>: expande para ~4× a dimensão, aplica uma não-linearidade (GELU) e volta ao tamanho original.",
         why: "A atenção mistura informação entre tokens; o feed-forward transforma cada token em profundidade, dando capacidade de representação não-linear.",
-      },
+        deep: `<p>"Independente" aqui é a palavra-chave: ao contrário da atenção, o feed-forward processa cada posição sozinha, sem olhar para as vizinhas — é a mesma rede (os mesmos pesos) aplicada token a token.</p>
+<div class="xp-example"><strong>Dimensões de um bloco típico</strong>entrada: vetor de 512 dimensões
+expansão: 512 → 2048 (4×) via primeira camada linear
+não-linearidade: GELU (deixa passar valores positivos, amortece os negativos)
+projeção de volta: 2048 → 512 via segunda camada linear</div>
+<p>Sem a não-linearidade, empilhar camadas lineares equivaleria matematicamente a uma única camada linear — é o GELU que dá à rede a capacidade de aproximar funções complexas, não apenas combinações lineares dos embeddings de entrada.</p>` },
       enter: (ctx) => {
         reveal(ctx, ["f_in", "f_l1"], 60);
         setTimeout(() => { ctx.show("f_a1"); ctx.drawArrow("f_a1"); reveal(ctx, ["f_mid", "f_l2"], 60); }, 350);
@@ -353,7 +399,11 @@
         anchor: "st_1", placement: "left",
         text: "O bloco inteiro é <strong>repetido N vezes</strong> (12, 24, 96+ camadas). A saída de um vira a entrada do próximo.",
         why: "Camadas iniciais captam padrões locais (sintaxe); as profundas, sentido abstrato e contexto global. Empilhar é o que dá ‘profundidade de raciocínio’.",
-      },
+        deep: `<p>Cada bloco tem seu próprio conjunto de pesos (Wq/Wk/Wv, matrizes do feed-forward) — não é o mesmo bloco reaplicado N vezes, são N blocos diferentes, cada um aprendendo a refinar um pouco mais a representação recebida do anterior.</p>
+<div class="xp-example"><strong>Progressão intuitiva pelas camadas (simplificado)</strong>Bloco 1: relações sintáticas próximas (sujeito ↔ verbo)
+Bloco ~metade: relações semânticas de médio alcance (referências, concordância)
+Bloco final: representação abstrata, pronta para prever a próxima palavra</div>
+<p>Não existe um limite fixo de "quantas camadas bastam" — mais camadas em geral aumentam a capacidade do modelo, mas também o custo computacional e a dificuldade de treinar. É um dos principais botões de escala usados para tornar um modelo maior ou menor.</p>` },
       enter: (ctx) => {
         reveal(ctx, ["st_2", "st_1", "st_0", "st_lab"], 130);
         setTimeout(() => { ctx.show("st_arr"); ctx.drawArrow("st_arr"); }, 500);
@@ -367,7 +417,13 @@
         anchor: "o_0", placement: "left",
         text: "O vetor final passa por uma <strong>camada Linear</strong> até o tamanho do vocabulário e por <strong>softmax</strong>, virando uma <strong>probabilidade para cada próxima palavra</strong>. Aqui vence <strong>“tapete”</strong>.",
         why: "Para gerar texto, escolhe-se uma palavra, ela é acrescentada à entrada e tudo recomeça — token a token. É a geração autoregressiva.",
-      },
+        deep: `<p>A camada linear final projeta o vetor de saída (ex.: 512 dimensões) para um vetor do tamanho do vocabulário inteiro (ex.: 50 mil), um número por token possível. O softmax transforma esses números crus (chamados <em>logits</em>) em probabilidades que somam 1.</p>
+<div class="xp-example"><strong>Distribuição de probabilidade sobre o vocabulário</strong>P("tapete")  = 0.62
+P("chão")    = 0.18
+P("sofá")    = 0.12
+P("carpete") = 0.08
+(e uma fatia minúscula espalhada entre os outros ~50 mil tokens)</div>
+<p>Escolher sempre o token de maior probabilidade (greedy) tende a gerar texto repetitivo; por isso, na prática, geradores costumam amostrar dessa distribuição com técnicas como <em>temperature</em> ou <em>top-p</em>, introduzindo alguma variação controlada.</p>` },
       enter: (ctx) => {
         reveal(ctx, ["o_title", "o_0", "o_1", "o_2", "o_3"], 80);
         setTimeout(() => reveal(ctx, ["ol_0", "ol_1", "ol_2", "ol_3"], 70), 250);
@@ -378,7 +434,13 @@
       title: "Atenção causal (no decoder)",
       balloon: { anchor: "cm_box", placement: "left",
         text: "Em modelos geradores (decoder, estilo GPT), a self-attention é <span class=\"xp-term\" tabindex=\"0\" data-tip=\"As posições futuras recebem -infinito antes do softmax, então seu peso vira zero.\">mascarada</span>: cada posição só atende às <strong>anteriores</strong> e a si mesma (triângulo inferior).",
-        why: "Durante a geração, o modelo não pode “espiar” a palavra que ainda vai prever. A máscara triangular garante isso." },
+        why: "Durante a geração, o modelo não pode “espiar” a palavra que ainda vai prever. A máscara triangular garante isso.",
+        deep: `<p>Na prática, a máscara soma <code>-infinito</code> aos scores Q·K das posições futuras <em>antes</em> do softmax — e como <code>e^(-infinito) = 0</code>, essas posições recebem peso exatamente zero depois do softmax, sem precisar de nenhuma lógica condicional especial.</p>
+<div class="xp-example"><strong>Matriz de atenção causal (linha = quem atende, coluna = quem é atendido)</strong>token 1 ("O")      → só pode ver: token 1
+token 2 ("gato")   → pode ver: tokens 1, 2
+token 3 ("sentou") → pode ver: tokens 1, 2, 3
+...cada linha "acende" um pouco mais que a anterior — forma um triângulo</div>
+<p>Esse mesmo mecanismo é o que permite treinar em paralelo: o modelo prevê todas as posições da sequência de uma vez durante o treino, mas cada previsão só "enxergou" o passado — exatamente como aconteceria gerando token a token.</p>` },
       enter: (ctx) => {
         ctx.reveal(["cm_box", "cm_t", "cm_n"], 90);
         const cells = [];
@@ -391,7 +453,12 @@
       show: ["gen_loop"], highlight: ["li_input", "li_out"],
       balloon: { anchor: "gen_box", placement: "bottom",
         text: "A palavra escolhida é <strong>anexada à entrada</strong> e todo o fluxo recomeça para prever a próxima — e assim sucessivamente.",
-        why: "Por isso o texto sai palavra a palavra. O mesmo passo se repete até sair um token de parada (fim de texto)." },
+        why: "Por isso o texto sai palavra a palavra. O mesmo passo se repete até sair um token de parada (fim de texto).",
+        deep: `<p>"Autoregressivo" significa que cada previsão depende das previsões anteriores — o modelo nunca gera a frase inteira de uma vez, mas sim um token, olha para trás (incluindo o que acabou de gerar) e prevê o próximo.</p>
+<div class="xp-example"><strong>Três passos do loop</strong>Entrada: "O gato sentou no" → gera "tapete"
+Entrada: "O gato sentou no tapete" → gera "."
+Entrada: "O gato sentou no tapete." → gera token especial de fim de texto (para)</div>
+<p>Esse loop custa uma passada completa pela rede por token gerado — é o motivo de gerar textos longos ser mais lento que gerar textos curtos, e por que técnicas de cache (guardar os K/V já calculados dos tokens anteriores) são essenciais para tornar isso rápido o suficiente para uso interativo.</p>` },
       enter: (ctx) => { ctx.show("gen_box"); ctx.drawArrow("gen_loop"); ctx.pulse("gen_loop", true); },
     },
     { // 16
@@ -417,7 +484,14 @@
         anchor: { x: 850, y: 400 }, placement: "top",
         text: "Esse é o caminho completo: <strong>texto → tokens → embeddings (+posição) → blocos de atenção → cabeça de saída → próxima palavra</strong>.",
         why: "A peça-chave é a self-attention: deixa cada palavra ‘olhar’ todas as outras e construir contexto. Empilhada muitas vezes, é o que torna os Transformers tão poderosos.",
-      },
+        deep: `<p>Vale destacar o que muda entre treino e uso (inferência): durante o treino, o modelo vê o texto inteiro de uma vez e aprende a prever cada posição em paralelo (com a máscara causal garantindo que não "veja o futuro"); durante a geração, ele de fato roda o loop token a token descrito nas últimas cenas.</p>
+<div class="xp-example"><strong>O pipeline completo, de ponta a ponta</strong>"O gato sentou no tapete"
+→ tokens: [O, gato, sentou, no, tap, ete]
+→ embeddings + posição: vetores densos por token
+→ N blocos de atenção + feed-forward: contexto se acumula
+→ cabeça de saída: distribuição de probabilidade sobre o vocabulário
+→ próxima palavra escolhida, e o ciclo recomeça</div>
+<p>Essa mesma arquitetura, com pequenas variações (encoder-only, decoder-only, encoder-decoder), é a base de praticamente todos os LLMs modernos de texto — o que muda entre modelos é sobretudo escala (número de blocos, dimensões) e dados de treino, não o mecanismo central.</p>` },
       enter: (ctx) => {
         reveal(ctx, ["sum_lab", "sum_sub"], 150);
         ["a1", "a2", "a3", "a4", "a5", "a6"].forEach((a, k) => setTimeout(() => ctx.pulse(a, true), k * 120));

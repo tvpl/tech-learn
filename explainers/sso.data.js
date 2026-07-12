@@ -102,7 +102,9 @@
       balloon: {
         anchor: 'user', placement: 'right',
         text: 'Cada app tem login próprio. Usuário precisa lembrar N senhas → reutilização → risco.',
-      },
+        deep: `<p>Esse problema tem nome: "credential fatigue". Quanto mais senhas um usuário precisa gerenciar, maior a chance de reutilizar a mesma senha em vários serviços — e isso transforma o vazamento de <em>um único</em> app fraco em risco para todos os outros que compartilham aquela senha.</p>
+<div class="xp-bad"><strong>Sem SSO</strong>Usuário usa "Senha123!" em 12 apps diferentes. Um deles vaza o banco em texto puro → credential stuffing tenta a mesma senha nos outros 11.</div>
+<div class="xp-good"><strong>Com SSO</strong>Usuário autentica uma vez no IdP, protegido com MFA. Nenhum dos SPs (apps) nunca vê ou guarda a senha.</div>` },
     },
     {
       title: 'SSO: 1 login, acesso múltiplo',
@@ -111,7 +113,15 @@
         anchor: 'idp', placement: 'left',
         text: 'Com SSO, o usuário autentica UMA vez no IdP e acessa todas as apps sem re-login.',
         why: 'O IdP emite "assertions" de identidade confiadas pelos Service Providers.',
-      },
+        deep: `<p>O que torna isso possível não é mágica — é uma sessão de autenticação centralizada no IdP, mais um protocolo padronizado (SAML ou OIDC) que os Service Providers usam para pedir "confirme quem é esse usuário" e receber uma resposta assinada de volta.</p>
+<div class="xp-example"><strong>Assertion simplificada</strong>{
+  "iss": "https://sso.empresa.com",
+  "sub": "alice@empresa.com",
+  "aud": "app1.empresa.com",
+  "authTime": "2026-07-12T10:00:00Z",
+  "exp": "2026-07-12T10:15:00Z"
+}</div>
+<p>O SP nunca autentica o usuário diretamente — ele apenas confia na assinatura do IdP sobre essa assertion.</p>` },
     },
     {
       title: 'Os Atores: User, SP, IdP',
@@ -120,8 +130,10 @@
              'ps1', 'po1', 'ps2', 'po2', 'ps3', 'po3', 'ps4', 'po4', 'ps5', 'po5', 'ps6', 'po6'],
       balloon: {
         anchor: 'idp', placement: 'left',
-        text: '**User** = quem autentica. **SP** (Service Provider) = a app. **IdP** = servidor de identidade central.',
-      },
+        text: '<strong>User</strong> = quem autentica. <strong>SP</strong> (Service Provider) = a app. <strong>IdP</strong> = servidor de identidade central.',
+        deep: `<p>Vale notar a diferença entre a sessão do <strong>SP</strong> (local, específica daquele app) e a sessão do <strong>IdP</strong> (global, é ela que sustenta o SSO). Um logout no SP não necessariamente derruba a sessão do IdP — por isso existe o Single Logout como mecanismo separado.</p>
+<div class="xp-example"><strong>Analogia</strong>IdP = balcão único de identidade de um condomínio (a portaria).
+SP = cada apartamento — confia que quem a portaria deixou passar é quem diz ser, sem verificar documento de novo na porta.</div>` },
     },
     {
       title: '① SP-initiated: User acessa App1 sem sessão',
@@ -132,7 +144,10 @@
         anchor: 'sp1', placement: 'right',
         text: 'O usuário tenta acessar App1. SP1 verifica: não há sessão ativa.',
         why: 'SP checa um cookie de sessão local — se não existir, inicia o SP-initiated flow.',
-      },
+        deep: `<p>SP-initiated é o fluxo mais comum na prática: o usuário começa navegando direto para a URL do app (não para o IdP), e é o próprio app que detecta a ausência de sessão e inicia o redirecionamento. O oposto, IdP-initiated, existe (o usuário começa num portal do IdP e clica num app), mas é menos usado e tem mais riscos de segurança sem um <code>RelayState</code> bem implementado.</p>
+<div class="xp-example"><strong>Checagem local do SP</strong>if (!req.cookies['sp1_session']) {
+  redirect(idpAuthUrl);
+}</div>` },
     },
     {
       title: '② SP redireciona para IdP com AuthnRequest',
@@ -142,7 +157,11 @@
       balloon: {
         anchor: 'a_sp1_idp_l', placement: 'top',
         text: 'SP1 gera um `AuthnRequest` e redireciona o browser para o IdP com parâmetros como `entityID`, `RelayState` e `redirect_uri`.',
-      },
+        deep: `<p>O <code>RelayState</code> merece atenção: é um valor opaco (geralmente a URL original que o usuário tentou acessar) que o SP anexa ao AuthnRequest e recebe de volta junto com a assertion — sem ele, depois do login o usuário cairia sempre na home, perdendo o destino original.</p>
+<div class="xp-example"><strong>AuthnRequest (SAML, simplificado)</strong>GET https://sso.empresa.com/saml/login?
+  SAMLRequest=<XML comprimido e base64>&
+  RelayState=https://app1.empresa.com/relatorios/42</div>
+<p>No mundo OIDC, o equivalente é o parâmetro <code>state</code> do Authorization Code Flow — mesma ideia, nomenclatura diferente.</p>` },
     },
     {
       title: '③-④ IdP apresenta tela de login e autentica',
@@ -154,7 +173,8 @@
         anchor: 'idp', placement: 'left',
         text: 'IdP mostra formulário de login (pode incluir MFA). Usuário submete credenciais diretamente ao IdP — o SP nunca vê a senha.',
         why: 'Principal vantagem de SSO: credenciais só trafegam com o IdP confiável.',
-      },
+        deep: `<p>Esse é o único ponto de todo o fluxo em que a senha (ou fator de MFA) do usuário trafega — e ela vai direto para o domínio do IdP, nunca para o domínio do SP. É essa centralização que torna o SSO mais seguro que N logins independentes: só um domínio precisa implementar (corretamente) rate limiting, MFA e detecção de força bruta.</p>
+<div class="xp-good"><strong>Boa prática</strong>IdP exige MFA obrigatório no login central — automaticamente todos os SPs conectados herdam essa proteção sem precisar implementar nada.</div>` },
     },
     {
       title: '⑤ IdP cria SSO Session e emite Assertion ao SP1',
@@ -165,8 +185,10 @@
       highlight: ['idp', 'sso_cookie', 'sp1'],
       balloon: {
         anchor: 'sso_cookie', placement: 'bottom',
-        text: 'IdP grava SSO session cookie no **seu próprio domínio** (ex: `sso.empresa.com`). Depois envia Assertion (SAML) ou `id_token` (OIDC) ao SP1.',
-      },
+        text: 'IdP grava SSO session cookie no <strong>seu próprio domínio</strong> (ex: `sso.empresa.com`). Depois envia Assertion (SAML) ou `id_token` (OIDC) ao SP1.',
+        deep: `<p>O cookie de sessão do IdP normalmente é <code>HttpOnly</code>, <code>Secure</code> e escopado ao domínio do próprio IdP — nenhum SP consegue lê-lo diretamente, o que é intencional: o SP só recebe a <em>assertion assinada</em>, nunca acesso à sessão do IdP em si.</p>
+<div class="xp-example"><strong>Set-Cookie do IdP</strong>Set-Cookie: idp_session=xyz789; Domain=sso.empresa.com; HttpOnly; Secure; SameSite=Lax</div>
+<p>É por causa desse cookie, e não de mágica, que a próxima vez que qualquer SP redirecionar o usuário ao IdP, ele já estará "logado" sem digitar nada.</p>` },
     },
     {
       title: '⑥-⑦ User acessa App2 — sem re-login!',
@@ -177,7 +199,8 @@
       balloon: {
         anchor: 'sp2', placement: 'right',
         text: 'SP2 redireciona ao IdP. O IdP encontra o SSO session cookie ativo — não exige nova autenticação.',
-      },
+        deep: `<p>Do ponto de vista do usuário parece instantâneo, mas por baixo dos panos o mesmo fluxo de redirecionamento do SP-initiated roda de novo — a diferença é que, ao chegar no IdP, ele encontra o cookie de sessão já válido e pula direto para emitir a assertion, sem mostrar formulário de login.</p>
+<div class="xp-example"><strong>Sequência silenciosa</strong>App2 → redirect IdP → IdP vê idp_session válido → gera assertion → redirect de volta para App2 (tudo em milissegundos, sem interação do usuário)</div>` },
     },
     {
       title: '⑧ IdP emite Assertion ao SP2 direto',
@@ -187,8 +210,10 @@
       highlight: ['idp', 'sp2'],
       balloon: {
         anchor: 'a_idp_sp2_l', placement: 'right',
-        text: 'IdP emite nova assertion para SP2. Usuário obtém acesso sem digitar senha — **esse é o valor do SSO**.',
-      },
+        text: 'IdP emite nova assertion para SP2. Usuário obtém acesso sem digitar senha — <strong>esse é o valor do SSO</strong>.',
+        deep: `<p>Cada SP recebe sua própria assertion, com <code>aud</code> (audience) específico daquele SP — uma assertion emitida para App1 não pode ser reaproveitada em App2, mesmo que ambos confiem no mesmo IdP. Isso evita que uma assertion vazada de um app comprometa outro.</p>
+<div class="xp-bad"><strong>Sem audience restriction</strong>Um SP malicioso poderia capturar a assertion destinada a outro SP e reapresentá-la como se fosse dele.</div>
+<div class="xp-good"><strong>Com aud checado</strong>Cada SP valida que a assertion foi emitida especificamente para ele antes de aceitar.</div>` },
     },
     {
       title: 'SAML 2.0 vs OIDC SSO',
@@ -197,9 +222,15 @@
              'ps1', 'po1', 'ps2', 'po2', 'ps3', 'po3', 'ps4', 'po4', 'ps5', 'po5', 'ps6', 'po6'],
       balloon: {
         anchor: 'proto_bg', placement: 'left',
-        text: '**SAML 2.0**: padrão enterprise, XML verboso, muito usado com apps legadas. **OIDC**: baseado em OAuth 2.0, JSON/JWT, cloud-native — tendência moderna.',
+        text: '<strong>SAML 2.0</strong>: padrão enterprise, XML verboso, muito usado com apps legadas. <strong>OIDC</strong>: baseado em OAuth 2.0, JSON/JWT, cloud-native — tendência moderna.',
         why: 'Novos sistemas quase sempre preferem OIDC pela simplicidade e tooling moderno.',
-      },
+        deep: `<p>SAML nasceu nos anos 2000 para SSO corporativo entre grandes empresas e ainda domina em integrações enterprise legadas (ex: Active Directory Federation Services). OIDC é mais recente, construído sobre OAuth 2.0, e se tornou o padrão de fato para SSO cloud-native e aplicações modernas.</p>
+<div class="xp-example"><strong>SAML — trecho de assertion XML</strong>&lt;saml:Assertion&gt;
+  &lt;saml:Subject&gt;alice@empresa.com&lt;/saml:Subject&gt;
+  &lt;saml:AudienceRestriction&gt;app1.empresa.com&lt;/saml:AudienceRestriction&gt;
+&lt;/saml:Assertion&gt;</div>
+<div class="xp-example"><strong>OIDC — id_token (JWT)</strong>{ "iss": "https://sso.empresa.com", "sub": "alice@empresa.com", "aud": "app1-client-id", "exp": 1720003600 }</div>
+<p>Para um projeto novo sem restrição legada, OIDC costuma ser a escolha mais simples de implementar e depurar.</p>` },
     },
     {
       title: 'Single Logout (SLO)',
@@ -210,7 +241,9 @@
         anchor: 'slo_bg', placement: 'left',
         text: 'Quando o usuário faz logout, o IdP invalida o SSO session cookie e notifica todos os SPs para encerrar sessões locais — desafio em sistemas legados.',
         why: 'SLO é difícil: nem todos os SPs implementam corretamente o endpoint de logout.',
-      },
+        deep: `<p>SLO é notoriamente frágil na prática: depende de o IdP conseguir notificar <em>todos</em> os SPs ativos (geralmente via requests em background ou iframes ocultos), e se um deles estiver offline, com bug, ou atrás de firewall restritivo, sua sessão local simplesmente não é encerrada — o usuário "saiu" do IdP mas continua logado nesse SP específico até a sessão local expirar sozinha.</p>
+<div class="xp-bad"><strong>SLO parcial</strong>Usuário clica "sair" no IdP, mas o SP3 (que estava com problema de rede) mantém a sessão local ativa por mais 2 horas.</div>
+<div class="xp-good"><strong>Mitigação comum</strong>Sessões locais dos SPs com TTL curto, mesmo com SSO ativo — reduz a janela de exposição quando o SLO falha silenciosamente.</div>` },
     },
     {
       title: 'Quiz',
@@ -224,7 +257,7 @@
           'No localStorage do browser, acessível por qualquer SP',
         ],
         answer: 2,
-        explain: 'O SSO session cookie fica no domínio do **IdP** (ex: sso.empresa.com). Isso permite que o IdP reconheça sessões ativas quando qualquer SP redireciona o usuário para autenticação — os SPs nunca leem esse cookie diretamente.',
+        explain: 'O SSO session cookie fica no domínio do <strong>IdP</strong> (ex: sso.empresa.com). Isso permite que o IdP reconheça sessões ativas quando qualquer SP redireciona o usuário para autenticação — os SPs nunca leem esse cookie diretamente.',
       },
     },
     {
@@ -238,7 +271,7 @@
              'slo_bg', 'slo_title', 'slo1', 'slo2', 'slo3', 'slo4'],
       balloon: {
         anchor: 'idp', placement: 'left',
-        text: '**SSO** centraliza autenticação num IdP. Uma sessão → acesso a N apps. SAML (enterprise) ou OIDC (moderno). SLO encerra sessões em todos os SPs.',
+        text: '<strong>SSO</strong> centraliza autenticação num IdP. Uma sessão → acesso a N apps. SAML (enterprise) ou OIDC (moderno). SLO encerra sessões em todos os SPs.',
       },
     },
   ];

@@ -114,16 +114,27 @@
       balloon: {
         anchor: 'f_know', placement: 'right',
         text: 'Credenciais são roubadas constantemente: phishing, credential stuffing, keyloggers. Apenas senha = 1 ponto de falha. MFA adiciona um segundo fator independente.',
-      },
+        deep: `<p>A maioria das contas comprometidas não é "hackeada" no sentido de quebrar criptografia — é phishada ou reaproveitada de outro vazamento. MFA não impede o roubo da senha; impede que a senha roubada sozinha seja suficiente.</p>
+<div class="xp-bad"><strong>Só senha</strong>Vazamento em outro site → mesma senha reaproveitada → login automatizado em massa (credential stuffing) funciona.</div>
+<div class="xp-good"><strong>Senha + segundo fator</strong>Mesmo com a senha vazada, o atacante não tem o device físico nem a biometria — o login para no segundo passo.</div>
+<h4>Os ataques que MFA neutraliza</h4>
+<ul>
+<li><strong>Credential stuffing</strong> — testar senhas vazadas de outros sites em massa</li>
+<li><strong>Phishing simples</strong> — página falsa que só captura usuário/senha</li>
+<li><strong>Keyloggers</strong> — capturam a digitação, mas não o segundo fator físico</li>
+</ul>` },
     },
     {
       title: 'Os 3 fatores de autenticação',
       show: ['f_know', 'f_know_sub', 'f_have', 'f_have_sub', 'f_is', 'f_is_sub'],
       balloon: {
         anchor: 'f_have', placement: 'bottom',
-        text: '**Saber** (senha, PIN): fácil de phishing. **Ter** (device com TOTP/FIDO2): precisa roubar o aparelho. **Ser** (biometria): não pode ser compartilhado. MFA combina ≥2 fatores **diferentes**.',
+        text: '<strong>Saber</strong> (senha, PIN): fácil de phishing. <strong>Ter</strong> (device com TOTP/FIDO2): precisa roubar o aparelho. <strong>Ser</strong> (biometria): não pode ser compartilhado. MFA combina ≥2 fatores <strong>diferentes</strong>.',
         why: '2FA com duas senhas diferentes não é MFA real — ambas pertencem ao mesmo fator "saber".',
-      },
+        deep: `<p>Combinar dois fatores do <em>mesmo</em> tipo não é MFA de verdade — é só duplicar a exposição ao mesmo risco.</p>
+<div class="xp-bad"><strong>Não é MFA real</strong>Senha + pergunta de segurança ("nome do seu primeiro animal") — ambos são "algo que você sabe", e ambos podem vazar juntos no mesmo phishing.</div>
+<div class="xp-good"><strong>MFA real</strong>Senha (sabe) + código do app authenticator (tem) — comprometer um não compromete automaticamente o outro.</div>
+<p>Na prática: escolha um fator de cada categoria. "Ser" (biometria) normalmente fica local no device e nunca trafega pela rede — ela desbloqueia a chave que fica no hardware, não é enviada como dado.</p>` },
     },
     {
       title: 'TOTP: senha que muda a cada 30s',
@@ -132,9 +143,15 @@
       highlight: ['f_have', 'totp_bg'],
       balloon: {
         anchor: 'totp_bg', placement: 'right',
-        text: '`HMAC-SHA1(secret, ⌊time/30⌋)` — ambos o app e servidor calculam o mesmo código com base no **tempo atual** e no segredo compartilhado. Código muda a cada 30s.',
+        text: '`HMAC-SHA1(secret, ⌊time/30⌋)` — ambos o app e servidor calculam o mesmo código com base no <strong>tempo atual</strong> e no segredo compartilhado. Código muda a cada 30s.',
         why: 'O segredo está no QR code do setup. Sem acesso ao device (app authenticator), o código não pode ser gerado.',
-      },
+        deep: `<p>O "segredo compartilhado" é criado uma única vez, no setup — depois disso, app e servidor nunca mais trocam esse valor pela rede, só o código de 6 dígitos derivado dele.</p>
+<div class="xp-example"><strong>Por que muda a cada 30s</strong>time_step = ⌊unix_time / 30⌋
+código = HMAC-SHA1(secret, time_step) truncado para 6 dígitos
+
+Em t=0..29s → time_step=X → código A
+Em t=30..59s → time_step=X+1 → código B (diferente)</div>
+<p>A janela de tolerância de ±1 passo existe porque o relógio do celular e do servidor nunca estão 100% sincronizados — sem essa margem, pequenos desvios de clock derrubariam logins válidos.</p>` },
     },
     {
       title: 'Setup TOTP: QR code e otpauth URI',
@@ -144,7 +161,10 @@
       balloon: {
         anchor: 'totp_bg', placement: 'right',
         text: 'O QR code contém: `otpauth://totp/App?secret=BASE32ENCODED&issuer=MinhaApp`. O app authenticator escaneia, armazena o secret e começa a gerar OTPs — sem precisar de internet.',
-      },
+        deep: `<p>O QR code nada mais é que uma forma conveniente de transmitir a URI <code>otpauth://</code> sem o usuário precisar digitar uma string longa manualmente.</p>
+<div class="xp-example"><strong>Anatomia da URI</strong>otpauth://totp/MinhaApp:usuario@exemplo.com?secret=JBSWY3DPEHPK3PXP&issuer=MinhaApp&digits=6&period=30</div>
+<div class="xp-bad"><strong>Erro comum</strong>Perder o QR code sem guardar backup codes — se o usuário trocar de celular sem migrar o app authenticator, fica sem acesso.</div>
+<p>Por isso todo bom fluxo de setup TOTP mostra os backup codes logo depois de confirmar o primeiro código gerado.</p>` },
     },
     {
       title: 'FIDO2 / WebAuthn: chave pública no servidor',
@@ -153,9 +173,12 @@
       highlight: ['f_have', 'f_is', 'wa_bg'],
       balloon: {
         anchor: 'wa_bg', placement: 'left',
-        text: 'O authenticator (YubiKey, biometria do phone) gera um par de chaves. O servidor guarda apenas a **chave pública**. A chave privada nunca sai do device.',
+        text: 'O authenticator (YubiKey, biometria do phone) gera um par de chaves. O servidor guarda apenas a <strong>chave pública</strong>. A chave privada nunca sai do device.',
         why: 'Mesmo que o servidor seja comprometido, o atacante não pode impersonar o usuário — a private key é inviolável no hardware.',
-      },
+        deep: `<p>É criptografia assimétrica aplicada a login: em vez de um segredo compartilhado (como no TOTP), cada lado guarda uma metade do par de chaves — e só uma metade nunca sai do dispositivo.</p>
+<div class="xp-example"><strong>O que cada lado guarda</strong>Device (YubiKey/celular): chave PRIVADA — nunca sai do hardware seguro
+Servidor: chave PÚBLICA + credential_id — inútil sozinha para logar</div>
+<p>Isso resolve um problema estrutural do TOTP: se o banco de dados do servidor vazar, um segredo TOTP vazado permite gerar códigos válidos; uma chave pública vazada não permite forjar login nenhum.</p>` },
     },
     {
       title: 'WebAuthn: registro e autenticação',
@@ -163,8 +186,13 @@
              'wa_bg', 'wa_title', 'w1', 'w2', 'w3', 'w4', 'w5', 'w6', 'w7', 'w8', 'w9'],
       balloon: {
         anchor: 'wa_bg', placement: 'right',
-        text: '**Registro**: `credentials.create()` → gera chave pública + attestation → servidor armazena.\n**Auth**: `credentials.get()` → assina challenge com private key → servidor verifica com public key. O challenge inclui o domínio → phishing falha.',
-      },
+        text: '<strong>Registro</strong>: `credentials.create()` → gera chave pública + attestation → servidor armazena.\n<strong>Auth</strong>: `credentials.get()` → assina challenge com private key → servidor verifica com public key. O challenge inclui o domínio → phishing falha.',
+        deep: `<p>Repare que em nenhum momento uma senha ou segredo trafega pela rede — só assinaturas criptográficas de um desafio (challenge) gerado a cada tentativa.</p>
+<div class="xp-example"><strong>Ciclo de autenticação</strong>1. Servidor gera challenge aleatório + rpId (domínio)
+2. Device assina challenge+rpId com a chave privada
+3. Servidor verifica a assinatura com a chave pública já cadastrada
+4. Challenge só vale uma vez → replay attack não funciona</div>
+<p>O <code>rpId</code> (domínio) embutido na assinatura é o que torna o phishing inviável — veja a cena de Phishing-Resistance à frente.</p>` },
     },
     {
       title: 'SMS OTP: conveniente mas inseguro',
@@ -173,8 +201,11 @@
       highlight: ['sms_bg'],
       balloon: {
         anchor: 'sms_bg', placement: 'left',
-        text: '**SIM swap**: atacante convence a operadora a transferir seu número. **SS7 attack**: falha na rede de telecomunicações permite interceptar SMS. SMS OTP é melhor que nada, mas não use como único 2FA.',
-      },
+        text: '<strong>SIM swap</strong>: atacante convence a operadora a transferir seu número. <strong>SS7 attack</strong>: falha na rede de telecomunicações permite interceptar SMS. SMS OTP é melhor que nada, mas não use como único 2FA.',
+        deep: `<p>O problema do SMS não é o código em si — é que ele depende de um canal (a rede de telefonia) que o usuário não controla e que tem décadas de falhas conhecidas de segurança.</p>
+<div class="xp-bad"><strong>SIM swap</strong>Atacante liga para a operadora se passando pelo dono da linha, pede portabilidade do número para um chip dele — a partir daí recebe todos os SMS, inclusive OTPs.</div>
+<div class="xp-good"><strong>Alternativa recomendada</strong>Usar SMS só como fallback de recuperação, com TOTP ou FIDO2 como método principal.</div>
+<p>Por isso órgãos de padronização de segurança digital já não recomendam SMS OTP como único segundo fator há vários anos — mas continua sendo melhor que nenhum MFA.</p>` },
     },
     {
       title: 'Fluxo de login com MFA (TOTP)',
@@ -184,7 +215,9 @@
       balloon: {
         anchor: 'lf_srv', placement: 'top',
         text: '① Usuário envia senha → ② servidor valida 1º fator → ③ pede código TOTP → ④ usuário abre app e digita código → ⑤ servidor valida TOTP → ⑥ sessão criada. Cada fator é verificado independentemente.',
-      },
+        deep: `<p>Cada seta do diagrama é uma chamada de rede separada — o servidor só libera a sessão depois que os DOIS fatores passarem, nunca antes.</p>
+<div class="xp-example"><strong>O que aconteceria sem a etapa ③</strong>Se o servidor criasse a sessão logo após validar a senha (②), o segundo fator viraria decorativo — bastaria roubar a senha para entrar.</div>
+<p>Um detalhe importante de segurança: a sessão só deve ser considerada "MFA completo" depois da etapa ⑤ — sistemas que marcam a sessão como autenticada antes disso têm uma janela de bypass.</p>` },
     },
     {
       title: 'Backup Codes: break glass quando perde o device',
@@ -193,7 +226,9 @@
       balloon: {
         anchor: 'bk_bg', placement: 'right',
         text: 'No momento do setup, o servidor gera 8-10 códigos de uso único. O usuário deve imprimí-los ou guardá-los seguramente. Servidor armazena apenas o hash. Cada código é marcado como "usado" após consumo.',
-      },
+        deep: `<p>Backup codes existem para o cenário em que o usuário perde acesso ao segundo fator (celular roubado, trocou de aparelho sem migrar) — sem eles, MFA vira um jeito de se trancar para fora da própria conta.</p>
+<div class="xp-good"><strong>Boa prática</strong>Guardar apenas o hash dos códigos no servidor (igual senha) e invalidar cada código após o primeiro uso.</div>
+<div class="xp-bad"><strong>Erro comum</strong>Gerar backup codes mas nunca avisar o usuário para guardá-los em lugar seguro — ele só descobre que precisa deles quando já perdeu o device.</div>` },
     },
     {
       title: 'Phishing-Resistance: TOTP vs FIDO2',
@@ -204,8 +239,13 @@
       highlight: ['phi_bg'],
       balloon: {
         anchor: 'phi_bg', placement: 'left',
-        text: 'TOTP pode ser phished: o usuário é enganado a digitar o código em um site falso que o repassa em tempo real ao site real. FIDO2 vincula a assinatura ao **domínio de origem** — em site.com.br falso, o challenge falha silenciosamente.',
-      },
+        text: 'TOTP pode ser phished: o usuário é enganado a digitar o código em um site falso que o repassa em tempo real ao site real. FIDO2 vincula a assinatura ao <strong>domínio de origem</strong> — em site.com.br falso, o challenge falha silenciosamente.',
+        deep: `<p>A diferença central: TOTP autentica "alguém que sabe o código agora", sem verificar onde esse código está sendo digitado; FIDO2 autentica "alguém que está literalmente no site certo".</p>
+<div class="xp-example"><strong>Ataque de phishing em tempo real (contra TOTP)</strong>1. Vítima acessa site-falso.com (clone visual do banco)
+2. Digita usuário, senha e código TOTP no site falso
+3. Site falso repassa tudo instantaneamente ao site real
+4. Site real aceita — o código TOTP era válido no momento do uso</div>
+<p>Com FIDO2, o passo 3 não tem como funcionar: a assinatura gerada pelo device já embute o domínio <code>site-falso.com</code>, e o site real rejeita porque o domínio não bate com o esperado.</p>` },
     },
     {
       title: 'Quiz',

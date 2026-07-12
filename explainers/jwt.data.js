@@ -122,8 +122,13 @@
       balloon: {
         anchor: { x: BX + BW/2, y: BY + 145 }, placement: "right",
         text: "HTTP é stateless. Sem state, como o servidor sabe quem fez a request? Opção 1: session cookie (banco consulta a cada request). Opção 2: <strong>JWT</strong> — o token carrega as informações e prova que são autênticas.",
-        why: "JWT transfere o estado para o cliente de forma segura. O servidor verifica a assinatura criptográfica — sem consultar banco para cada request."
-      }
+        why: "JWT transfere o estado para o cliente de forma segura. O servidor verifica a assinatura criptográfica — sem consultar banco para cada request.",
+        deep: `<p>Antes de JWT virar popular, a alternativa dominante era session cookie: o servidor guarda o estado (quem é o usuário) num banco/cache e devolve ao cliente apenas um ID opaco. JWT inverte essa lógica — o próprio token carrega as claims, assinadas, então o servidor não precisa perguntar a ninguém "quem é esse token?".</p>
+<div class="xp-example"><strong>Sessão tradicional</strong>Cookie: sid=a1b2c3
+Servidor: SELECT * FROM sessions WHERE id='a1b2c3'  -- 1 lookup por request</div>
+<div class="xp-example"><strong>JWT</strong>Authorization: Bearer eyJhbGci...
+Servidor: verify(token, publicKey)  -- 0 lookups, tudo já está no token</div>
+<p>O trade-off: JWT elimina o lookup, mas dificulta revogar um token antes de expirar — ele é "verdade" enquanto a assinatura for válida.</p>` },
     },
     {
       title: "JWT = 3 Partes Separadas por Ponto",
@@ -131,8 +136,12 @@
       balloon: {
         anchor: { x: BX + BW/2, y: BY + 145 }, placement: "right",
         text: "Um JWT é: <strong>base64url(header)</strong> + <strong>.</strong> + <strong>base64url(payload)</strong> + <strong>.</strong> + <strong>signature</strong>. Tudo numa única string compacta — pode ir em headers, cookies, URL.",
-        why: "Base64url (sem +, / e =) é safe para URL e headers HTTP. O ponto como separador é simples de parsear — nenhuma biblioteca especial necessária."
-      }
+        why: "Base64url (sem +, / e =) é safe para URL e headers HTTP. O ponto como separador é simples de parsear — nenhuma biblioteca especial necessária.",
+        deep: `<p>Cada segmento é codificado em Base64url isoladamente, não o token inteiro — por isso dá para inspecionar o header e o payload sem sequer ter a chave de verificação (em jwt.io, por exemplo). Só a signature exige a chave para ser calculada ou validada.</p>
+<div class="xp-example"><strong>Token completo (compacto)</strong>eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.
+eyJzdWIiOiJ1c2VyXzQyIiwiZXhwIjoxNzIwMDAwOTAwfQ.
+SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c</div>
+<p>Base64url difere do Base64 padrão em dois caracteres (<code>-</code> e <code>_</code> em vez de <code>+</code> e <code>/</code>) e não usa padding <code>=</code> — isso evita que o token precise de escaping ao viajar em URLs e headers HTTP.</p>` },
     },
     {
       title: "Header: Algoritmo e Tipo",
@@ -142,8 +151,12 @@
       balloon: {
         anchor: { x: BX + BW/2, y: BY + 250 }, placement: "right",
         text: "<code>alg</code>: o algoritmo de assinatura (<code>HS256</code>, <code>RS256</code>, <code>ES256</code>). <code>typ</code>: sempre <code>JWT</code>. Verifique o <code>alg</code> ao validar — nunca aceite <code>alg:none</code>.",
-        why: "Ataques 'alg:none' tentam forjar tokens sem assinatura. Implmentações devem exigir explicitamente o algoritmo esperado, nunca aceitar o que o token declara às cegas."
-      }
+        why: "Ataques 'alg:none' tentam forjar tokens sem assinatura. Implmentações devem exigir explicitamente o algoritmo esperado, nunca aceitar o que o token declara às cegas.",
+        deep: `<p>O ataque "alg:none" é um dos mais conhecidos contra implementações ingênuas de JWT: se a biblioteca de verificação simplesmente confia no <code>alg</code> declarado pelo próprio token, um atacante pode reescrever o header para <code>{"alg":"none"}</code>, remover a signature, e o servidor aceita o token sem checar nada.</p>
+<div class="xp-bad"><strong>Verificação vulnerável</strong>const alg = jwt.header.alg; // lê do token
+verify(token, key, { algorithm: alg }); // atacante controla "alg"</div>
+<div class="xp-good"><strong>Verificação segura</strong>verify(token, publicKey, { algorithms: ["RS256"] }); // servidor fixa o algoritmo esperado, ignora o que o token declara</div>
+<p>Outra variante ataca bibliotecas que aceitam tanto HS256 quanto RS256: o atacante usa a public key RS256 (conhecida publicamente) como se fosse o secret de um HS256 forjado.</p>` },
     },
     {
       title: "Payload: Claims do Token",
@@ -154,8 +167,11 @@
       balloon: {
         anchor: { x: BX + BW/2, y: BY + 440 }, placement: "right",
         text: "<strong>iss</strong>: quem emitiu. <strong>sub</strong>: sujeito (user_id). <strong>aud</strong>: audiência (para qual API). <strong>exp</strong>: expiração Unix timestamp. <strong>iat</strong>: issued at. <strong>jti</strong>: ID único do token.",
-        why: "⚠️ O payload é apenas base64 — não criptografado. Qualquer um pode decodificar e ler. Nunca coloque dados sensíveis (senha, CPF) no payload. Use JWE se precisar criptografar."
-      },
+        why: "⚠️ O payload é apenas base64 — não criptografado. Qualquer um pode decodificar e ler. Nunca coloque dados sensíveis (senha, CPF) no payload. Use JWE se precisar criptografar.",
+        deep: `<p>As claims "registered" (iss, sub, aud, exp, iat, jti) têm significado padronizado pelo RFC 7519, e a maioria das bibliotecas já valida automaticamente exp/aud/iss. Claims customizadas (como <code>role</code>) são livres, mas devem ser tratadas como dados públicos — qualquer um com o token consegue lê-las.</p>
+<div class="xp-bad"><strong>Payload perigoso</strong>{ "sub": "user_42", "cpf": "123.456.789-00", "senha_hash": "$2b$..." }</div>
+<div class="xp-good"><strong>Payload adequado</strong>{ "sub": "user_42", "role": "admin", "exp": 1720000900 }</div>
+<p>Se realmente precisar transportar dados sensíveis dentro de um token, use JWE (JSON Web Encryption) em vez de JWT/JWS puro — JWE cifra o payload, não só assina.</p>` },
       enter(ctx) {
         ["pay_1","pay_2","pay_3","pay_4","pay_5","pay_6","pay_7","pay_warn"].forEach((id,k) =>
           setTimeout(() => ctx.show(id), k * 120));
@@ -170,8 +186,12 @@
       balloon: {
         anchor: { x: BX + BW/2, y: BY + 600 }, placement: "right",
         text: "A signature é <code>Sign(header + \".\" + payload, privateKey)</code>. Qualquer alteração no header ou payload invalida a signature — proteção contra tampering.",
-        why: "A signature NÃO criptografa o conteúdo — apenas prova que o token não foi alterado desde que foi emitido pelo Auth Server que tem a privateKey."
-      }
+        why: "A signature NÃO criptografa o conteúdo — apenas prova que o token não foi alterado desde que foi emitido pelo Auth Server que tem a privateKey.",
+        deep: `<p>É comum confundir "assinado" com "criptografado" — um JWT comum (JWS) apenas garante que ninguém alterou o conteúdo sem ser detectado; qualquer pessoa ainda consegue ler header e payload decodificando Base64. A signature prova origem e integridade, não confidencialidade.</p>
+<div class="xp-example"><strong>Tentativa de tampering</strong>Payload original: {"sub":"user_42","role":"user"}
+Atacante edita para: {"sub":"user_42","role":"admin"}
+Resultado: header+payload mudou → hash muda → signature não bate mais → verify() retorna false</div>
+<p>Mudar um único caractere do payload já invalida a assinatura, porque ela é calculada sobre o header e o payload concatenados, não sobre cada campo isoladamente.</p>` },
     },
     {
       title: "Verificação: Sem Consultar o Banco",
@@ -181,8 +201,15 @@
       balloon: {
         anchor: { x: 910, y: 220 }, placement: "bottom",
         text: "O servidor verifica o JWT <strong>sem consultar banco</strong>: 1) Split nas 3 partes, 2) busca public key no JWKS endpoint (cached), 3) verifica signature, 4) checa <code>exp</code>, <code>iss</code>, <code>aud</code>.",
-        why: "Stateless verification = horizontal scaling fácil. Cada instância verifica independentemente sem coordenação. Desvantagem: não dá para revogar um token antes do exp."
-      },
+        why: "Stateless verification = horizontal scaling fácil. Cada instância verifica independentemente sem coordenação. Desvantagem: não dá para revogar um token antes do exp.",
+        deep: `<p>O JWKS (JSON Web Key Set) é um endpoint público que expõe as chaves públicas do Auth Server em formato padronizado — os serviços consumidores buscam essas chaves periodicamente (com cache) em vez de recebê-las manualmente, o que permite rotacionar chaves sem redeploy.</p>
+<div class="xp-example"><strong>GET /.well-known/jwks.json</strong>{
+  "keys": [
+    { "kid": "2024-key-1", "kty": "RSA", "use": "sig",
+      "n": "0vx7agoebGcQ...", "e": "AQAB" }
+  ]
+}</div>
+<p>O campo <code>kid</code> (key ID) no header do JWT diz qual chave do JWKS usar — essencial quando há múltiplas chaves ativas durante uma rotação.</p>` },
       enter(ctx) {
         ctx.drawArrow("ver_a1");
         setTimeout(() => ctx.drawArrow("ver_a2"), 400);
@@ -198,8 +225,10 @@
       balloon: {
         anchor: "alg_bg", placement: "right",
         text: "<strong>HS256</strong>: usa uma <em>chave simétrica compartilhada</em>. Todos que podem verificar também podem criar novos tokens. Simples e rápido.",
-        why: "Use HS256 quando só um sistema (ex: o próprio backend) precisa verificar — nunca compartilhe a secret entre múltiplos serviços. Vazamento da secret = comprometimento total."
-      }
+        why: "Use HS256 quando só um sistema (ex: o próprio backend) precisa verificar — nunca compartilhe a secret entre múltiplos serviços. Vazamento da secret = comprometimento total.",
+        deep: `<p>HS256 usa a mesma secret para assinar e verificar (HMAC), então qualquer serviço que precise <em>verificar</em> tokens automaticamente também consegue <em>forjar</em> tokens válidos — a secret vira um segredo de alto valor que precisa ser distribuído com muito cuidado.</p>
+<div class="xp-good"><strong>Uso correto de HS256</strong>Um monólito onde o mesmo processo emite e verifica os tokens (ex: sessão interna de uma API single-service) — a secret nunca sai do processo.</div>
+<div class="xp-bad"><strong>Uso arriscado</strong>Compartilhar a mesma secret HS256 entre 10 microserviços — vazamento em qualquer um deles permite forjar tokens para todos.</div>` },
     },
     {
       title: "RS256: Par de Chaves Assimétricas",
@@ -210,8 +239,13 @@
       balloon: {
         anchor: "ver_pk", placement: "left",
         text: "<strong>RS256</strong>: Auth Server assina com <em>private key</em>. Qualquer serviço verifica com a <em>public key</em> (disponível no JWKS endpoint). Assimétrico: verificador não pode forjar tokens.",
-        why: "RS256 é o padrão para sistemas distribuídos. Auth Server centraliza assinatura. Cada microserviço verifica independentemente com public key — sem compartilhar secrets."
-      }
+        why: "RS256 é o padrão para sistemas distribuídos. Auth Server centraliza assinatura. Cada microserviço verifica independentemente com public key — sem compartilhar secrets.",
+        deep: `<p>Em sistemas distribuídos, RS256 resolve exatamente o problema que o HS256 cria: só o Auth Server (dono da private key) consegue emitir tokens; qualquer outro serviço pode verificar com a public key sem correr o risco de também conseguir forjar tokens.</p>
+<div class="xp-example"><strong>Divisão de responsabilidade</strong>Auth Server: sign(payload, privateKey) → token
+Serviço A: verify(token, publicKey) → ✓/✗
+Serviço B: verify(token, publicKey) → ✓/✗
+(nenhum dos dois consegue assinar novos tokens)</div>
+<p>ES256 (ECDSA) é uma alternativa a RS256 com o mesmo modelo assimétrico, mas chaves e assinaturas bem menores — cada vez mais comum em JWTs modernos.</p>` },
     },
     {
       title: "JWT Stateless: Vantagens e Limitações",
@@ -220,8 +254,10 @@
       balloon: {
         anchor: { x: 740, y: 210 }, placement: "right",
         text: "<strong>✓ Vantagens</strong>: sem session store, horizontal scaling, microserviços verificam independentemente, informações no token. <strong>✗ Limitações</strong>: não pode revogar antes do <code>exp</code>.",
-        why: "Para logout ou revogação de emergência (conta comprometida), o token continuaria válido até expirar. Tokens curtos (15min) minimizam a janela."
-      }
+        why: "Para logout ou revogação de emergência (conta comprometida), o token continuaria válido até expirar. Tokens curtos (15min) minimizam a janela.",
+        deep: `<p>A limitação de revogação costuma ser subestimada: se um usuário for demitido ou tiver a conta comprometida, um access_token JWT já emitido continua tecnicamente válido até o <code>exp</code>, mesmo que o usuário seja removido do banco de dados.</p>
+<div class="xp-bad"><strong>Token de vida longa (ex: 7 dias)</strong>Uma conta comprometida fica exposta por até 7 dias mesmo após a detecção e a resposta ao incidente.</div>
+<div class="xp-good"><strong>Access token curto (15min)</strong>Limita drasticamente a janela de exposição — combinado com refresh token revogável, dá controle quase equivalente ao de sessions, sem perder o benefício stateless para leitura.</div>` },
     },
     {
       title: "Problema de Revogação + Padrão Recomendado",
@@ -230,8 +266,12 @@
       balloon: {
         anchor: "rev_bg", placement: "left",
         text: "Padrão: <strong>access_token curto</strong> (15min, stateless JWT) + <strong>refresh_token longo</strong> (7d, stateful no banco). Revogação = deletar refresh token. Blocklist de JTI para casos urgentes.",
-        why: "Refresh token rotation: cada uso gera novo refresh e invalida o anterior. Se um refresh vazar, o sistema detecta uso duplicado e revoga a sessão inteira."
-      }
+        why: "Refresh token rotation: cada uso gera novo refresh e invalida o anterior. Se um refresh vazar, o sistema detecta uso duplicado e revoga a sessão inteira.",
+        deep: `<p>O padrão access curto + refresh longo é essencialmente um compromisso: aceita-se que o access_token não seja revogável instantaneamente, mas limita-se o dano ao seu tempo de vida curto, enquanto o controle real de "logout / revogar acesso" acontece no refresh_token, que É stateful e pode ser deletado a qualquer momento.</p>
+<div class="xp-example"><strong>Revogação de emergência</strong>DELETE FROM refresh_tokens WHERE user_id = 42;
+-- novos access_tokens não podem mais ser gerados
+-- access_tokens já emitidos expiram sozinhos em até 15min</div>
+<p>Uma blocklist de <code>jti</code> (JWT ID) resolve o caso raro em que é preciso invalidar um access_token específico imediatamente — mas exige voltar a consultar algum store, perdendo parte do benefício stateless.</p>` },
     },
     {
       title: "JWT vs Session Cookie",
@@ -240,8 +280,11 @@
       balloon: {
         anchor: { x: 910, y: 460 }, placement: "top",
         text: "<strong>JWT</strong>: stateless, maior payload, revogação difícil, ideal para microserviços e APIs. <strong>Session cookie</strong>: stateful (DB lookup), menor payload, revogação imediata, ideal para monolitos.",
-        why: "Para aplicações tradicionais com um banco centralizado, session cookies são mais simples e revocáveis. JWT brilha em sistemas distribuídos com múltiplos services."
-      }
+        why: "Para aplicações tradicionais com um banco centralizado, session cookies são mais simples e revocáveis. JWT brilha em sistemas distribuídos com múltiplos services.",
+        deep: `<p>A escolha entre os dois não é dogmática — muitos sistemas usam ambos: session cookie tradicional para a aplicação web principal (login do usuário) e JWT para as APIs internas entre microserviços, onde stateless importa mais que revogação instantânea.</p>
+<div class="xp-good"><strong>Session cookie</strong>ideal para monolitos, apps com poucos servidores, quando revogação imediata é crítica (ex: sistemas bancários).</div>
+<div class="xp-good"><strong>JWT</strong>ideal para arquiteturas de microserviços, APIs públicas, mobile apps que consomem múltiplos serviços sem um "gateway" único de sessão.</div>
+<p>Um erro comum é tratar JWT como substituto universal de sessions "porque é mais moderno" — a escolha certa depende de quanto controle de revogação o sistema realmente precisa.</p>` },
     },
     {
       title: "Quiz",

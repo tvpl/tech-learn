@@ -178,7 +178,11 @@
         anchor: 'json_bg', placement: 'right',
         text: 'Producer A publica mensagens JSON com campo `amount`. Um dia remove o campo para refatorar. Consumer B crasha com `KeyError: amount`. Sem schema enforcement, o contrato entre producer e consumer é invisível.',
         why: 'Schema drift é a principal causa de falhas silenciosas em pipelines de dados — difícil de detectar até a produção.',
-      },
+        deep: `<p>O problema fica pior em escala: um tópico Kafka pode ter dezenas de consumers de times diferentes, cada um assumindo implicitamente uma estrutura de mensagem. Sem um contrato explícito e verificado, uma mudança no producer só quebra o consumer em runtime — geralmente em produção, geralmente de madrugada.</p>
+<div class="xp-bad"><strong>Deploy do producer sem aviso</strong>// antes: { userId, event, amount, currency }
+// depois de um refactor:
+{ userId, event, currency } // "amount" removido silenciosamente</div>
+<p>Um Schema Registry resolve isso tornando o contrato explícito e versionado: o producer só consegue publicar uma mensagem se o schema dela for compatível com as regras configuradas — a quebra é detectada no deploy, não em produção.</p>` },
     },
     {
       title: 'JSON: flexível mas sem garantias',
@@ -187,8 +191,11 @@
       highlight: ['json_bg'],
       balloon: {
         anchor: 'json_bg', placement: 'right',
-        text: 'JSON: human-readable, zero setup. Problemas: **payloads grandes** (nomes de campo repetidos em cada mensagem), **sem schema enforcement** e **parse lento** (texto → objeto). Bom para desenvolvimento; problemático em alta escala.',
-      },
+        text: 'JSON: human-readable, zero setup. Problemas: <strong>payloads grandes</strong> (nomes de campo repetidos em cada mensagem), <strong>sem schema enforcement</strong> e <strong>parse lento</strong> (texto → objeto). Bom para desenvolvimento; problemático em alta escala.',
+        deep: `<p>O custo de "nomes de campo repetidos" parece pequeno numa mensagem isolada, mas em um tópico com bilhões de eventos por dia, os bytes gastos só com as strings <code>"userId"</code>, <code>"event"</code>, <code>"amount"</code> repetidas em cada mensagem somam terabytes de armazenamento e banda desperdiçados.</p>
+<div class="xp-example"><strong>Mesma mensagem, dois formatos</strong>JSON: { "userId": 42, "event": "checkout", "amount": 99.90, "currency": "BRL" }  → ~65 bytes de nomes de campo
+Avro: apenas os valores, na ordem do schema → nomes ficam só no schema, não em cada mensagem</div>
+<p>Isso não significa que JSON seja uma escolha ruim — para volumes baixos/médios e times pequenos, a legibilidade e a ausência de setup (sem Registry, sem geração de código) frequentemente compensam o overhead de espaço.</p>` },
     },
     {
       title: 'Protocol Buffers: schema compilado, binário compacto',
@@ -197,9 +204,16 @@
       highlight: ['proto_bg'],
       balloon: {
         anchor: 'proto_bg', placement: 'left',
-        text: 'Protobuf usa **field numbers** em vez de nomes — o wire format é muito menor (~10 bytes vs ~120 JSON). O `.proto` file é a fonte de verdade. `protoc` gera código tipado. Campo removido: usar `reserved` para não reutilizar o number.',
+        text: 'Protobuf usa <strong>field numbers</strong> em vez de nomes — o wire format é muito menor (~10 bytes vs ~120 JSON). O `.proto` file é a fonte de verdade. `protoc` gera código tipado. Campo removido: usar `reserved` para não reutilizar o number.',
         why: 'Field numbers são a chave da backward compatibility: adicionar campo com number novo → safe. Reutilizar number de campo removido → BREAKING.',
-      },
+        deep: `<p>No wire, uma mensagem Protobuf não carrega nomes de campo — só pares (field number, valor) codificados em varint. Isso é o que torna o payload tão compacto, mas também o motivo pelo qual reutilizar um number de campo removido é perigoso: um consumer antigo pode interpretar o valor errado como se fosse o campo antigo.</p>
+<div class="xp-example"><strong>.proto com reserved</strong>message OrderEvent {
+  int32 user_id = 1;
+  reserved 2;          // campo antigo "legacy_field" removido
+  reserved "legacy_field";
+  string currency = 3;
+}</div>
+<p><code>reserved</code> impede o compilador de deixar alguém reusar acidentalmente aquele number ou nome no futuro — é uma proteção em tempo de compilação contra um erro que só apareceria em runtime.</p>` },
     },
     {
       title: 'Apache Avro: schema JSON, encoding binário',
@@ -208,8 +222,11 @@
       highlight: ['avro_bg'],
       balloon: {
         anchor: 'avro_bg', placement: 'right',
-        text: 'Avro define o schema em JSON mas serializa em binário. Campos são identificados por **posição** no schema (não por nome no wire). Schema evolution via `default` values. Muito integrado ao ecossistema Confluent Kafka.',
-      },
+        text: 'Avro define o schema em JSON mas serializa em binário. Campos são identificados por <strong>posição</strong> no schema (não por nome no wire). Schema evolution via `default` values. Muito integrado ao ecossistema Confluent Kafka.',
+        deep: `<p>Como o wire format do Avro não carrega nenhum metadado — nem nomes, nem tipos, nem field numbers — o consumer precisa necessariamente ter o schema exato usado na escrita para conseguir decodificar os bytes corretamente. É por isso que Avro depende tão fortemente do Schema Registry: sem ele, não há como saber qual schema usar para ler.</p>
+<div class="xp-example"><strong>Schema Avro com default</strong>{ "name": "coupon_code", "type": ["null", "string"], "default": null }
+# campo novo e opcional — mensagens antigas sem ele recebem null ao ler</div>
+<p>Diferente do Protobuf, que gera código a partir do <code>.proto</code> em build time, o Avro é tipicamente resolvido em runtime — o que dá mais flexibilidade dinâmica, ao custo de checagem de tipos acontecer mais tarde no ciclo de desenvolvimento.</p>` },
     },
     {
       title: 'Comparativo: JSON vs Avro vs Protobuf',
@@ -219,7 +236,13 @@
       balloon: {
         anchor: 'avro_bg', placement: 'bottom',
         text: '| | JSON | Avro | Protobuf |\n|Payload|~120B|~25B|~10B|\n|Schema|nenhum|JSON def|.proto file|\n|Tipagem|none|runtime|compilada|\n|Evolution|manual|default values|field numbers|\n\nProtobuf é menor; Avro integra melhor ao Kafka ecosystem com Registry.',
-      },
+        deep: `<p>Na prática, a escolha raramente é só sobre tamanho de payload — o ecossistema em volta pesa mais. Confluent Schema Registry nasceu com Avro como formato "nativo", então times já no mundo Confluent tendem a usar Avro por menor atrito. Times vindos de gRPC/microserviços já têm os <code>.proto</code> prontos e preferem reaproveitá-los no Kafka.</p>
+<h4>Guia rápido de escolha</h4>
+<ul>
+<li><strong>JSON</strong> — prototipagem, volumes baixos, times pequenos, debug fácil (dá pra ler no console)</li>
+<li><strong>Avro</strong> — ecossistema Kafka/Confluent maduro, schema evolution flexível com defaults</li>
+<li><strong>Protobuf</strong> — já usa gRPC, quer o menor payload possível, prioriza tipagem forte em compile-time</li>
+</ul>` },
     },
     {
       title: 'Schema Registry: o contrato centralizado',
@@ -228,9 +251,14 @@
       highlight: ['sr_box'],
       balloon: {
         anchor: 'sr_box', placement: 'right',
-        text: 'O Schema Registry é um serviço HTTP que armazena e versiona schemas. Cada schema recebe um **schema_id** único. Producer registra antes de publicar. Consumer busca o schema pelo ID para deserializar.',
+        text: 'O Schema Registry é um serviço HTTP que armazena e versiona schemas. Cada schema recebe um <strong>schema_id</strong> único. Producer registra antes de publicar. Consumer busca o schema pelo ID para deserializar.',
         why: 'O Registry garante que producer e consumer sempre usam schemas compatíveis — sem coordenação manual entre times.',
-      },
+        deep: `<p>O Registry funciona como uma fonte única de verdade separada do próprio Kafka — ele não guarda mensagens, só schemas e suas regras de compatibilidade. Isso permite que times evoluam schemas de forma coordenada sem precisar reprocessar ou tocar nos tópicos existentes.</p>
+<div class="xp-example"><strong>Registrar um schema</strong>curl -X POST http://registry:8081/subjects/orders-value/versions \\
+  -H "Content-Type: application/vnd.schemaregistry.v1+json" \\
+  -d '{"schema": "{\\"type\\":\\"record\\",...}"}'
+# resposta: {"id": 7}</div>
+<p>Se o schema enviado já existe (mesmo conteúdo), o Registry retorna o <code>id</code> já existente em vez de criar um duplicado — schema_ids são determinísticos por conteúdo dentro de um mesmo subject.</p>` },
     },
     {
       title: 'Producer: registrar schema e serializar',
@@ -241,8 +269,11 @@
       highlight: ['pr_box', 'sr_box'],
       balloon: {
         anchor: 's_reg_l', placement: 'top',
-        text: 'Producer envia o schema ao Registry. Se já existe e é compatível, recebe o **schema_id** existente. Serializa a mensagem prefixada com `[0x00][schema_id de 4 bytes]` — apenas 5 bytes de overhead para todo o contexto de schema.',
-      },
+        text: 'Producer envia o schema ao Registry. Se já existe e é compatível, recebe o <strong>schema_id</strong> existente. Serializa a mensagem prefixada com `[0x00][schema_id de 4 bytes]` — apenas 5 bytes de overhead para todo o contexto de schema.',
+        deep: `<p>Na prática, esse fluxo acontece dentro do serializer Avro/Protobuf do cliente Kafka (<code>KafkaAvroSerializer</code>, por exemplo) — o código da aplicação não faz a chamada HTTP diretamente, apenas configura a URL do Registry e chama <code>producer.send()</code> normalmente.</p>
+<div class="xp-example"><strong>Wire format da mensagem</strong>[0x00] [0x00 0x00 0x00 0x07] [bytes Avro/Protobuf do payload]
+  magic byte    schema_id = 7 (4 bytes, big-endian)   payload serializado</div>
+<p>O serializer mantém um cache local de schemas já registrados nessa run do producer — ele só bate no Registry via HTTP na primeira vez que vê aquele schema; publicações seguintes reusam o schema_id em memória, sem round-trip de rede.</p>` },
     },
     {
       title: 'Consumer: ler schema_id e deserializar',
@@ -258,7 +289,11 @@
         anchor: 's_read_l', placement: 'top',
         text: 'Consumer lê os primeiros 5 bytes: magic byte `0x00` + `schema_id`. Faz GET ao Registry para obter o schema (cache local após o primeiro fetch). Usa o schema para deserializar os bytes restantes.',
         why: 'O cache local do consumer evita latência do Registry em cada mensagem — schemas raramente mudam.',
-      },
+        deep: `<p>Um detalhe importante: o consumer usa o schema com o qual a mensagem foi <em>escrita</em> (identificado pelo schema_id) combinado com o schema que ele mesmo espera (a versão mais recente que conhece) para resolver a leitura — é essa combinação de "writer schema" + "reader schema" que faz a resolução de compatibilidade funcionar campo a campo.</p>
+<div class="xp-example"><strong>GET ao Registry (cache miss)</strong>GET /schemas/ids/7
+{"schema": "{\\"type\\":\\"record\\",\\"name\\":\\"OrderEvent\\",...}"}
+# resultado fica em cache local do consumer indefinidamente (schema_id nunca muda de conteúdo)</div>
+<p>Como um schema_id é imutável por definição, o cache do consumer nunca precisa de invalidação — só cresce conforme novos schema_ids aparecem no tráfego, o que é raro em regime estável.</p>` },
     },
     {
       title: 'Compatibility Modes: BACKWARD e FORWARD',
@@ -269,9 +304,15 @@
       highlight: ['compat_bg', 'sr_box'],
       balloon: {
         anchor: 'compat_bg', placement: 'left',
-        text: '**BACKWARD**: novo consumer pode ler mensagens antigas. Permite adicionar campo com default e remover campo.\n**FORWARD**: consumer antigo pode ler mensagens novas. Permite adicionar campo e remover campo com default.',
+        text: '<strong>BACKWARD</strong>: novo consumer pode ler mensagens antigas. Permite adicionar campo com default e remover campo.\n<strong>FORWARD</strong>: consumer antigo pode ler mensagens novas. Permite adicionar campo e remover campo com default.',
         why: 'BACKWARD é o default e o mais comum: permite fazer deploy do consumer antes do producer (safe rollout).',
-      },
+        deep: `<p>O nome da regra descreve a direção em que a compatibilidade é garantida, não quem faz deploy primeiro — o que confunde muita gente. BACKWARD significa "o schema novo consegue ler dados escritos com o schema velho" (o consumer olha para trás, para o passado).</p>
+<div class="xp-good"><strong>Ordem de rollout com BACKWARD</strong>1. Deploy do consumer com o novo schema primeiro
+2. Deploy do producer depois
+(o consumer novo já sabe lidar com mensagens antigas e novas)</div>
+<div class="xp-good"><strong>Ordem de rollout com FORWARD</strong>1. Deploy do producer com o novo schema primeiro
+2. Deploy do consumer depois
+(consumers antigos ainda conseguem ler as mensagens novas)</div>` },
     },
     {
       title: 'FULL e Schema Evolution Rules',
@@ -283,8 +324,11 @@
       highlight: ['evol_bg'],
       balloon: {
         anchor: 'evol_bg', placement: 'left',
-        text: '**FULL** = BACKWARD + FORWARD: mais seguro mas mais restritivo. **NONE**: sem verificação — perigoso, apenas para desenvolvimento. Regra de ouro de evolution: sempre adicionar campos com `default`, nunca reutilizar field numbers (Protobuf) ou alterar tipos.',
-      },
+        text: '<strong>FULL</strong> = BACKWARD + FORWARD: mais seguro mas mais restritivo. <strong>NONE</strong>: sem verificação — perigoso, apenas para desenvolvimento. Regra de ouro de evolution: sempre adicionar campos com `default`, nunca reutilizar field numbers (Protobuf) ou alterar tipos.',
+        deep: `<p>FULL é a escolha certa quando producer e consumer fazem deploy de forma independente e você não pode garantir a ordem — é o modo mais seguro para ambientes com múltiplos times publicando/consumindo o mesmo tópico sem coordenação estreita.</p>
+<div class="xp-bad"><strong>Mudança BREAKING comum</strong>Mudar "amount" de int para string — nenhum modo de compatibilidade permite isso; qualquer consumer (antigo ou novo) vai falhar ao tentar interpretar o tipo errado</div>
+<div class="xp-good"><strong>Evolução segura</strong>Adicionar campo novo com default, nunca reaproveitar nome/number de campo removido, nunca mudar o tipo de um campo existente</div>
+<p>NONE existe principalmente para ambientes de desenvolvimento local ou testes onde iterar rápido no schema é mais importante que segurança — nunca deveria ser o modo configurado em produção.</p>` },
     },
     {
       title: 'Subject naming e Registry na prática',
@@ -294,8 +338,13 @@
              'compat_bg', 'compat_title', 'cm_bk_h', 'cm_bk3'],
       balloon: {
         anchor: 'sr_box', placement: 'right',
-        text: '**Subject naming**: `{topic}-value` (ex: `orders-value`), `{topic}-key`, ou `{record-name}`. Confluent Schema Registry: REST API na porta 8081, suporta Avro/JSON Schema/Protobuf. Cache no cliente evita overhead. Schema IDs são imutáveis (nunca mudam de schema).',
-      },
+        text: '<strong>Subject naming</strong>: `{topic}-value` (ex: `orders-value`), `{topic}-key`, ou `{record-name}`. Confluent Schema Registry: REST API na porta 8081, suporta Avro/JSON Schema/Protobuf. Cache no cliente evita overhead. Schema IDs são imutáveis (nunca mudam de schema).',
+        deep: `<p>A estratégia de naming <code>{topic}-value</code> (TopicNameStrategy) é o default e liga o schema diretamente ao tópico Kafka — simples, mas significa que um tópico só pode ter um schema por vez (versionado). Já <code>{record-name}</code> (RecordNameStrategy) liga o schema ao nome lógico do evento, permitindo múltiplos tipos de evento no mesmo tópico.</p>
+<div class="xp-example"><strong>Listar versões de um subject</strong>curl http://registry:8081/subjects/orders-value/versions
+[1, 2, 3]
+curl http://registry:8081/subjects/orders-value/versions/3
+{"id": 7, "version": 3, "schema": "..."}</div>
+<p>Vale lembrar: a compatibilidade é verificada por <em>subject</em>, não pelo tópico inteiro — se um tópico usa RecordNameStrategy com vários tipos de evento, cada tipo tem sua própria linha de evolução e regras de compatibilidade independentes.</p>` },
     },
     {
       title: 'Quiz',
@@ -311,7 +360,7 @@
           'Alterar o tipo do campo amount de int para string para acomodar o coupon_code',
         ],
         answer: 1,
-        explain: 'BACKWARD compatibility requer que novos schemas possam ser lidos por consumers que usam o schema mais recente para ler mensagens produzidas com schemas mais antigos. Adicionar um campo com **default value** é a operação segura: mensagens antigas (sem o campo) serão preenchidas com o default ao serem deserializadas pelo novo consumer. Remover campos (sem default), renomear ou mudar tipos são operações BREAKING.',
+        explain: 'BACKWARD compatibility requer que novos schemas possam ser lidos por consumers que usam o schema mais recente para ler mensagens produzidas com schemas mais antigos. Adicionar um campo com <strong>default value</strong> é a operação segura: mensagens antigas (sem o campo) serão preenchidas com o default ao serem deserializadas pelo novo consumer. Remover campos (sem default), renomear ou mudar tipos são operações BREAKING.',
       },
     },
     {

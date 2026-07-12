@@ -28,6 +28,8 @@
   --balloon-alpha: .9;
   --balloon-bg: rgba(var(--balloon-bg-rgb), var(--balloon-alpha));
   --balloon-ink: #16203d;
+  --balloon-strong-ink: #0b3aa3;
+  --balloon-why-ink: #3a4870;
 
   --ease: cubic-bezier(.22, 1, .36, 1);
   --t-fast: .28s;
@@ -317,19 +319,27 @@ body {
   font-weight: 700;
 }
 .xp-balloon p { margin: 0; }
-.xp-balloon strong { color: #0b3aa3; }
+.xp-balloon strong { color: var(--balloon-strong-ink); }
 .xp-balloon .xp-why {
   margin-top: 9px;
   padding-top: 9px;
   border-top: 1px dashed rgba(22, 32, 61, .2);
   font-size: 13px;
-  color: #3a4870;
+  color: var(--balloon-why-ink);
 }
 .xp-balloon .xp-why::before {
   content: "Por que? ";
   font-weight: 700;
   color: var(--accent-2);
 }
+.xp-balloon-more {
+  appearance: none; display: block; margin-top: 10px;
+  border: none; background: transparent; padding: 0;
+  font: 600 12.5px "Inter", sans-serif; color: var(--accent-2);
+  cursor: pointer;
+}
+.xp-balloon-more:hover { text-decoration: underline; }
+.xp-balloon.is-collapsed .xp-balloon-more { display: none; }
 /* ponteiro (tail) do balão */
 .xp-balloon::after {
   content: "";
@@ -435,7 +445,9 @@ body {
   display: flex; flex-direction: column; gap: 8px;
   font-size: 12.5px; color: var(--ink-soft);
 }
-.xp-opacity-pop input[type="range"] { width: 100%; accent-color: var(--accent); }
+.xp-opacity-row { display: flex; align-items: center; gap: 10px; }
+.xp-opacity-pop input[type="range"] { flex: 1; accent-color: var(--accent); }
+.xp-opacity-value { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--ink); min-width: 34px; text-align: right; }
 
 /* ---- overlay de ajuda: atalhos de teclado (tecla ? ou h) --------------- */
 .xp-help {
@@ -465,6 +477,130 @@ body {
 }
 .xp-help-close { display: block; margin-left: auto; }
 @keyframes xp-fade { from { opacity: 0; } to { opacity: 1; } }
+
+/* ---- painel "Saiba mais": aprofundamento opcional de uma cena ---------- */
+.xp-deep {
+  position: fixed; inset: 0; z-index: 55;
+  display: none; place-items: center; padding: 24px;
+  background: rgba(0, 0, 0, .55);
+  backdrop-filter: blur(2px);
+  animation: xp-fade var(--t-fast) var(--ease);
+}
+.xp-app.show-deep .xp-deep { display: grid; }
+.xp-deep-card {
+  width: min(640px, 92vw);
+  max-height: min(80vh, 720px);
+  overflow-y: auto;
+  background: linear-gradient(160deg, var(--panel-2), var(--panel));
+  border: 1px solid var(--line); border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 26px 28px 22px;
+  color: var(--ink);
+}
+.xp-deep-card h2 { margin: 0 0 14px; font-size: 19px; color: var(--accent); }
+.xp-deep-body { font-size: 14.5px; line-height: 1.65; color: var(--ink-soft); }
+.xp-deep-body p { margin: 0 0 12px; }
+.xp-deep-body h4 { margin: 18px 0 8px; font-size: 14px; color: var(--ink); }
+.xp-deep-body ul, .xp-deep-body ol { margin: 0 0 12px; padding-left: 22px; }
+.xp-deep-body li { margin-bottom: 5px; }
+.xp-deep-body strong { color: var(--ink); }
+.xp-deep-body code { font: 500 .92em ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--bg-soft); padding: 1px 6px; border-radius: 5px; }
+.xp-deep-body .xp-example {
+  background: var(--bg-soft); border: 1px solid var(--line); border-radius: 10px;
+  padding: 12px 14px; margin: 0 0 14px;
+  font: 13px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace;
+  white-space: pre-wrap; color: var(--ink);
+}
+.xp-deep-body .xp-example strong { display: block; margin-bottom: 6px; font: 700 11px/1 "Inter", sans-serif; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); }
+.xp-deep-body .xp-good, .xp-deep-body .xp-bad {
+  border-left: 3px solid var(--good); border-radius: 6px;
+  padding: 8px 12px; margin: 0 0 10px; background: rgba(81, 224, 163, .08);
+}
+.xp-deep-body .xp-bad { border-left-color: var(--hot); background: rgba(255, 122, 144, .08); }
+.xp-deep-body img, .xp-reading-deep img {
+  max-width: 100%; display: block; margin: 10px 0;
+  border-radius: 8px; border: 1px solid var(--line);
+}
+.xp-deep-close { display: block; margin: 16px 0 0 auto; }
+
+/* ---- modo leitura: recap de todas as cenas / base p/ imprimir --------- */
+.xp-reading {
+  position: fixed; inset: 0; z-index: 55;
+  display: none; place-items: center; padding: 24px;
+  background: rgba(0, 0, 0, .55);
+  backdrop-filter: blur(2px);
+  animation: xp-fade var(--t-fast) var(--ease);
+}
+.xp-app.show-reading .xp-reading { display: grid; }
+.xp-reading-card {
+  width: min(760px, 94vw);
+  max-height: min(86vh, 820px);
+  overflow-y: auto;
+  background: linear-gradient(160deg, var(--panel-2), var(--panel));
+  border: 1px solid var(--line); border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 26px 30px 24px;
+  color: var(--ink);
+}
+.xp-reading-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+.xp-reading-head h2 { margin: 0; font-size: 20px; color: var(--accent); }
+.xp-reading-actions { display: flex; gap: 8px; flex: none; }
+.xp-reading-scene { padding-bottom: 20px; margin-bottom: 20px; border-bottom: 1px dashed var(--line); }
+.xp-reading-scene:last-child { border-bottom: none; margin-bottom: 0; }
+.xp-reading-scene h3 { margin: 0 0 8px; font-size: 15.5px; color: var(--ink); }
+.xp-reading-scene p { margin: 0 0 8px; font-size: 14px; line-height: 1.6; color: var(--ink-soft); }
+.xp-reading-scene .xp-why { margin: 8px 0; padding: 8px 0 0; border-top: 1px dashed var(--line); font-size: 13px; color: var(--ink-soft); }
+.xp-reading-scene .xp-why::before { content: "Por que? "; font-weight: 700; color: var(--accent-2); }
+.xp-reading-deep {
+  margin-top: 10px; font-size: 13.5px; line-height: 1.6; color: var(--ink-soft);
+}
+.xp-reading-deep h4 { margin: 12px 0 6px; font-size: 13px; color: var(--ink); }
+.xp-reading-deep ul, .xp-reading-deep ol { margin: 0 0 10px; padding-left: 20px; }
+.xp-reading-deep code { font: 500 .92em ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--bg-soft); padding: 1px 6px; border-radius: 5px; }
+.xp-reading-deep .xp-example {
+  background: var(--bg-soft); border: 1px solid var(--line); border-radius: 8px;
+  padding: 10px 12px; margin: 0 0 10px;
+  font: 12.5px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace;
+  white-space: pre-wrap; color: var(--ink);
+}
+.xp-reading-deep .xp-good, .xp-reading-deep .xp-bad {
+  border-left: 3px solid var(--good); border-radius: 6px;
+  padding: 6px 10px; margin: 0 0 8px; background: rgba(81, 224, 163, .08);
+}
+.xp-reading-deep .xp-bad { border-left-color: var(--hot); background: rgba(255, 122, 144, .08); }
+.xp-reading-quiz { margin-top: 10px; padding: 10px 12px; background: var(--bg-soft); border-radius: 8px; }
+.xp-reading-quiz-q { margin: 0 0 8px; font-weight: 600; color: var(--ink); }
+.xp-reading-quiz ol { margin: 0 0 8px; padding-left: 20px; }
+.xp-reading-quiz li { color: var(--ink-soft); margin-bottom: 3px; }
+.xp-reading-quiz li.is-correct { color: var(--good); font-weight: 600; }
+.xp-reading-quiz-explain { margin: 0; font-size: 12.5px; color: var(--muted); }
+.xp-reading-close { display: block; }
+
+@media print {
+  body * { visibility: hidden; }
+  .xp-app.show-reading .xp-reading,
+  .xp-app.show-reading .xp-reading * { visibility: visible; }
+  .xp-app.show-reading .xp-reading {
+    position: absolute; top: 0; left: 0; right: 0; bottom: auto; z-index: auto;
+    display: block; padding: 0;
+    background: none; backdrop-filter: none;
+  }
+  .xp-reading-card {
+    width: auto; max-height: none; overflow: visible; box-shadow: none;
+    background: #fff; color: #111; border: none; padding: 0;
+  }
+  .xp-reading-actions, .xp-reading-close { display: none; }
+  .xp-reading-head h2, .xp-reading-scene h3, .xp-reading-deep h4 { color: #111; }
+  .xp-reading-scene p, .xp-reading-scene .xp-why, .xp-reading-deep, .xp-reading-deep li,
+  .xp-reading-quiz-explain { color: #333; }
+  .xp-reading-scene strong, .xp-reading-deep strong { color: #111; }
+  .xp-reading-deep .xp-example {
+    background: #f4f4f4; border-color: #ccc; color: #111;
+  }
+  .xp-reading-deep .xp-good, .xp-reading-deep .xp-bad { background: #f4f4f4; }
+  .xp-reading-quiz { background: #f4f4f4; }
+  .xp-reading-scene { break-inside: avoid; }
+}
 
 /* ---- foco visível por teclado (acessibilidade) ------------------------- */
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }

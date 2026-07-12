@@ -146,7 +146,15 @@
       balloon: {
         anchor: "rest_box", placement: "bottom",
         text: "REST sobre HTTP/1.1 com JSON é a escolha default para APIs. Flexível e ubíquo — mas <strong>verboso</strong> (headers repetidos, JSON text parsing) e sem tipagem forte em runtime.",
-        why: "Um payload JSON típico de 1KB pode se tornar 100 bytes em Protobuf. Em alta frequência (telemetria, IoT, microserviços internos) isso importa."
+        why: "Um payload JSON típico de 1KB pode se tornar 100 bytes em Protobuf. Em alta frequência (telemetria, IoT, microserviços internos) isso importa.",
+        deep: `<p>REST não define um formato de payload obrigatório, mas na prática quase sempre significa JSON sobre HTTP/1.1: texto legível por humanos, fácil de debugar no navegador, mas caro de fazer parse e volumoso na rede — cada chave do objeto se repete em toda resposta.</p>
+<div class="xp-example"><strong>Payload JSON típico</strong>{
+  "id": 42,
+  "name": "Alice Silva",
+  "email": "alice@exemplo.com"
+}
+// ~70 bytes, sem contar headers HTTP</div>
+<p>Sem um schema obrigatório, o contrato entre cliente e servidor normalmente vive em documentação separada (OpenAPI/Swagger) que pode ficar desatualizada — nada impede o servidor de mudar um campo sem avisar o cliente em tempo de compilação.</p>`
       }
     },
     {
@@ -157,7 +165,17 @@
       balloon: {
         anchor: "grpc_box", placement: "bottom",
         text: "gRPC usa <strong>Protocol Buffers</strong> (.proto) como IDL (Interface Definition Language). Dados são serializados em binário — menor payload e mais rápido que JSON text parsing.",
-        why: "Protobuf numera cada campo — isso permite evoluir a API sem quebrar compatibilidade. Adicionar campo novo com número novo é backward-compatible."
+        why: "Protobuf numera cada campo — isso permite evoluir a API sem quebrar compatibilidade. Adicionar campo novo com número novo é backward-compatible.",
+        deep: `<p>Protobuf serializa cada campo como um par (número do campo + tipo + valor) em binário, sem repetir nomes de chave como o JSON faz. Isso reduz drasticamente o tamanho do payload e a CPU gasta fazendo parsing.</p>
+<div class="xp-example"><strong>Mesmo dado em Protobuf (bytes, simplificado)</strong>campo 1 (id):    varint  42
+campo 2 (name):   string  "Alice Silva"
+campo 3 (email):  string  "alice@exemplo.com"
+// binário compacto, sem nomes de chave repetidos</div>
+<h4>Trade-off</h4>
+<ul>
+<li><strong>Protobuf</strong> — menor, mais rápido, tipado; mas não é legível a olho nu (precisa do .proto para decodificar)</li>
+<li><strong>JSON</strong> — legível, sem ferramenta extra; mas maior e sem tipagem forte</li>
+</ul>`
       }
     },
     {
@@ -167,7 +185,11 @@
       balloon: {
         anchor: { x: MX, y: 480 }, placement: "bottom",
         text: "O <code>.proto</code> define <strong>Messages</strong> (estruturas de dados) e <strong>Services</strong> (RPCs). Cada campo tem um <em>número</em> único (não o nome) — isso garante compatibilidade binária entre versões.",
-        why: "O contrato fica no repositório e é a fonte de verdade. Qualquer alteração incompatível quebra o build — não surpresas em runtime."
+        why: "O contrato fica no repositório e é a fonte de verdade. Qualquer alteração incompatível quebra o build — não surpresas em runtime.",
+        deep: `<p>O número do campo (não o nome) é o que realmente viaja no binário — por isso renomear um campo no .proto não quebra compatibilidade, mas reutilizar um número já usado antes quebra silenciosamente clientes antigos.</p>
+<div class="xp-good"><strong>Evolução compatível</strong>Adicionar <code>string phone = 4;</code> — clientes antigos ignoram o campo novo; clientes novos leem normal.</div>
+<div class="xp-bad"><strong>Quebra compatibilidade</strong>Reaproveitar o número <code>2</code> para um campo diferente — clientes antigos decodificam o valor errado sem erro nenhum, silenciosamente.</div>
+<p>Por isso times sérios com Protobuf costumam marcar campos removidos como <code>reserved</code> em vez de simplesmente apagar a linha, evitando que alguém reuse o número por engano no futuro.</p>`
       }
     },
     {
@@ -178,7 +200,14 @@
       balloon: {
         anchor: "protoc_btn", placement: "bottom",
         text: "<code>protoc --go_out=. user.proto</code> gera: <strong>client stub</strong> (faz chamada como função local) e <strong>server interface</strong> (que o dev implementa). Suporta 10+ linguagens.",
-        why: "Zero código de serialização manual. A camada de transporte é gerada — o dev foca 100% na lógica de negócio."
+        why: "Zero código de serialização manual. A camada de transporte é gerada — o dev foca 100% na lógica de negócio.",
+        deep: `<p>O protoc não gera só a serialização — ele gera classes completas de request/response, um cliente com métodos que parecem chamadas de função local, e a interface que o servidor precisa implementar (o "esqueleto"). Suporta dezenas de linguagens via plugins.</p>
+<div class="xp-example"><strong>Comando típico</strong>protoc --go_out=. --go-grpc_out=. user.proto
+
+# gera:
+#   user.pb.go       (structs + serialização)
+#   user_grpc.pb.go  (client stub + server interface)</div>
+<p>Esse código gerado normalmente entra no controle de versão (ou é gerado no CI) — assim, mudar o .proto e recompilar já avisa em tempo de build sobre qualquer lugar que dependa de um campo removido, em vez de falhar só em runtime.</p>`
       },
       enter(ctx) {
         ctx.drawArrow("gen_cl");
@@ -194,7 +223,14 @@
       balloon: {
         anchor: "h2_bg", placement: "bottom",
         text: "<strong>HTTP/2</strong> sob o gRPC: <br>• <em>Multiplexing</em>: múltiplas RPCs na mesma conexão TCP <br>• <em>HPACK</em>: compressão de headers (economiza ~80% em headers repetidos) <br>• <em>Binary frames</em>: mais eficiente que HTTP/1.1 text",
-        why: "HTTP/1.1 exige uma conexão TCP por request simultânea (ou pipelining limitado). HTTP/2 resolve isso com streams numerados numa única conexão."
+        why: "HTTP/1.1 exige uma conexão TCP por request simultânea (ou pipelining limitado). HTTP/2 resolve isso com streams numerados numa única conexão.",
+        deep: `<p>HTTP/1.1 permite só uma requisição pendente por conexão sem pipelining real — por isso browsers e clientes abrem várias conexões TCP em paralelo. HTTP/2 resolve isso multiplexando várias "streams" lógicas dentro de uma única conexão TCP.</p>
+<div class="xp-example"><strong>Multiplexing (simplificado)</strong>1 conexão TCP:
+  stream 1 → GetUser(42)     [em andamento]
+  stream 3 → ListUsers()     [em andamento]
+  stream 5 → CreateUser(...) [em andamento]
+  (tudo intercalado nos mesmos bytes TCP)</div>
+<p>O HPACK comprime headers reaproveitando um dicionário compartilhado entre requisições da mesma conexão — depois da primeira chamada, headers repetidos (como <code>authorization</code>) custam poucos bytes nas próximas.</p>`
       }
     },
     {
@@ -206,7 +242,12 @@
       balloon: {
         anchor: { x: MX, y: 395 }, placement: "bottom",
         text: "<strong>Unary RPC</strong>: 1 request, 1 response — o equivalente de uma chamada REST. Ex: <code>GetUser(id: 42)</code> → <code>User{id:42, name:\"Alice\"}</code>.",
-        why: "Mesmo sendo 'igual ao REST' funcionalmente, a Unary RPC já ganha em payload (protobuf binário) e headers (HTTP/2 HPACK)."
+        why: "Mesmo sendo 'igual ao REST' funcionalmente, a Unary RPC já ganha em payload (protobuf binário) e headers (HTTP/2 HPACK).",
+        deep: `<p>Do ponto de vista do código do cliente, uma Unary RPC parece uma chamada de função comum — o stub gerado esconde toda a serialização e a rede por trás de uma assinatura tipada.</p>
+<div class="xp-example"><strong>Cliente (pseudocódigo Go)</strong>resp, err := client.GetUser(ctx, &UserReq{Id: 42})
+if err != nil { ... }
+fmt.Println(resp.Name)  // "Alice Silva"</div>
+<p>Por trás dessa chamada: o stub serializa <code>UserReq</code> em Protobuf, abre um stream HTTP/2, envia os bytes, espera a resposta, desserializa em <code>User</code> e devolve — tudo isso é código gerado, não escrito à mão.</p>`
       },
       enter(ctx) { ctx.drawArrow("rpc_req"); setTimeout(() => ctx.drawArrow("rpc_res"), 400); }
     },
@@ -219,7 +260,15 @@
       balloon: {
         anchor: { x: MX, y: 560 }, placement: "top",
         text: "<strong>Server Streaming</strong>: cliente envia 1 request, servidor responde com <em>N mensagens</em> no mesmo stream HTTP/2. Útil para: paginação de resultados grandes, feed de eventos, progresso de processamento.",
-        why: "Sem server streaming, o cliente precisaria fazer múltiplas requisições ou receber tudo de uma vez (payload gigante). Com streaming, começa a processar na primeira mensagem."
+        why: "Sem server streaming, o cliente precisaria fazer múltiplas requisições ou receber tudo de uma vez (payload gigante). Com streaming, começa a processar na primeira mensagem.",
+        deep: `<p>Server streaming reaproveita o mesmo stream HTTP/2 para várias mensagens: o servidor escreve um <code>User</code> por vez assim que fica pronto, sem esperar montar a lista inteira em memória antes de responder.</p>
+<div class="xp-example"><strong>Cliente consumindo o stream (pseudocódigo)</strong>stream, _ := client.ListUsers(ctx, &ListReq{})
+for {
+  user, err := stream.Recv()
+  if err == io.EOF { break }  // END_STREAM
+  fmt.Println(user.Name)
+}</div>
+<p>O frame <code>END_STREAM</code> do HTTP/2 marca o fim do streaming — não existe um "tamanho total" anunciado de antemão como em REST paginado; o cliente processa mensagem a mensagem até a stream fechar.</p>`
       },
       enter(ctx) {
         ctx.drawArrow("rpc_ss1");
@@ -233,7 +282,13 @@
       balloon: {
         anchor: { x: 325, y: 510 }, placement: "bottom",
         text: "<strong>Client Streaming</strong>: cliente envia múltiplas mensagens, servidor responde ao final (ex: upload, aggregation). <strong>Bidirectional</strong>: ambos enviam quando quiserem — full-duplex como WebSocket, mas com RPC semantics.",
-        why: "Bidirectional streaming é raro mas poderoso: telemetria em tempo real, chat de microserviços, jogos multiplayer."
+        why: "Bidirectional streaming é raro mas poderoso: telemetria em tempo real, chat de microserviços, jogos multiplayer.",
+        deep: `<p>Client streaming inverte a direção: o cliente manda vários pedidos e só recebe uma resposta no fim (útil pra upload em partes, ou agregações client-side). Bidirectional streaming não tem essa restrição — cada lado lê e escreve no seu próprio ritmo, de forma assíncrona.</p>
+<div class="xp-example"><strong>Assinatura .proto de cada tipo</strong>rpc GetUser(UserReq) returns (User);                     // unary
+rpc ListUsers(ListReq) returns (stream User);             // server stream
+rpc UploadChunks(stream Chunk) returns (UploadResult);     // client stream
+rpc Chat(stream Msg) returns (stream Msg);                 // bidirectional</div>
+<p>Bidirectional streaming é o único dos quatro tipos que realmente se parece com WebSocket — mas mantendo a tipagem forte e a estrutura de "métodos RPC" do gRPC.</p>`
       }
     },
     {
@@ -244,7 +299,15 @@
       balloon: {
         anchor: "h2_bg", placement: "bottom",
         text: "<strong>Status</strong>: 16 códigos padrão (OK, NOT_FOUND, UNAVAILABLE, DEADLINE_EXCEEDED…). <strong>Metadata</strong>: key-value headers (auth token, trace-id). <strong>Deadlines</strong>: timeout propagado para toda a cadeia de chamadas.",
-        why: "Deadlines são melhores que timeouts locais: se o cliente desiste, o servidor downstream também sabe desistir, economizando recursos no sistema inteiro."
+        why: "Deadlines são melhores que timeouts locais: se o cliente desiste, o servidor downstream também sabe desistir, economizando recursos no sistema inteiro.",
+        deep: `<p>Os status codes do gRPC não são os mesmos do HTTP (200, 404...) — são um conjunto próprio de 16 códigos pensados para semântica de RPC, mapeados internamente para HTTP/2, mas expostos ao dev como um enum na linguagem escolhida.</p>
+<div class="xp-example"><strong>Códigos gRPC mais usados</strong>OK                  0   sucesso
+NOT_FOUND           5   recurso não existe
+INVALID_ARGUMENT    3   request malformado
+UNAUTHENTICATED     16  sem credencial válida
+DEADLINE_EXCEEDED   4   estourou o prazo
+UNAVAILABLE         14  servidor fora do ar/sobrecarregado</div>
+<p>O <strong>deadline</strong> propagado end-to-end é uma das features mais úteis: se o cliente definir 500ms e a chamada já consumiu 400ms num serviço intermediário, o próximo serviço na cadeia recebe só os 100ms restantes — evita trabalho inútil depois que ninguém mais espera a resposta.</p>`
       }
     },
     {
@@ -254,7 +317,16 @@
       balloon: {
         anchor: "icp_bg", placement: "top",
         text: "<strong>Interceptors</strong> são executados antes/depois de cada RPC: autenticação (verificar Bearer token), logging estruturado, distributed tracing, retry com backoff exponencial.",
-        why: "Separa concerns de infraestrutura da lógica de negócio. Um interceptor de auth centralizado elimina verificações duplicadas em cada método."
+        why: "Separa concerns de infraestrutura da lógica de negócio. Um interceptor de auth centralizado elimina verificações duplicadas em cada método.",
+        deep: `<p>Interceptors formam uma cadeia: cada um pode inspecionar/modificar a requisição antes de passar adiante, e a resposta antes de devolver — o mesmo padrão de middleware de frameworks web, mas aplicado a chamadas RPC.</p>
+<div class="xp-example"><strong>Interceptor de auth (pseudocódigo)</strong>func AuthInterceptor(ctx, req, next) {
+  token := metadata.Get(ctx, "authorization")
+  if !valid(token) {
+    return status.Error(Unauthenticated, "token inválido")
+  }
+  return next(ctx, req)  // segue para o handler real
+}</div>
+<p>Como interceptors rodam antes de qualquer handler específico, uma correção de bug de autenticação no interceptor corrige <em>todos</em> os métodos RPC de uma vez — não precisa tocar em cada implementação individualmente.</p>`
       }
     },
     {
@@ -264,7 +336,10 @@
       balloon: {
         anchor: { x: 305, y: 640 }, placement: "top",
         text: "<strong>gRPC</strong>: microserviços internos, alta performance, streaming. <strong>REST</strong>: APIs públicas, browser direto, simplicidade. <strong>GraphQL</strong>: clientes com necessidades diferentes de dados.",
-        why: "gRPC exige que o cliente entenda Protobuf e HTTP/2 — browsers não suportam nativamente. grpc-web é uma proxy workaround. Para APIs públicas, REST ainda vence em adoção."
+        why: "gRPC exige que o cliente entenda Protobuf e HTTP/2 — browsers não suportam nativamente. grpc-web é uma proxy workaround. Para APIs públicas, REST ainda vence em adoção.",
+        deep: `<p>A decisão raramente é "gRPC substitui REST" — é mais comum um sistema usar os três, cada um na borda certa: gRPC entre microsserviços internos (onde ambos os lados controlam o código), REST ou GraphQL na borda pública (onde o cliente pode ser um navegador ou app de terceiro).</p>
+<div class="xp-bad"><strong>gRPC direto do browser</strong>Navegadores não suportam HTTP/2 trailers nativamente do jeito que o gRPC precisa — exige um proxy (grpc-web) traduzindo para o browser, uma camada extra de complexidade.</div>
+<div class="xp-good"><strong>Padrão comum em produção</strong>Browser → REST/GraphQL (API Gateway) → gRPC entre os microsserviços internos → banco de dados</div>`
       }
     },
     {

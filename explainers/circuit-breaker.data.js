@@ -107,7 +107,12 @@
       highlight: ["casc4"],
       balloon: { anchor: "cascade_box", placement: "bottom",
         text: "Em sistemas distribuídos, uma falha num serviço lento faz com que outros serviços fiquem bloqueados esperando resposta. As threads se esgotam, as filas enchem e a falha se propaga em <strong>cascata</strong> — derrubando tudo.",
-        why: "O Circuit Breaker foi criado especificamente para cortar essa cascata: ao detectar que um serviço está falhando, ele para de chamar o serviço imediatamente, evitando que o problema se alastre." },
+        why: "O Circuit Breaker foi criado especificamente para cortar essa cascata: ao detectar que um serviço está falhando, ele para de chamar o serviço imediatamente, evitando que o problema se alastre.",
+        deep: `<p>O mecanismo clássico é simples de entender em números: um pool de 200 threads, cada uma bloqueada por 30s esperando um serviço lento responder — em menos de 7 segundos o pool inteiro está ocupado, e toda requisição nova (mesmo para endpoints saudáveis) fica na fila.</p>
+<div class="xp-bad"><strong>Sem proteção</strong>Serviço A → chama Serviço B (lento) → thread de A bloqueada
+Serviço C → chama Serviço A → thread de C também bloqueada
+Resultado: C também fica indisponível, mesmo nunca tendo falado com B</div>
+<p>Esse é o efeito "thundering" da falha em cascata: um problema local em B se propaga para A, depois para C, e assim por diante — um serviço lento é, na prática, pior que um serviço fora do ar, porque continua consumindo recursos até o timeout.</p>` },
       enter: (ctx) => {
         ["casc1","casc2","casc3","casc4"].forEach((id, i) => setTimeout(() => ctx.show(id), i * 150));
         setTimeout(() => { ["a_c12","a_c23","a_c34"].forEach((id, i) => setTimeout(() => ctx.drawArrow(id), i * 100)); }, 600);
@@ -119,7 +124,15 @@
       highlight: ["st_closed"],
       balloon: { anchor: "st_closed", placement: "right",
         text: "O Circuit Breaker é uma <strong>máquina de estados</strong> com três estados: <strong>CLOSED</strong> (circuito fechado, tráfego normal), <strong>OPEN</strong> (circuito aberto, tráfego bloqueado) e <strong>HALF-OPEN</strong> (testando se o serviço recuperou).",
-        why: "O nome vem dos disjuntores elétricos: quando detecta sobrecarga, abre o circuito para proteger o sistema. Quando a tensão normaliza, pode ser testado novamente." },
+        why: "O nome vem dos disjuntores elétricos: quando detecta sobrecarga, abre o circuito para proteger o sistema. Quando a tensão normaliza, pode ser testado novamente.",
+        deep: `<p>O padrão foi popularizado pela Netflix com a biblioteca Hystrix (hoje descontinuada em favor de <code>resilience4j</code> no ecossistema Java, ou implementações equivalentes em outras linguagens). A ideia central é sempre a mesma: envolver toda chamada a um serviço externo com um objeto que decide, antes de chamar, se vale a pena tentar.</p>
+<h4>As três transições possíveis</h4>
+<ul>
+<li><strong>CLOSED → OPEN</strong> — quando a taxa de falhas cruza um threshold configurado</li>
+<li><strong>OPEN → HALF-OPEN</strong> — automaticamente, após um timer de espera</li>
+<li><strong>HALF-OPEN → CLOSED ou OPEN</strong> — depende do resultado da requisição de teste (probe)</li>
+</ul>
+<p>Diferente de um <code>try/catch</code> simples, o Circuit Breaker tem memória: ele lembra o histórico recente de falhas para decidir se ainda vale tentar.</p>` },
     },
     {
       title: "Estado CLOSED: operação normal",
@@ -127,7 +140,12 @@
       highlight: ["st_closed", "req_ok"],
       balloon: { anchor: "st_closed", placement: "right",
         text: "No estado <strong>CLOSED</strong>, todas as requisições passam normalmente para o serviço dependente. O Circuit Breaker monitora cada chamada: tempo de resposta, códigos de erro e timeouts.",
-        why: "Em CLOSED, o CB é quase transparente — apenas um interceptador que observa. O overhead é mínimo (uma comparação de contador por chamada)." },
+        why: "Em CLOSED, o CB é quase transparente — apenas um interceptador que observa. O overhead é mínimo (uma comparação de contador por chamada).",
+        deep: `<p>Implementações reais como resilience4j calculam a taxa de falha sobre uma janela deslizante (por número de chamadas ou por tempo), não sobre o total desde o início — assim uma falha isolada há uma hora não conta contra o serviço hoje.</p>
+<div class="xp-example"><strong>Config típica (resilience4j)</strong>failureRateThreshold: 50%
+slidingWindowSize: 10 (últimas 10 chamadas)
+minimumNumberOfCalls: 5 (não avalia antes disso)</div>
+<p>O <code>minimumNumberOfCalls</code> evita abrir o circuito com base em amostra pequena: 1 falha em 1 chamada seria 100%, mas estatisticamente irrelevante. Só depois de um volume mínimo de chamadas o CB começa a confiar na taxa calculada.</p>` },
       enter: (ctx) => {
         ctx.drawArrow("req_ok");
         setTimeout(() => ctx.drawArrow("resp_ok2"), 500);
@@ -139,7 +157,11 @@
       highlight: ["fail_ctr", "st_closed"],
       balloon: { anchor: "fail_ctr", placement: "top",
         text: "A cada falha (timeout, 5xx, exception), o <strong>contador de falhas</strong> incrementa. Quando atinge o <strong>threshold</strong> (ex.: 5 falhas em 10 segundos), o CB transita para OPEN.",
-        why: "O threshold evita que uma falha isolada abra o circuito. Configurar threshold muito baixo causa falsos positivos; muito alto demora a proteger. Ajuste baseado no SLA do serviço." },
+        why: "O threshold evita que uma falha isolada abra o circuito. Configurar threshold muito baixo causa falsos positivos; muito alto demora a proteger. Ajuste baseado no SLA do serviço.",
+        deep: `<p>Nem todo erro deveria contar igual. Um 404 de "recurso não encontrado" é uma resposta válida do serviço — não indica que ele está com problema. Já um timeout, 503 ou connection refused são sinais reais de degradação e devem contar para o contador.</p>
+<div class="xp-good"><strong>Conte como falha</strong>Timeout, 5xx, connection refused, circuit já aberto de uma dependência</div>
+<div class="xp-bad"><strong>Não conte como falha</strong>404 (recurso não existe), 400 (request inválido do próprio cliente) — são respostas corretas do serviço, não indícios de indisponibilidade</div>
+<p>Classificar mal os erros é uma causa comum de circuit breaker "nervoso" — abrindo com muita frequência mesmo com o serviço saudável.</p>` },
       enter: (ctx) => {
         ctx.setBars("fail_bar", [0.4]);
         setTimeout(() => ctx.setBars("fail_bar", [0.6]), 300);
@@ -152,7 +174,11 @@
       highlight: ["st_open", "a_co"],
       balloon: { anchor: "st_open", placement: "right",
         text: "Com o threshold atingido, o CB transita para <strong>OPEN</strong>. A partir daqui, ele rejeita <em>todas</em> as chamadas imediatamente, sem tentar contactar o serviço dependente.",
-        why: "Fail fast em OPEN é intencional: melhor retornar um erro instantâneo do que bloquear threads por segundos esperando um serviço que sabemos estar falhando." },
+        why: "Fail fast em OPEN é intencional: melhor retornar um erro instantâneo do que bloquear threads por segundos esperando um serviço que sabemos estar falhando.",
+        deep: `<p>A transição em si é barata — é só uma mudança de estado em memória — mas o efeito é imediato em todo o sistema: a partir do próximo milissegundo, nenhuma chamada nova consome uma thread ou uma conexão esperando o serviço problemático.</p>
+<div class="xp-example"><strong>Evento de transição (log típico)</strong>[CircuitBreaker "pagamentos-api"] state transition: CLOSED -> OPEN
+failureRate: 62% (threshold: 50%), lastFailure: TimeoutException</div>
+<p>É comum emitir uma métrica ou alerta nesse momento exato — a abertura do circuito é um sinal valioso de que uma dependência está degradada, e times de observabilidade costumam monitorar transições de estado do CB como um indicador de saúde do sistema.</p>` },
       enter: (ctx) => { ctx.drawArrow("a_co"); },
     },
     {
@@ -161,7 +187,17 @@
       highlight: ["st_open", "blk_box"],
       balloon: { anchor: "blk_box", placement: "top",
         text: "Em <strong>OPEN</strong>, o CB intercepta a chamada e responde com <strong>503 imediato</strong> — sem nem tentar contactar o Serviço B. Um timer conta o tempo de espera (ex.: 30 segundos).",
-        why: "O cliente recebe um erro rápido e pode tomar uma ação alternativa: retornar dados do cache, mostrar mensagem de manutenção ou redirecionar para backup." },
+        why: "O cliente recebe um erro rápido e pode tomar uma ação alternativa: retornar dados do cache, mostrar mensagem de manutenção ou redirecionar para backup.",
+        deep: `<p>O erro rápido não precisa ser o fim da história para o usuário — o padrão fica bem mais forte combinado com um <strong>fallback</strong>: uma função alternativa que o CB chama automaticamente quando rejeita a requisição.</p>
+<div class="xp-example"><strong>Fallback comum</strong>catch (CallNotPermittedException e) {
+  return cache.getLastKnownGoodValue(); // ou um valor default
+}</div>
+<h4>Fallbacks típicos por caso</h4>
+<ul>
+<li>Recomendações de produto → lista genérica em cache em vez de personalizada</li>
+<li>Preço em tempo real → último preço conhecido, com aviso de "pode estar desatualizado"</li>
+<li>Feature não-crítica → simplesmente omitir da tela em vez de quebrar a página inteira</li>
+</ul>` },
       enter: (ctx) => {
         ctx.drawArrow("req_blk");
         setTimeout(() => ctx.drawArrow("fast_fail"), 400);
@@ -173,7 +209,12 @@
       highlight: ["st_halfopen", "a_oh"],
       balloon: { anchor: "st_halfopen", placement: "right",
         text: "Após o timer de espera expirar, o CB transita para <strong>HALF-OPEN</strong>: ele permite que <em>uma única</em> requisição de teste (probe) passe para o serviço dependente.",
-        why: "HALF-OPEN é o mecanismo de auto-recuperação: o CB verifica periodicamente se o serviço voltou a funcionar, sem precisar de intervenção humana para reativar." },
+        why: "HALF-OPEN é o mecanismo de auto-recuperação: o CB verifica periodicamente se o serviço voltou a funcionar, sem precisar de intervenção humana para reativar.",
+        deep: `<p>O tempo de espera fixo (ex.: sempre 30s) funciona, mas muitas implementações preferem <strong>back-off exponencial</strong>: se a primeira probe falhar, o próximo timer é maior (30s, depois 60s, depois 120s...), evitando bombardear repetidamente um serviço que está demorando para se recuperar.</p>
+<div class="xp-example"><strong>Back-off exponencial com jitter</strong>tentativa 1: espera 30s
+tentativa 2: espera 60s ± jitter aleatório
+tentativa 3: espera 120s ± jitter aleatório</div>
+<p>O <em>jitter</em> (variação aleatória) evita que múltiplas instâncias do mesmo cliente, todas com CB aberto ao mesmo tempo, façam a probe exatamente no mesmo segundo — o que criaria um mini pico de carga sincronizado no serviço que está se recuperando.</p>` },
       enter: (ctx) => { ctx.drawArrow("a_oh"); },
     },
     {
@@ -182,7 +223,11 @@
       highlight: ["st_halfopen", "probe_req"],
       balloon: { anchor: "probe_req", placement: "top",
         text: "O <strong>probe request</strong> vai ao Serviço B. Se retornar sucesso (2xx dentro do timeout), o CB transita para CLOSED — tráfego normal é retomado. Se falhar, volta para OPEN e o timer recomeça.",
-        why: "Uma probe é suficiente — não é necessário aquecer com múltiplas chamadas. Isso minimiza a carga no serviço que está se recuperando." },
+        why: "Uma probe é suficiente — não é necessário aquecer com múltiplas chamadas. Isso minimiza a carga no serviço que está se recuperando.",
+        deep: `<p>Algumas implementações (resilience4j incluso) permitem configurar um pequeno número de chamadas permitidas em HALF-OPEN em vez de exatamente uma — por exemplo, 3 a 5 — para ter uma amostra um pouco mais confiável antes de decidir, sem chegar a reabrir totalmente o tráfego.</p>
+<div class="xp-example"><strong>Config com múltiplas probes</strong>permittedNumberOfCallsInHalfOpenState: 3
+# das 3, se >= 50% falharem → volta pra OPEN; senão → CLOSED</div>
+<p>O trade-off é direto: mais probes dão mais confiança na decisão, mas colocam mais carga num serviço que ainda pode estar frágil. Para dependências críticas ou sensíveis a carga, uma única probe costuma ser a escolha mais conservadora.</p>` },
       enter: (ctx) => { ctx.drawArrow("probe_req"); },
     },
     {
@@ -191,7 +236,11 @@
       highlight: ["st_closed", "a_hc"],
       balloon: { anchor: "st_closed", placement: "right",
         text: "Probe bem-sucedido → CB transita de HALF-OPEN para <strong>CLOSED</strong>. O tráfego normal é retomado gradualmente. O contador de falhas é zerado.",
-        why: "A recuperação é automática: o sistema se auto-cura sem intervenção humana. Isso é fundamental para alta disponibilidade em microservices." },
+        why: "A recuperação é automática: o sistema se auto-cura sem intervenção humana. Isso é fundamental para alta disponibilidade em microservices.",
+        deep: `<p>"Gradualmente" é a palavra-chave: alguns sistemas fazem toda a fila de requisições retomar de uma vez ao fechar o circuito, o que pode sobrecarregar de novo um serviço que só acabou de voltar. Um padrão mais cuidadoso é combinar o CB com um <strong>rate limiter</strong> logo após o fechamento, para "aquecer" o tráfego de volta gradualmente.</p>
+<div class="xp-example"><strong>Log de recuperação</strong>[CircuitBreaker "pagamentos-api"] state transition: HALF_OPEN -> CLOSED
+probe succeeded in 84ms, resuming normal traffic</div>
+<p>Zerar o contador de falhas ao fechar é importante para não carregar "cicatrizes" do incidente anterior — o CB deve julgar o serviço pelo comportamento atual, não pelo histórico de uma falha já resolvida.</p>` },
       enter: (ctx) => { ctx.drawArrow("a_hc"); },
     },
     {
@@ -200,7 +249,10 @@
       highlight: ["st_open", "a_ho"],
       balloon: { anchor: "st_open", placement: "left",
         text: "Se a probe falhar, o CB volta para <strong>OPEN</strong> e o timer recomeça. O serviço ainda não recuperou — o sistema aguarda mais um ciclo antes de tentar novamente.",
-        why: "Back-off exponencial pode ser implementado: primeiro espera 30s, depois 60s, depois 120s. Isso evita sobrecarregar um serviço que está tentando se recuperar." },
+        why: "Back-off exponencial pode ser implementado: primeiro espera 30s, depois 60s, depois 120s. Isso evita sobrecarregar um serviço que está tentando se recuperar.",
+        deep: `<p>Esse ciclo HALF-OPEN → OPEN pode se repetir várias vezes durante um incidente prolongado — e cada repetição é informação valiosa. Times costumam registrar quantas vezes o circuito "tentou e falhou" como parte do runbook de incidente, para saber se o serviço está piorando, estável ou já dando sinais de melhora.</p>
+<div class="xp-bad"><strong>Anti-padrão</strong>Resetar o CB manualmente para CLOSED durante o incidente "para ver se já melhorou" — sobrescreve a proteção e pode gerar nova cascata</div>
+<div class="xp-good"><strong>Prática recomendada</strong>Deixar o CB seguir seu ciclo automático de probes; investigar a causa raiz da falha em paralelo, sem forçar o estado</div>` },
       enter: (ctx) => { ctx.drawArrow("a_ho"); },
     },
     {

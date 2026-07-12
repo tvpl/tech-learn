@@ -84,7 +84,10 @@
       highlight: ["lim_box"],
       balloon: { anchor: "lim_box", placement: "left",
         text: "Um único agente tem uma <strong>janela de contexto finita</strong>, não pode fazer múltiplas coisas em paralelo e acumula erros em tarefas longas. Para problemas complexos, isso se torna um gargalo.",
-        why: "Assim como times de pessoas são mais produtivos que indivíduos isolados em tarefas complexas, múltiplos agentes especializados superam um único agente genérico." },
+        why: "Assim como times de pessoas são mais produtivos que indivíduos isolados em tarefas complexas, múltiplos agentes especializados superam um único agente genérico.",
+        deep: `<p>O gargalo de janela de contexto é cumulativo: um agente único que pesquisa, codifica e revisa numa única conversa longa acumula tudo isso na mesma janela — o histórico de pesquisa ainda está lá quando ele está tentando revisar código, competindo por espaço e atenção.</p>
+<div class="xp-bad"><strong>Agente único em tarefa complexa</strong>Uma tarefa de "pesquisar a lib X, implementar a integração e revisar o código" pode acumular um volume grande de contexto numa única sessão — boa parte irrelevante para a etapa atual.</div>
+<p>Dividir em subagentes especializados não é só sobre paralelismo — é também sobre manter cada janela de contexto focada só no que é relevante para aquela subtarefa específica.</p>` },
     },
     {
       title: "O Agente Orquestrador",
@@ -92,7 +95,10 @@
       highlight: ["orch"],
       balloon: { anchor: "orch", placement: "right",
         text: "O <strong>Orquestrador</strong> recebe o objetivo de alto nível e faz o planejamento: quebra a tarefa em subtarefas, decide quais agentes usar, em que ordem e com qual contexto.",
-        why: "O orquestrador não executa as tarefas — ele coordena. Isso preserva sua janela de contexto para raciocínio e tomada de decisão, não para execução." },
+        why: "O orquestrador não executa as tarefas — ele coordena. Isso preserva sua janela de contexto para raciocínio e tomada de decisão, não para execução.",
+        deep: `<p>Separar "quem planeja" de "quem executa" é um padrão que vem de arquitetura de sistemas distribuídos e de gestão de projetos: um orquestrador que também executasse os detalhes técnicos de cada subtarefa perderia a visão de conjunto necessária para coordenar bem.</p>
+<div class="xp-example"><strong>Prompt típico de orquestrador</strong>"Você recebe o objetivo do usuário e decide: (1) quais subagentes especializados invocar, (2) que contexto passar a cada um, (3) como combinar os resultados. Você não escreve código nem executa comandos diretamente."</div>
+<p>Na prática, o orquestrador ainda é um LLM como qualquer outro — a diferença está inteiramente no prompt e nas ferramentas disponíveis (spawn de subagentes, não edição de arquivos).</p>` },
     },
     {
       title: "Spawn de subagentes",
@@ -100,7 +106,10 @@
       highlight: ["sa0", "sa1", "sa2"],
       balloon: { anchor: "sp_lbl", placement: "bottom",
         text: "O orquestrador <strong>spawna subagentes</strong> — novos processos de LLM com prompts e contextos próprios e isolados. Cada subagente recebe uma tarefa específica: pesquisar, codar ou revisar.",
-        why: "O isolamento de contexto é essencial: cada subagente começa limpo, sem o histórico dos outros. Isso evita contaminação cruzada e permite escalar." },
+        why: "O isolamento de contexto é essencial: cada subagente começa limpo, sem o histórico dos outros. Isso evita contaminação cruzada e permite escalar.",
+        deep: `<p>"Spawnar" um subagente normalmente significa iniciar uma nova conversa/sessão de LLM com um system prompt específico para aquela função e um contexto inicial preparado pelo orquestrador — não é o mesmo processo de LLM "se dividindo", é uma nova instância independente.</p>
+<div class="xp-example"><strong>Prompt de spawn para o Pesquisador</strong>"Você é um subagente especializado em pesquisa. Objetivo: encontrar a documentação oficial da API X e resumir os endpoints de autenticação. Retorne um resumo estruturado com links. Você não tem acesso a edição de arquivos."</div>
+<p>Como o contexto é isolado desde o início, o subagente nunca vê o histórico de como o orquestrador chegou até aquele pedido — só o que foi explicitamente passado no prompt de spawn.</p>` },
       enter: (ctx) => {
         ["sp0","sp1","sp2"].forEach((id, i) => setTimeout(() => ctx.drawArrow(id), i * 150));
         setTimeout(() => {
@@ -114,7 +123,12 @@
       highlight: ["sa0","sa1","sa2"],
       balloon: { anchor: "sa1", placement: "right",
         text: "Cada subagente tem acesso apenas às <strong>ferramentas do seu domínio</strong>: o Pesquisador acessa busca e leitura de URLs; o Coder edita arquivos e roda testes; o Revisor faz lint e scan de segurança.",
-        why: "Especialização reduz o espaço de decisão de cada agente, melhora a qualidade e simplifica o controle de permissões: o Revisor não precisa de acesso a edição de arquivos." },
+        why: "Especialização reduz o espaço de decisão de cada agente, melhora a qualidade e simplifica o controle de permissões: o Revisor não precisa de acesso a edição de arquivos.",
+        deep: `<p>Restringir as ferramentas disponíveis por subagente não é só sobre organização — é uma medida de segurança direta: se o Revisor não tem acesso a <code>edit_file</code>, mesmo que ele seja manipulado por algum conteúdo malicioso durante a revisão, ele fisicamente não consegue alterar código.</p>
+<div class="xp-good"><strong>Permissões mínimas por papel</strong>Pesquisador: search, read_url (sem escrita)
+Coder: edit_file, run_tests (sem acesso à internet)
+Revisor: lint, sec_scan (somente leitura)</div>
+<p>Esse é o mesmo princípio de menor privilégio usado em sistemas tradicionais, aplicado a agentes: cada subagente só recebe exatamente as ferramentas necessárias para sua função, nada mais.</p>` },
       enter: (ctx) => {
         const all = ["sa0_t1","sa0_t2","sa1_t1","sa1_t2","sa2_t1","sa2_t2"];
         all.forEach((id, i) => setTimeout(() => ctx.show(id), i * 80));
@@ -126,7 +140,10 @@
       highlight: ["sa0", "sa1", "sa2"],
       balloon: { anchor: "par_lbl", placement: "bottom",
         text: "Os três subagentes <strong>executam em paralelo</strong>: o Pesquisador já busca enquanto o Coder implementa e o Revisor prepara seus critérios. Não há dependência entre eles nessa fase.",
-        why: "Paralelismo reduz drasticamente o tempo total de tarefas complexas — de sequencial (n × tempo) para paralelo (≈ max tempo). Em tarefas longas, a diferença pode ser de horas." },
+        why: "Paralelismo reduz drasticamente o tempo total de tarefas complexas — de sequencial (n × tempo) para paralelo (≈ max tempo). Em tarefas longas, a diferença pode ser de horas.",
+        deep: `<p>Paralelismo só funciona sem coordenação extra quando as subtarefas são realmente <strong>independentes</strong> — se o Coder precisasse do resultado da pesquisa antes de começar, a execução teria que ser sequencial (ou parcialmente sequencial) em vez de paralela.</p>
+<div class="xp-example"><strong>Dependência quebra o paralelismo</strong>Se a tarefa do Coder é "implemente a integração com a API que o Pesquisador vai encontrar", ele precisa esperar o resultado do Pesquisador — não pode rodar em paralelo com ele.</div>
+<p>Identificar corretamente quais subtarefas são independentes (podem rodar em paralelo) versus dependentes (precisam de um resultado anterior) é a parte mais difícil do planejamento do orquestrador — errar isso anula o ganho de velocidade do paralelismo.</p>` },
       enter: (ctx) => { ["sa0","sa1","sa2"].forEach(id => ctx.pulse(id, true)); },
     },
     {
@@ -134,7 +151,10 @@
       highlight: ["sa0", "sa1", "sa2"],
       balloon: { anchor: "iso_lbl", placement: "bottom",
         text: "Cada subagente tem sua própria janela de contexto <strong>independente</strong>. O Subagente A não vê os pensamentos do B. Isso evita distrações e permite que cada um aprofunde no seu domínio sem interferência.",
-        why: "Isolamento também é segurança: um subagente comprometido por injeção de prompt não contamina os outros. O orquestrador valida os resultados antes de usá-los." },
+        why: "Isolamento também é segurança: um subagente comprometido por injeção de prompt não contamina os outros. O orquestrador valida os resultados antes de usá-los.",
+        deep: `<p>O isolamento tem um custo: se dois subagentes descobrem informações relacionadas de forma independente, nenhum sabe o que o outro encontrou até o orquestrador agregar os resultados — não há como um subagente "perguntar" a outro diretamente no meio da execução (na maioria das implementações).</p>
+<div class="xp-bad"><strong>Custo do isolamento</strong>O Coder implementa uma função assumindo um formato de API que o Pesquisador, em paralelo, está descobrindo que na verdade é diferente. Só na agregação o orquestrador percebe a inconsistência.</div>
+<p>Para tarefas com muita interdependência, às vezes vale sacrificar paralelismo e rodar os subagentes em sequência (Pesquisador termina, depois Coder começa com o resultado já disponível) — trade-off entre velocidade e consistência.</p>` },
     },
     {
       title: "Resultados retornam ao orquestrador",
@@ -142,7 +162,10 @@
       highlight: ["orch"],
       balloon: { anchor: "orch", placement: "right",
         text: "Cada subagente termina e envia seu <strong>resultado estruturado</strong> ao orquestrador: o Pesquisador devolve links e resumos, o Coder o diff do código, o Revisor a lista de issues.",
-        why: "O formato do resultado é combinado no prompt de spawn — resultados estruturados (JSON, markdown) são mais fáceis de processar pelo orquestrador do que texto livre." },
+        why: "O formato do resultado é combinado no prompt de spawn — resultados estruturados (JSON, markdown) são mais fáceis de processar pelo orquestrador do que texto livre.",
+        deep: `<p>Combinar o formato do resultado esperado já no prompt de spawn evita que o orquestrador precise "interpretar" texto livre e impreciso de cada subagente — um contrato de saída estruturado torna a agregação mais confiável e menos propensa a erros de leitura.</p>
+<div class="xp-example"><strong>Contrato de saída combinado no spawn</strong>"Retorne um JSON: { 'links': [...], 'resumo': '...', 'confianca': 'alta|media|baixa' }"</div>
+<p>O campo de confiança (ou similar) é uma prática útil: permite ao orquestrador decidir se aceita o resultado direto ou se pede mais investigação — um subagente que retorna "confiança baixa" sinaliza que aquele resultado merece verificação extra antes de ser usado.</p>` },
       enter: (ctx) => {
         ["res0_lbl","res1_lbl","res2_lbl"].forEach((id, i) => setTimeout(() => ctx.show(id), i * 100));
         setTimeout(() => {
@@ -156,7 +179,10 @@
       highlight: ["agg_box", "orch"],
       balloon: { anchor: "agg_box", placement: "top",
         text: "O orquestrador recebe todos os resultados e faz a <strong>síntese final</strong>: usa a pesquisa para contextualizar o código gerado, aplica as correções do revisor e entrega uma resposta coerente e completa.",
-        why: "Essa é a vantagem central do padrão: o orquestrador tem visibilidade holística enquanto cada subagente tem profundidade. Separar delegação de execução é o que torna isso escalável." },
+        why: "Essa é a vantagem central do padrão: o orquestrador tem visibilidade holística enquanto cada subagente tem profundidade. Separar delegação de execução é o que torna isso escalável.",
+        deep: `<p>A agregação é onde erros de subagentes individuais podem ser pegos ou propagados — o orquestrador precisa decidir se confia cegamente nos resultados ou se cruza as informações (ex.: será que o diff do Coder é consistente com o que o Revisor encontrou?).</p>
+<div class="xp-good"><strong>Síntese que cruza resultados</strong>"O Revisor encontrou uma vulnerabilidade na linha 40 do diff do Coder. Vou pedir ao Coder para corrigir antes de considerar a tarefa concluída." — o orquestrador usa um resultado para validar outro.</div>
+<p>Esse é o momento em que o padrão multi-agente entrega seu valor real: não é só "mais rápido por paralelismo", é também "mais robusto" porque a síntese final tem múltiplas perspectivas independentes para comparar, em vez de confiar no julgamento de um único agente.</p>` },
     },
     {
       title: "Tratamento de falhas e retry",
@@ -164,7 +190,12 @@
       highlight: ["fail_box"],
       balloon: { anchor: "fail_box", placement: "right",
         text: "Quando um subagente falha (timeout, erro, resposta inválida), o orquestrador pode <strong>tentar novamente</strong> com um prompt mais específico, substituir por outro agente ou usar um fallback — sem impactar os outros subagentes.",
-        why: "Resiliência é uma vantagem do multi-agente: a falha de um componente não derruba todo o sistema. O orquestrador mantém o estado e decide como recuperar." },
+        why: "Resiliência é uma vantagem do multi-agente: a falha de um componente não derruba todo o sistema. O orquestrador mantém o estado e decide como recuperar.",
+        deep: `<p>Isolar subagentes também isola falhas: se o Pesquisador trava num loop infinito de busca, isso não impede o Coder e o Revisor de continuarem seu trabalho — o orquestrador só precisa de um timeout para detectar e agir sobre o subagente problemático.</p>
+<div class="xp-example"><strong>Estratégia de retry com ajuste</strong>Tentativa 1: Pesquisador falha por timeout (query ambígua demais)
+Orquestrador ajusta: "Seja mais específico: busque apenas na documentação oficial, não em blogs de terceiros"
+Tentativa 2: sucesso</div>
+<p>Um retry "burro" (repetir exatamente o mesmo prompt) raramente resolve o problema — retries eficazes geralmente incluem alguma informação nova sobre por que a tentativa anterior falhou, dando ao subagente uma chance real de fazer diferente.</p>` },
     },
     {
       title: "Quiz rápido",

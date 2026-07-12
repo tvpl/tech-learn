@@ -259,10 +259,15 @@
   const steps = [
     {
       title: "O Ecossistema de Pagamentos com Cartão",
-      text: "Quando você paga com cartão, uma cadeia de participantes processa a transação: POS Terminal → Adquirente → Bandeira → Emissor → resposta de volta em < 2 segundos.",
-      why: "ISO 8583 é o protocolo que padroniza essas mensagens globalmente desde 1987. Visa Base II e Mastercard IPM são derivações.",
-      balloonAnchor: { x: 640, y: 660 },
-      placement: "top",
+      balloon: { anchor: { x: 640, y: 660 }, placement: "top",
+        text: "Quando você paga com cartão, uma cadeia de participantes processa a transação: POS Terminal → Adquirente → Bandeira → Emissor → resposta de volta em < 2 segundos.",
+        why: "ISO 8583 é o protocolo que padroniza essas mensagens globalmente desde 1987. Visa Base II e Mastercard IPM são derivações.",
+        deep: `<p>Cada participante dessa cadeia tem um papel financeiro distinto, não só técnico: o Adquirente é o banco que atende o lojista (recebe o dinheiro da venda), o Emissor é o banco do portador do cartão (quem efetivamente paga), e a Bandeira roteia e arbitra entre os dois lados sem ser dona do dinheiro em nenhum momento.</p>
+<div class="xp-example"><strong>Quem participa da taxa numa venda de R$150,00</strong>Lojista recebe: R$150,00 − taxa de desconto
+Adquirente:     parte da taxa (processamento)
+Bandeira:       parte da taxa (rede/marca)
+Emissor:        parte da taxa (interchange fee)</div>
+<p>O PIX, por comparação, dispensa boa parte dessa cadeia — por isso costuma ser mais barato para o lojista, mas ainda não substitui cartão de crédito parcelado nem a aceitação internacional que o ISO 8583 já resolveu há décadas.</p>` },
       enter(ctx) {
         ALL_IDS.forEach(id => ctx.hide(id));
         ctx.show("title_main");
@@ -276,18 +281,32 @@
     },
     {
       title: "O que é ISO 8583?",
-      text: "ISO 8583 define o formato binário das mensagens financeiras entre sistemas de pagamento. Uma mensagem consiste em: MTI + Bitmap + Data Elements.",
-      why: "Formato binário compacto (não JSON) para minimizar latência em links de baixa largura de banda.",
-      balloonAnchor: "msg_title",
-      placement: "right",
+      balloon: { anchor: "msg_title", placement: "right",
+        text: "ISO 8583 define o formato binário das mensagens financeiras entre sistemas de pagamento. Uma mensagem consiste em: MTI + Bitmap + Data Elements.",
+        why: "Formato binário compacto (não JSON) para minimizar latência em links de baixa largura de banda.",
+        deep: `<p>Diferente de um payload JSON auto-descritivo (onde cada valor vem com o nome do campo do lado), o ISO 8583 depende do bitmap e de um dicionário de Data Elements conhecido por ambos os lados para saber o que cada bloco de bytes significa — é mais compacto, mas exige que emissor e adquirente concordem exatamente com a especificação de campos.</p>
+<div class="xp-example"><strong>Estrutura de uma mensagem 0100</strong>MTI:              0100
+Bitmap primário:   F2 3A C4 81 E0 28 40 C0
+DE2  (PAN):        4111111111111111
+DE3  (Proc Code):  000000
+DE4  (Amount):     000000015000
+DE11 (STAN):       123456
+...</div>
+<p>Não existem vírgulas, chaves ou aspas — cada Data Element tem um formato fixo ou um comprimento variável precedido por um indicador (LLVAR/LLLVAR), tudo definido pela especificação, não pela mensagem em si.</p>` },
       enter(ctx) { showBase(ctx); }
     },
     {
       title: "MTI: Message Type Indicator",
-      text: "O MTI é um número de 4 dígitos que define a versão, classe, função e origem da mensagem. 0100 = Auth Request, 0110 = Auth Response.",
-      why: "O MTI é o primeiro campo de toda mensagem ISO 8583 — determina como o restante deve ser interpretado.",
-      balloonAnchor: "mti_box",
-      placement: "right",
+      balloon: {
+        anchor: "mti_box", placement: "right",
+        text: "O MTI é um número de 4 dígitos que define a versão, classe, função e origem da mensagem. 0100 = Auth Request, 0110 = Auth Response.",
+        why: "O MTI é o primeiro campo de toda mensagem ISO 8583 — determina como o restante deve ser interpretado.",
+        deep: `<p>Pense no MTI como o "envelope" da mensagem: antes mesmo de ler qualquer dado da transação, o sistema já sabe, só pelos 4 dígitos, se está lidando com um pedido de autorização, uma resposta, um estorno ou uma mensagem de rede.</p>
+<div class="xp-example"><strong>Decodificando 0100</strong>Dígito 1 (0): versão ISO 8583:1987
+Dígito 2 (1): classe Financeira
+Dígito 3 (0): função Request
+Dígito 4 (0): origem Acquirer</div>
+<p>Por isso o par 0100/0110 é tão comum na prática: mesma classe (Financeira), mesma origem, só muda o dígito de função (0=Request, 1=Response) — um padrão que se repete em quase toda troca de mensagens do protocolo.</p>` },
       enter(ctx) {
         ALL_IDS.forEach(id => ctx.hide(id));
         ctx.show("title_main");
@@ -298,10 +317,17 @@
     },
     {
       title: "Bitmap: Quais Campos Estão Presentes",
-      text: "O Bitmap é uma máscara binária de 64 bits (ou 128 com secundário). Cada bit indica se o DE correspondente está presente. 64 bits = 8 bytes de overhead.",
-      why: "Eficiência: uma mensagem de autorização usa ~20 DEs de 128 possíveis. O bitmap evita transmitir campos vazios.",
-      balloonAnchor: "bmp1_box",
-      placement: "right",
+      balloon: {
+        anchor: "bmp1_box", placement: "right",
+        text: "O Bitmap é uma máscara binária de 64 bits (ou 128 com secundário). Cada bit indica se o DE correspondente está presente. 64 bits = 8 bytes de overhead.",
+        why: "Eficiência: uma mensagem de autorização usa ~20 DEs de 128 possíveis. O bitmap evita transmitir campos vazios.",
+        deep: `<p>O bitmap é o que torna o ISO 8583 eficiente sem precisar de um formato auto-descritivo como JSON — em vez de mandar 128 campos, a maioria vazios, a mensagem manda só os bits indicando quais estão presentes, seguidos apenas dos DEs realmente usados.</p>
+<div class="xp-example"><strong>Lendo um byte do bitmap</strong>Byte 1 do bitmap: F2 (hex) = 1111 0010 (binário)
+Bit 1 = 1 → DE1 presente (indica bitmap secundário)
+Bit 2 = 1 → DE2 presente (PAN)
+Bit 3 = 1 → DE3 presente (Processing Code)
+Bit 6 = 0 → DE6 ausente nesta mensagem</div>
+<p>É por isso que a mesma mensagem 0100 pode ter tamanhos diferentes dependendo da transação — uma compra simples usa menos DEs que uma transação parcelada com múltiplos dados adicionais.</p>` },
       enter(ctx) {
         ALL_IDS.forEach(id => ctx.hide(id));
         ctx.show("title_main");
@@ -313,18 +339,29 @@
     },
     {
       title: "Data Elements: Os Campos da Transação",
-      text: "Cada DE tem número, formato e tamanho definidos. DE2=PAN, DE4=Amount (centavos, sem ponto), DE11=STAN, DE37=RRN, DE39=Response Code.",
-      why: "Conhecer os DEs principais é essencial para debugar transações e integrar com sistemas de pagamento.",
-      balloonAnchor: "de_title",
-      placement: "right",
+      balloon: {
+        anchor: "de_title", placement: "right",
+        text: "Cada DE tem número, formato e tamanho definidos. DE2=PAN, DE4=Amount (centavos, sem ponto), DE11=STAN, DE37=RRN, DE39=Response Code.",
+        why: "Conhecer os DEs principais é essencial para debugar transações e integrar com sistemas de pagamento.",
+        deep: `<p>Cada Data Element tem uma "ficha técnica" fixa na especificação ISO 8583: tamanho fixo ou variável, tipo (numérico, alfanumérico, binário) e formato — sem essa ficha compartilhada entre os dois lados, seria impossível interpretar os bytes crus.</p>
+<div class="xp-good"><strong>Formato fixo vs variável</strong>DE4 (Amount): sempre 12 dígitos fixos, preenchido com zeros à esquerda (000000015000 = R$150,00)
+DE43 (Nome do lojista): campo LLVAR — 2 dígitos indicam o tamanho, seguido do conteúdo de tamanho variável</div>
+<p>Debugar uma transação problemática normalmente significa decodificar o bitmap, achar quais DEs estão presentes, e comparar valor a valor com o que era esperado — sem ferramenta de parsing, é trabalho manual tedioso.</p>` },
       enter(ctx) { showBase(ctx); }
     },
     {
       title: "Fluxo: POS → Adquirente → Bandeira → Emissor",
-      text: "O POS envia o 0100 Auth Request ao Adquirente, que roteia para a Bandeira, que encaminha ao Emissor. O Emissor verifica saldo/limite e responde com 0110.",
-      why: "Toda essa cadeia ocorre em < 2 segundos. Sistemas com SLA apertado (ex: 300ms) usam rotas diretas.",
-      balloonAnchor: { x: FLOW_X + 280, y: 560 },
-      placement: "top",
+      balloon: {
+        anchor: { x: FLOW_X + 280, y: 560 }, placement: "top",
+        text: "O POS envia o 0100 Auth Request ao Adquirente, que roteia para a Bandeira, que encaminha ao Emissor. O Emissor verifica saldo/limite e responde com 0110.",
+        why: "Toda essa cadeia ocorre em < 2 segundos. Sistemas com SLA apertado (ex: 300ms) usam rotas diretas.",
+        deep: `<p>Cada salto da cadeia adiciona latência de rede real — por isso processadoras investem pesado em conexões dedicadas de baixa latência entre adquirentes, bandeiras e emissores, em vez de depender da internet pública.</p>
+<div class="xp-example"><strong>Onde o tempo é gasto (ordem de grandeza)</strong>POS → Adquirente: ~50-100ms
+Adquirente → Bandeira: ~50-100ms
+Bandeira → Emissor: ~50-100ms
+Processamento no Emissor (validação, fraude, saldo): variável
+Volta: mesmo caminho, em sentido inverso</div>
+<p>Se qualquer salto falhar ou expirar, o fluxo de reversão (MTI 0400) entra em ação para garantir que o valor não fique "preso" — veja a cena de Reversão e Settlement à frente.</p>` },
       enter(ctx) {
         showBase(ctx);
         AUTH_MSG_IDS.forEach(id => ctx.show(id));
@@ -332,10 +369,13 @@
     },
     {
       title: "Autorização (0100 → 0110)",
-      text: "0100: Auth Request — contém PAN, amount, terminal ID, STAN. 0110: Auth Response — adiciona DE39 (response code) e DE38 (approval code se aprovado).",
-      why: "Autorização apenas reserva o limite no emissor. A cobrança efetiva acontece na Captura (0200).",
-      balloonAnchor: { x: FLOW_X + 280, y: 560 },
-      placement: "top",
+      balloon: {
+        anchor: { x: FLOW_X + 280, y: 560 }, placement: "top",
+        text: "0100: Auth Request — contém PAN, amount, terminal ID, STAN. 0110: Auth Response — adiciona DE39 (response code) e DE38 (approval code se aprovado).",
+        why: "Autorização apenas reserva o limite no emissor. A cobrança efetiva acontece na Captura (0200).",
+        deep: `<p>É crucial entender que uma autorização aprovada NÃO é uma cobrança efetivada — é uma reserva temporária de limite, análoga a segurar uma mesa num restaurante sem ainda ter pago a conta.</p>
+<div class="xp-bad"><strong>Erro comum de quem está aprendendo</strong>Achar que DE39=00 (aprovado) significa que o dinheiro já saiu da conta do portador — na verdade, o valor fica "bloqueado" até a Captura confirmar a cobrança.</div>
+<div class="xp-good"><strong>Ciclo completo</strong>Autorização (0100/0110) → reserva o limite → Captura (0200) → efetiva a cobrança → Settlement (0500) → liquidação financeira entre os bancos</div>` },
       enter(ctx) {
         showBase(ctx);
         AUTH_MSG_IDS.forEach(id => ctx.show(id));
@@ -343,10 +383,16 @@
     },
     {
       title: "Códigos de Resposta (DE39)",
-      text: "DE39 é o mais importante da resposta: 00=Aprovado, 05=Do not honor, 51=Saldo insuficiente, 14=Cartão inválido, 91=Emissor indisponível.",
-      why: "Tratar corretamente cada código de resposta é obrigatório para boa UX e conformidade com as bandeiras.",
-      balloonAnchor: { x: 640, y: 530 },
-      placement: "top",
+      balloon: {
+        anchor: { x: 640, y: 530 }, placement: "top",
+        text: "DE39 é o mais importante da resposta: 00=Aprovado, 05=Do not honor, 51=Saldo insuficiente, 14=Cartão inválido, 91=Emissor indisponível.",
+        why: "Tratar corretamente cada código de resposta é obrigatório para boa UX e conformidade com as bandeiras.",
+        deep: `<p>Tratar cada código de resposta de forma específica é o que separa uma boa experiência de checkout de uma ruim — mostrar "Cartão recusado" genérico para um DE39=51 (saldo insuficiente) confunde o cliente, que poderia simplesmente tentar outro cartão.</p>
+<div class="xp-example"><strong>Como cada código deveria orientar a UX</strong>05 (Do not honor) → "Cartão recusado pelo banco emissor, tente outro cartão"
+51 (Saldo insuficiente) → "Saldo/limite insuficiente"
+54 (Cartão expirado) → "Cartão vencido, verifique a validade"
+91 (Emissor indisponível) → "Tente novamente em instantes" (é temporário, vale retry)</div>
+<p>Alguns códigos (como 91 e 96) indicam problemas temporários do lado do emissor — sistemas bem desenhados fazem retry automático nesses casos, diferente dos códigos de recusa definitiva.</p>` },
       enter(ctx) {
         ALL_IDS.forEach(id => ctx.hide(id));
         ctx.show("title_main");
@@ -357,10 +403,15 @@
     },
     {
       title: "Reversão e Settlement",
-      text: "0400 Reversal cancela autorização após timeout. Settlement (0500) é o batch end-of-day: Adquirente envia todas as capturas para liquidação financeira.",
-      why: "Sem reversão em timeout, o Emissor mantém o saldo bloqueado por horas. Settlement fecha o ciclo financeiro.",
-      balloonAnchor: { x: 640, y: 500 },
-      placement: "top",
+      balloon: {
+        anchor: { x: 640, y: 500 }, placement: "top",
+        text: "0400 Reversal cancela autorização após timeout. Settlement (0500) é o batch end-of-day: Adquirente envia todas as capturas para liquidação financeira.",
+        why: "Sem reversão em timeout, o Emissor mantém o saldo bloqueado por horas. Settlement fecha o ciclo financeiro.",
+        deep: `<p>Reversão e Settlement resolvem dois problemas completamente diferentes: reversão é sobre corrigir uma falha de comunicação (o "e se a resposta se perder?"); settlement é sobre o ciclo financeiro normal de todo dia.</p>
+<div class="xp-example"><strong>Por que a reversão usa o mesmo STAN</strong>0100 original: STAN=123456
+0400 Reversal:  STAN=123456 (mesmo valor!)
+→ O Emissor usa o STAN para encontrar exatamente qual autorização cancelar</div>
+<p>Sem esse mecanismo, um timeout de rede deixaria o limite do cliente bloqueado até o expirar automático da autorização (que pode levar horas) — a reversão libera isso de forma imediata e deliberada.</p>` },
       enter(ctx) {
         ALL_IDS.forEach(id => ctx.hide(id));
         ctx.show("title_main");
@@ -385,10 +436,10 @@
     },
     {
       title: "Resumo",
-      text: "ISO 8583 = MTI + Bitmap + Data Elements. Autorização 0100/0110 em < 2s. Captura + Settlement fecham o ciclo financeiro.",
-      why: "",
-      balloonAnchor: { x: 640, y: 680 },
-      placement: "top",
+      balloon: {
+        anchor: { x: 640, y: 680 }, placement: "top",
+        text: "ISO 8583 = MTI + Bitmap + Data Elements. Autorização 0100/0110 em < 2s. Captura + Settlement fecham o ciclo financeiro.",
+      },
       enter(ctx) {
         ALL_IDS.forEach(id => ctx.hide(id));
         ctx.show("sum_panel"); ctx.show("sum_title");

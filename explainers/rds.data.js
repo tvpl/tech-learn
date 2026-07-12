@@ -156,40 +156,46 @@
   const steps = [
     {
       title: "O que é Amazon RDS?",
-      text: "RDS (Relational Database Service) é um serviço gerenciado de banco de dados relacional na AWS. Suporta MySQL, PostgreSQL, MariaDB, Oracle, SQL Server e Aurora.",
-      why: "Managed significa: sem gerenciar OS, patches, backups, replicação — foque só na sua aplicação.",
-      balloonAnchor: { x: 640, y: 680 },
-      placement: "top",
+      balloon: { anchor: { x: 640, y: 680 }, placement: "top",
+        text: "RDS (Relational Database Service) é um serviço gerenciado de banco de dados relacional na AWS. Suporta MySQL, PostgreSQL, MariaDB, Oracle, SQL Server e Aurora.",
+        why: "Managed significa: sem gerenciar OS, patches, backups, replicação — foque só na sua aplicação." },
       enter(ctx) {
         showBase(ctx);
       }
     },
     {
       title: "Instância Primária",
-      text: "A instância Primary aceita todas as escritas e leituras. É o endpoint principal que sua aplicação conecta. Roda dentro de uma VPC em subnet privada.",
-      why: "RDS gerencia o engine, storage (SSD gp3/io1), patches e monitoramento automático.",
-      balloonAnchor: "pri_box",
-      placement: "right",
+      balloon: { anchor: "pri_box", placement: "right",
+        text: "A instância Primary aceita todas as escritas e leituras. É o endpoint principal que sua aplicação conecta. Roda dentro de uma VPC em subnet privada.",
+        why: "RDS gerencia o engine, storage (SSD gp3/io1), patches e monitoramento automático.",
+        deep: `<p>O endpoint da Primary é um CNAME estável (ex: <code>mydb.cluster-xxxx.us-east-1.rds.amazonaws.com</code>), não um IP fixo — isso é o que permite trocar qual instância física está "atrás" do endpoint (num failover, por exemplo) sem a aplicação precisar mudar a connection string.</p>
+<div class="xp-example"><strong>Escolhendo storage</strong>gp3: SSD de propósito geral, IOPS/throughput configuráveis independente do tamanho
+io1/io2: SSD provisionado, para cargas com IOPS altíssimo e previsível (ex: OLTP crítico)</div>
+<p>O tipo de instância (ex: <code>db.r6g.xlarge</code>) e o engine (PostgreSQL, MySQL, Aurora) são escolhidos na criação, mas storage e classe de instância podem ser alterados depois, geralmente com uma janela de manutenção.</p>` },
       enter(ctx) {
         showBase(ctx);
       }
     },
     {
       title: "Multi-AZ: Replicação Síncrona",
-      text: "Com Multi-AZ, cada write na Primary é replicado de forma síncrona para uma Standby em outra AZ antes de confirmar o commit. Garante RPO=0.",
-      why: "Commit só é confirmado para a aplicação depois que ambas as instâncias gravaram. Zero perda de dados.",
-      balloonAnchor: "arr_sync1",
-      placement: "bottom",
+      balloon: { anchor: "arr_sync1", placement: "bottom",
+        text: "Com Multi-AZ, cada write na Primary é replicado de forma síncrona para uma Standby em outra AZ antes de confirmar o commit. Garante RPO=0.",
+        why: "Commit só é confirmado para a aplicação depois que ambas as instâncias gravaram. Zero perda de dados.",
+        deep: `<p>"Síncrono" aqui significa que o commit da transação só retorna sucesso para a aplicação depois que o WAL (write-ahead log, ou binlog no MySQL) foi persistido tanto na Primary quanto na Standby. Isso tem um custo: a latência de commit inclui o round-trip de rede entre as duas AZs.</p>
+<div class="xp-good"><strong>RPO = 0</strong>Se a Primary falhar exatamente após um commit confirmado, esse dado já está garantidamente na Standby — nenhuma transação confirmada é perdida.</div>
+<div class="xp-bad"><strong>Confundir com Read Replica</strong>Read Replicas usam replicação assíncrona — um commit não espera a réplica confirmar, então há risco de perda de dados recentes se a Primary cair antes de replicar.</div>` },
       enter(ctx) {
         showBase(ctx);
       }
     },
     {
       title: "Failover Automático (< 2 min)",
-      text: "Se a Primary falha, o RDS promove a Standby a Primary e atualiza o CNAME do endpoint. A aplicação reconecta no mesmo hostname — sem mudança de config.",
-      why: "O failover é transparente para a aplicação se ela tiver retry logic. Downtime típico: 60-120 segundos.",
-      balloonAnchor: "arr_failover_lbl",
-      placement: "left",
+      balloon: { anchor: "arr_failover_lbl", placement: "left",
+        text: "Se a Primary falha, o RDS promove a Standby a Primary e atualiza o CNAME do endpoint. A aplicação reconecta no mesmo hostname — sem mudança de config.",
+        why: "O failover é transparente para a aplicação se ela tiver retry logic. Downtime típico: 60-120 segundos.",
+        deep: `<p>O RDS dispara failover automaticamente em cenários como falha da instância, falha da AZ inteira, ou mudança de tipo de instância que exige reboot — mas a aplicação só se beneficia da transparência se implementar retry com backoff, já que a resolução DNS do endpoint pode levar alguns segundos para propagar após a mudança do CNAME.</p>
+<div class="xp-bad"><strong>Sem retry logic</strong>Aplicação trata erro de conexão como falha definitiva e derruba a request — usuário vê erro mesmo com failover funcionando corretamente.</div>
+<div class="xp-good"><strong>Com retry logic</strong>Connection pool detecta erro, aguarda alguns segundos e tenta reconectar no mesmo endpoint — a nova Primary já está pronta para aceitar conexões.</div>` },
       enter(ctx) {
         showBase(ctx);
         ctx.show("failover_overlay"); ctx.show("failover_lbl");
@@ -198,10 +204,14 @@
     },
     {
       title: "Read Replicas: Escalando Leituras",
-      text: "Read Replicas recebem dados da Primary via replicação assíncrona. São read-only e podem ter lag de milissegundos a segundos. Use para queries analíticas pesadas.",
-      why: "Alivia a Primary de queries de leitura — essencial quando leituras superam escritas 10:1 ou mais.",
-      balloonAnchor: "rr1_box",
-      placement: "right",
+      balloon: { anchor: "rr1_box", placement: "right",
+        text: "Read Replicas recebem dados da Primary via replicação assíncrona. São read-only e podem ter lag de milissegundos a segundos. Use para queries analíticas pesadas.",
+        why: "Alivia a Primary de queries de leitura — essencial quando leituras superam escritas 10:1 ou mais.",
+        deep: `<p>Como a replicação é assíncrona, a aplicação precisa tolerar "replication lag" — uma leitura na réplica pode não refletir um write que acabou de acontecer na Primary. Esse padrão é conhecido como eventual consistency para leituras, e exige decidir conscientemente quais queries podem tolerar dado ligeiramente desatualizado.</p>
+<div class="xp-example"><strong>Roteamento típico numa aplicação</strong>Write (INSERT/UPDATE/DELETE) → sempre Primary
+Read crítica (saldo, checkout) → Primary
+Read tolerante a lag (dashboard, listagem) → Read Replica</div>
+<p>Read Replicas também podem ser promovidas a instância standalone (independente) em caso de necessidade — útil para migrar carga de analytics para um cluster totalmente separado sem downtime na Primary.</p>` },
       enter(ctx) {
         showBase(ctx);
         ctx.show("rr1_box"); ctx.show("rr1_lbl"); ctx.show("rr1_async"); ctx.show("rr1_ro");
@@ -212,10 +222,13 @@
     },
     {
       title: "Backups Automatizados + Snapshots",
-      text: "RDS faz backup diário automático para S3 e mantém transaction logs. Isso permite PITR — restaurar o banco para qualquer segundo dentro do período de retenção.",
-      why: "PITR é essencial para recovery de erros humanos: DELETE sem WHERE, ou corrupção de dados.",
-      balloonAnchor: { x: 350, y: AZ_Y + AZ_H + 80 },
-      placement: "top",
+      balloon: { anchor: { x: 350, y: AZ_Y + AZ_H + 80 }, placement: "top",
+        text: "RDS faz backup diário automático para S3 e mantém transaction logs. Isso permite PITR — restaurar o banco para qualquer segundo dentro do período de retenção.",
+        why: "PITR é essencial para recovery de erros humanos: DELETE sem WHERE, ou corrupção de dados.",
+        deep: `<p>O backup diário é só a "base" — o RDS também captura os transaction logs continuamente (a cada 5 minutos, tipicamente) e os envia para o S3. É a combinação snapshot diário + logs incrementais que permite restaurar para qualquer segundo, não só para o horário do snapshot.</p>
+<div class="xp-example"><strong>Snapshot automático vs manual</strong>Automated backup: apagado quando a instância é deletada (a menos que "retain" seja marcado)
+Manual snapshot: persiste indefinidamente até exclusão explícita, independente da instância existir</div>
+<p>O período de retenção configurável (1–35 dias) define até onde no passado o PITR alcança — snapshots manuais são a forma de guardar um ponto específico (ex: antes de uma migração) por mais tempo que isso.</p>` },
       enter(ctx) {
         showBase(ctx);
         ctx.show("bkp_panel"); ctx.show("bkp_t"); ctx.show("bkp_d1"); ctx.show("bkp_d2"); ctx.show("bkp_d3");
@@ -223,10 +236,15 @@
     },
     {
       title: "Restore Point-in-Time",
-      text: "PITR permite restaurar o banco a qualquer momento dentro do período de retenção (1-35 dias). O restore cria uma nova instância RDS — não substitui a atual.",
-      why: "Sempre restaure para uma nova instância para poder comparar e fazer validação antes de cutover.",
-      balloonAnchor: { x: 350, y: AZ_Y + AZ_H + 80 },
-      placement: "top",
+      balloon: { anchor: { x: 350, y: AZ_Y + AZ_H + 80 }, placement: "top",
+        text: "PITR permite restaurar o banco a qualquer momento dentro do período de retenção (1-35 dias). O restore cria uma nova instância RDS — não substitui a atual.",
+        why: "Sempre restaure para uma nova instância para poder comparar e fazer validação antes de cutover.",
+        deep: `<p>O restore é sempre para uma <strong>nova instância</strong> com um novo endpoint — nunca sobrescreve a instância existente. Isso é proposital: dá tempo de validar os dados restaurados antes de decidir migrar a aplicação para o novo endpoint (cutover), evitando destruir a instância problemática antes de confirmar que o restore realmente resolveu o incidente.</p>
+<div class="xp-example"><strong>Fluxo típico de um restore</strong>1. aws rds restore-db-instance-to-point-in-time --target-db-instance-identifier mydb-restored --restore-time 2026-07-10T14:32:00Z
+2. Validar dados na instância restaurada
+3. Trocar a connection string da aplicação (cutover)
+4. Descomissionar a instância antiga com problema</div>
+<p>O tempo de restore não é instantâneo — depende do tamanho do banco, já que envolve recriar o storage a partir do snapshot base e reaplicar os transaction logs até o segundo escolhido.</p>` },
       enter(ctx) {
         showBase(ctx);
         ctx.show("bkp_panel"); ctx.show("bkp_t"); ctx.show("bkp_d1"); ctx.show("bkp_d2"); ctx.show("bkp_d3");
@@ -234,10 +252,12 @@
     },
     {
       title: "Segurança: VPC, SGs, Encryption",
-      text: "RDS deve sempre ficar em subnet privada. Security Groups controlam quais IPs/instâncias podem conectar. Dados em repouso criptografados com AWS KMS.",
-      why: "Nunca exponha um banco de dados diretamente na internet — sempre use Bastion Host ou VPN para acesso direto.",
-      balloonAnchor: { x: 930, y: AZ_Y + AZ_H + 80 },
-      placement: "top",
+      balloon: { anchor: { x: 930, y: AZ_Y + AZ_H + 80 }, placement: "top",
+        text: "RDS deve sempre ficar em subnet privada. Security Groups controlam quais IPs/instâncias podem conectar. Dados em repouso criptografados com AWS KMS.",
+        why: "Nunca exponha um banco de dados diretamente na internet — sempre use Bastion Host ou VPN para acesso direto.",
+        deep: `<p>Security Groups no RDS funcionam como um firewall stateful na porta do banco (5432 no PostgreSQL, 3306 no MySQL): em vez de liberar por IP fixo, a prática recomendada é liberar por <strong>Security Group de origem</strong> — por exemplo, o SG dos Pods/instâncias da aplicação — assim o acesso segue automaticamente quando a aplicação escala.</p>
+<div class="xp-example"><strong>Regra de SG recomendada</strong>Inbound: porta 5432, origem = sg-app-servers (não 0.0.0.0/0)</div>
+<p>Encryption at rest com KMS é definido na criação da instância e não pode ser ativado depois em uma instância já existente sem migração (snapshot + restore com criptografia habilitada) — por isso vale habilitar desde o dia 1, mesmo em ambientes de desenvolvimento.</p>` },
       enter(ctx) {
         showBase(ctx);
         ctx.show("sec_panel"); ctx.show("sec_t"); ctx.show("sec_d1"); ctx.show("sec_d2"); ctx.show("sec_d3");
@@ -245,10 +265,13 @@
     },
     {
       title: "Performance Insights",
-      text: "Performance Insights mostra o DB Load: quantas sessions estão ativas e em qual estado (CPU, I/O, lock waits). Filtre por SQL, user, ou wait event.",
-      why: "Identifica exatamente qual query está causando gargalo — economiza horas de investigação.",
-      balloonAnchor: { x: 640, y: AZ_Y + AZ_H + 80 },
-      placement: "top",
+      balloon: { anchor: { x: 640, y: AZ_Y + AZ_H + 80 }, placement: "top",
+        text: "Performance Insights mostra o DB Load: quantas sessions estão ativas e em qual estado (CPU, I/O, lock waits). Filtre por SQL, user, ou wait event.",
+        why: "Identifica exatamente qual query está causando gargalo — economiza horas de investigação.",
+        deep: `<p>O DB Load é medido em "Average Active Sessions" (AAS) — quantas sessões estavam, em média, ativamente executando ou esperando por um recurso num intervalo de tempo. Comparar o AAS contra o número de vCPUs da instância mostra rapidamente se o gargalo é CPU (AAS acima do número de vCPUs indica fila) ou outro tipo de espera.</p>
+<div class="xp-example"><strong>Lendo o gráfico de DB Load</strong>AAS = 8, instância com 4 vCPUs, maior parte em "CPU" → CPU-bound, considere instância maior
+AAS = 8, maior parte em "Lock:tuple" → contenção de lock, revisar transações longas</div>
+<p>Diferente de logs de slow query, o Performance Insights amostra continuamente e correlaciona automaticamente picos de carga com o SQL exato responsável — sem precisar habilitar logging verboso que impacta performance.</p>` },
       enter(ctx) {
         showBase(ctx);
         ctx.show("pi_panel"); ctx.show("pi_t"); ctx.show("pi_d1"); ctx.show("pi_d2");
@@ -271,10 +294,10 @@
     },
     {
       title: "Resumo",
-      text: "RDS = banco relacional gerenciado com Multi-AZ para HA, Read Replicas para escala, PITR para recovery, e segurança na VPC.",
-      why: "",
-      balloonAnchor: { x: 640, y: 680 },
-      placement: "top",
+      balloon: {
+        anchor: { x: 640, y: 680 }, placement: "top",
+        text: "RDS = banco relacional gerenciado com Multi-AZ para HA, Read Replicas para escala, PITR para recovery, e segurança na VPC.",
+      },
       enter(ctx) {
         ALL_IDS.forEach(id => ctx.hide(id));
         ctx.show("sum_panel"); ctx.show("sum_title");

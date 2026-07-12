@@ -186,20 +186,23 @@
   const steps = [
     {
       title: "O que é Kubernetes?",
-      text: "Kubernetes (K8s) é um orquestrador de containers open-source que automatiza deployment, escalonamento e gerenciamento de aplicações containerizadas.",
-      why: "Sem K8s, você precisaria reiniciar containers manualmente, balancear carga, e gerenciar onde cada container roda em dezenas de servidores.",
-      balloonAnchor: { x: 640, y: 680 },
-      placement: "top",
+      balloon: { anchor: { x: 640, y: 680 }, placement: "top",
+        text: "Kubernetes (K8s) é um orquestrador de containers open-source que automatiza deployment, escalonamento e gerenciamento de aplicações containerizadas.",
+        why: "Sem K8s, você precisaria reiniciar containers manualmente, balancear carga, e gerenciar onde cada container roda em dezenas de servidores." },
       enter(ctx) {
         showBase(ctx);
       }
     },
     {
       title: "API Server: Único Ponto de Entrada",
-      text: "Todo acesso ao cluster passa pelo API Server. kubectl, controllers, kubelets — todos falam com o API Server via REST.",
-      why: "Centraliza autenticação, autorização (RBAC) e validação. É o cérebro do cluster.",
-      balloonAnchor: "cp_api",
-      placement: "bottom",
+      balloon: { anchor: "cp_api", placement: "bottom",
+        text: "Todo acesso ao cluster passa pelo API Server. kubectl, controllers, kubelets — todos falam com o API Server via REST.",
+        why: "Centraliza autenticação, autorização (RBAC) e validação. É o cérebro do cluster.",
+        deep: `<p>Por trás do API Server está uma API REST versionada (<code>/api/v1</code>, <code>/apis/apps/v1</code>, ...) que representa cada recurso do cluster (Pods, Deployments, Services) como um objeto JSON/YAML. <code>kubectl</code> é só um cliente HTTP dessa API — qualquer ferramenta pode falar diretamente com ela.</p>
+<div class="xp-example"><strong>kubectl é HTTP por baixo</strong>kubectl get pods -n default
+# equivalente a:
+GET /api/v1/namespaces/default/pods</div>
+<p>Toda requisição passa por três estágios no API Server: autenticação (quem é você), autorização/RBAC (o que você pode fazer) e admission control (validação/mutação do objeto antes de persistir no etcd).</p>` },
       enter(ctx) {
         showBase(ctx);
         ctx.show("arr_api_etcd"); ctx.show("arr_etcd_api");
@@ -208,10 +211,14 @@
     },
     {
       title: "etcd: Estado do Cluster",
-      text: "O etcd é um banco de dados chave-valor distribuído que armazena todo o estado do cluster: quais Pods devem rodar, configurações, secrets.",
-      why: "É a fonte de verdade. Se o etcd morrer, o Control Plane perde estado. Sempre faça backup do etcd!",
-      balloonAnchor: "cp_etcd",
-      placement: "bottom",
+      balloon: { anchor: "cp_etcd", placement: "bottom",
+        text: "O etcd é um banco de dados chave-valor distribuído que armazena todo o estado do cluster: quais Pods devem rodar, configurações, secrets.",
+        why: "É a fonte de verdade. Se o etcd morrer, o Control Plane perde estado. Sempre faça backup do etcd!",
+        deep: `<p>etcd usa o protocolo Raft para replicar dados de forma consistente entre suas réplicas — por isso clusters de produção rodam etcd com número ímpar de nós (3 ou 5), garantindo quorum mesmo se uma réplica cair.</p>
+<div class="xp-example"><strong>Backup do etcd</strong>ETCDCTL_API=3 etcdctl snapshot save backup.db \\
+  --endpoints=https://127.0.0.1:2379 \\
+  --cacert=ca.crt --cert=etcd.crt --key=etcd.key</div>
+<p>Só o API Server fala diretamente com o etcd — Scheduler, Controller Manager e kubelets sempre passam pelo API Server, nunca acessam o etcd diretamente. Isso centraliza autenticação e validação num único ponto.</p>` },
       enter(ctx) {
         showBase(ctx);
         ctx.show("arr_api_etcd"); ctx.show("arr_etcd_api");
@@ -219,10 +226,19 @@
     },
     {
       title: "Scheduler: Escolhe o Nó",
-      text: "Quando um Pod é criado, o Scheduler decide em qual Worker Node ele vai rodar. Considera recursos disponíveis, affinity rules e taints/tolerations.",
-      why: "Você nunca escolhe o nó manualmente em produção — o Scheduler otimiza a distribuição automaticamente.",
-      balloonAnchor: "cp_sched",
-      placement: "bottom",
+      balloon: { anchor: "cp_sched", placement: "bottom",
+        text: "Quando um Pod é criado, o Scheduler decide em qual Worker Node ele vai rodar. Considera recursos disponíveis, affinity rules e taints/tolerations.",
+        why: "Você nunca escolhe o nó manualmente em produção — o Scheduler otimiza a distribuição automaticamente.",
+        deep: `<p>O Scheduler roda em duas fases para cada Pod pendente: <strong>filtering</strong> (elimina nós que não atendem requisitos — CPU/memória insuficiente, taints sem toleration, node selector) e <strong>scoring</strong> (pontua os nós restantes por critérios como afinidade e distribuição de carga, escolhendo o de maior nota).</p>
+<div class="xp-example"><strong>Trecho de PodSpec com afinidade</strong>affinity:
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: disktype
+          operator: In
+          values: ["ssd"]</div>
+<p>Taints (no nó) e tolerations (no Pod) trabalham em conjunto: um nó com taint "só para workloads de GPU" só recebe Pods que explicitamente tolerem essa restrição.</p>` },
       enter(ctx) {
         showBase(ctx);
         ctx.show("arr_api_sch");
@@ -231,10 +247,19 @@
     },
     {
       title: "Controller Manager: Reconciliação",
-      text: "O Controller Manager executa loops de reconciliação: compara o estado desejado (spec) com o estado real, e toma ações para convergir os dois.",
-      why: "É o coração do self-healing: se um Pod morre, o ReplicaSet Controller cria um novo automaticamente.",
-      balloonAnchor: "cp_cm",
-      placement: "bottom",
+      balloon: { anchor: "cp_cm", placement: "bottom",
+        text: "O Controller Manager executa loops de reconciliação: compara o estado desejado (spec) com o estado real, e toma ações para convergir os dois.",
+        why: "É o coração do self-healing: se um Pod morre, o ReplicaSet Controller cria um novo automaticamente.",
+        deep: `<p>Cada "controller" dentro do Controller Manager roda um loop simples e infinito: observa o estado atual via API Server, compara com o <code>spec</code> desejado, e emite ações para reduzir a diferença. Esse padrão se chama <strong>reconciliation loop</strong> e é a base de todo o modelo declarativo do K8s.</p>
+<div class="xp-example"><strong>Pseudocódigo de um controller</strong>for {
+  desired := getSpec()
+  current := getStatus()
+  if current != desired {
+    takeAction(desired, current)
+  }
+  sleep(interval)
+}</div>
+<p>Existem dezenas de controllers rodando em paralelo: ReplicaSet Controller, Deployment Controller, Node Controller, Job Controller — cada um responsável por um tipo de recurso.</p>` },
       enter(ctx) {
         showBase(ctx);
         ctx.show("arr_api_cm");
@@ -242,30 +267,59 @@
     },
     {
       title: "Worker Node: kubelet + kube-proxy",
-      text: "Cada Worker Node roda: kubelet (garante que os Pods especificados estejam rodando) e kube-proxy (mantém regras de rede para Services).",
-      why: "O kubelet é o agente local: recebe o PodSpec do API Server e instrui o container runtime (containerd).",
-      balloonAnchor: "wn_title",
-      placement: "bottom",
+      balloon: { anchor: "wn_title", placement: "bottom",
+        text: "Cada Worker Node roda: kubelet (garante que os Pods especificados estejam rodando) e kube-proxy (mantém regras de rede para Services).",
+        why: "O kubelet é o agente local: recebe o PodSpec do API Server e instrui o container runtime (containerd).",
+        deep: `<p>O kubelet não conversa com outros kubelets — ele só troca informação com o API Server via polling/watch. Ele traduz o PodSpec (declarativo) em chamadas ao container runtime via CRI (Container Runtime Interface), que por sua vez chama containerd ou CRI-O para criar os containers de fato.</p>
+<div class="xp-example"><strong>kube-proxy em modo iptables (simplificado)</strong>-A KUBE-SERVICES -d 10.96.0.10/32 -p tcp --dport 80 \\
+  -j KUBE-SVC-XXXX
+# redireciona para um dos IPs de Pod do Service, balanceando</div>
+<p>kube-proxy também suporta o modo IPVS, mais eficiente que iptables para clusters com milhares de Services — iptables percorre regras sequencialmente, IPVS usa uma tabela hash.</p>` },
       enter(ctx) {
         showBase(ctx);
       }
     },
     {
       title: "Pod: Menor Unidade Deployável",
-      text: "Um Pod contém 1+ containers que compartilham o mesmo namespace de rede e volumes. Containers no mesmo Pod comunicam via localhost.",
-      why: "Nunca crie Pods diretamente em produção — use Deployment para ter self-healing e rolling updates.",
-      balloonAnchor: "pod_a0",
-      placement: "top",
+      balloon: { anchor: "pod_a0", placement: "top",
+        text: "Um Pod contém 1+ containers que compartilham o mesmo namespace de rede e volumes. Containers no mesmo Pod comunicam via localhost.",
+        why: "Nunca crie Pods diretamente em produção — use Deployment para ter self-healing e rolling updates.",
+        deep: `<p>Containers no mesmo Pod compartilham o <strong>network namespace</strong> (mesma interface de rede e IP) e podem compartilhar volumes — mas cada um roda seu próprio processo isolado. O padrão "sidecar" explora isso: um container principal + um container auxiliar (proxy, log shipper) que colaboram via localhost ou arquivo compartilhado.</p>
+<div class="xp-example"><strong>Pod com container + sidecar</strong>containers:
+- name: app
+  image: myapp:v1
+- name: log-shipper
+  image: fluentbit:latest
+  volumeMounts:
+  - name: logs
+    mountPath: /var/log/app</div>
+<p>Um Pod é sempre a unidade que o Scheduler posiciona — nunca um container isolado. Se você precisa escalar, escala Pods, não containers individuais dentro deles.</p>` },
       enter(ctx) {
         showBase(ctx);
       }
     },
     {
       title: "Deployment + ReplicaSet: Self-Healing",
-      text: "Um Deployment gerencia um ReplicaSet que mantém N réplicas de um Pod. Se um Pod morre, o ReplicaSet cria um substituto automaticamente.",
-      why: "O estado desejado (3 réplicas) é sempre reconciliado. K8s nunca 'esquece' de restart um Pod morto.",
-      balloonAnchor: { x: NODES[2].x + NODE_W + 20 + 140, y: WN_Y + 240 },
-      placement: "left",
+      balloon: { anchor: { x: NODES[2].x + NODE_W + 20 + 140, y: WN_Y + 240 }, placement: "left",
+        text: "Um Deployment gerencia um ReplicaSet que mantém N réplicas de um Pod. Se um Pod morre, o ReplicaSet cria um substituto automaticamente.",
+        why: "O estado desejado (3 réplicas) é sempre reconciliado. K8s nunca 'esquece' de restart um Pod morto.",
+        deep: `<p>O Deployment não gerencia Pods diretamente — ele gerencia ReplicaSets, e cada ReplicaSet gerencia um conjunto de Pods com o mesmo <code>selector</code>. Ao fazer update de imagem, o Deployment cria um <strong>novo</strong> ReplicaSet e migra réplicas gradualmente do antigo para o novo — é assim que o rollback funciona: basta voltar a apontar para o ReplicaSet anterior.</p>
+<div class="xp-example"><strong>Manifesto mínimo de Deployment</strong>apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp
+spec:
+  replicas: 3
+  selector:
+    matchLabels: {app: myapp}
+  template:
+    metadata:
+      labels: {app: myapp}
+    spec:
+      containers:
+      - name: myapp
+        image: myapp:v2</div>
+<p><code>kubectl rollout history deployment/myapp</code> mostra as revisões guardadas, cada uma correspondendo a um ReplicaSet antigo mantido para rollback rápido.</p>` },
       enter(ctx) {
         showBase(ctx);
         ctx.show("dep_panel"); ctx.show("dep_title");
@@ -276,10 +330,20 @@
     },
     {
       title: "Service: DNS Estável para Pods",
-      text: "Um Service cria um endpoint estável (IP virtual + DNS) que aponta para um conjunto de Pods definido por selector. kube-proxy mantém as regras.",
-      why: "Pods têm IPs efêmeros. O Service provê um endpoint permanente mesmo quando Pods mudam.",
-      balloonAnchor: { x: NODES[2].x + NODE_W + 20 + 140, y: WN_Y + 150 },
-      placement: "left",
+      balloon: { anchor: { x: NODES[2].x + NODE_W + 20 + 140, y: WN_Y + 150 }, placement: "left",
+        text: "Um Service cria um endpoint estável (IP virtual + DNS) que aponta para um conjunto de Pods definido por selector. kube-proxy mantém as regras.",
+        why: "Pods têm IPs efêmeros. O Service provê um endpoint permanente mesmo quando Pods mudam.",
+        deep: `<p>Um Service não é um processo rodando em algum lugar — é uma entrada no etcd que o kube-proxy traduz em regras de rede (iptables/IPVS) em <strong>todos</strong> os nós do cluster. O <code>ClusterIP</code> é um IP virtual que nunca aparece de fato numa interface de rede — o tráfego é redirecionado no nível do kernel para um Pod real.</p>
+<div class="xp-example"><strong>Manifesto de Service</strong>apiVersion: v1
+kind: Service
+metadata:
+  name: myapp
+spec:
+  selector: {app: myapp}
+  ports:
+  - port: 80
+    targetPort: 8080</div>
+<p>O CoreDNS resolve <code>myapp.default.svc.cluster.local</code> para o ClusterIP automaticamente — nenhuma aplicação precisa saber IPs de Pods, só o nome do Service.</p>` },
       enter(ctx) {
         showBase(ctx);
         ctx.show("svc_detail"); ctx.show("svc_detail_t");
@@ -289,10 +353,12 @@
     },
     {
       title: "ConfigMap e Secret",
-      text: "ConfigMap guarda configurações não-sensíveis (URLs, feature flags). Secret guarda dados sensíveis (tokens, senhas) codificados em base64 e criptografados em repouso.",
-      why: "Separa configuração do código — a mesma imagem Docker roda em dev, staging e prod com ConfigMaps diferentes.",
-      balloonAnchor: { x: 590, y: CP_Y + CP_H + 80 },
-      placement: "top",
+      balloon: { anchor: { x: 590, y: CP_Y + CP_H + 80 }, placement: "top",
+        text: "ConfigMap guarda configurações não-sensíveis (URLs, feature flags). Secret guarda dados sensíveis (tokens, senhas) codificados em base64 e criptografados em repouso.",
+        why: "Separa configuração do código — a mesma imagem Docker roda em dev, staging e prod com ConfigMaps diferentes.",
+        deep: `<p>Secret não é criptografado por padrão só por estar em base64 — base64 é apenas uma codificação, não criptografia (qualquer um pode decodificar). A segurança real vem do <strong>encryption at rest</strong> configurado no etcd e do controle de acesso via RBAC sobre quem pode ler o objeto Secret.</p>
+<div class="xp-good"><strong>Boa prática</strong>Habilitar encryption at rest no etcd + RBAC restritivo e, se possível, um secrets manager externo (Vault, AWS Secrets Manager) via CSI driver.</div>
+<div class="xp-bad"><strong>Erro comum</strong>Achar que Secret "já é seguro" só por ser base64 e versionar o manifesto no Git sem criptografia adicional (ex: sealed-secrets, SOPS).</div>` },
       enter(ctx) {
         showBase(ctx);
         ctx.show("cfg_panel"); ctx.show("cfg_t"); ctx.show("cfg_d1"); ctx.show("cfg_d2");
@@ -300,10 +366,21 @@
     },
     {
       title: "HPA: Horizontal Pod Autoscaler",
-      text: "O HPA monitora métricas (CPU, memória, custom via Prometheus) e escala automaticamente o número de réplicas entre min e max.",
-      why: "Scale horizontal é mais seguro e rápido que vertical. HPA reage em 15-30 segundos a picos de carga.",
-      balloonAnchor: { x: 240, y: CP_Y + CP_H + 80 },
-      placement: "top",
+      balloon: { anchor: { x: 240, y: CP_Y + CP_H + 80 }, placement: "top",
+        text: "O HPA monitora métricas (CPU, memória, custom via Prometheus) e escala automaticamente o número de réplicas entre min e max.",
+        why: "Scale horizontal é mais seguro e rápido que vertical. HPA reage em 15-30 segundos a picos de carga.",
+        deep: `<p>O HPA calcula o número de réplicas com uma fórmula simples: <code>réplicas_desejadas = réplicas_atuais × (métrica_atual / métrica_alvo)</code>, arredondando para cima e respeitando os limites <code>min</code>/<code>max</code> configurados.</p>
+<div class="xp-example"><strong>Manifesto de HPA</strong>apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata: {name: myapp}
+spec:
+  scaleTargetRef: {kind: Deployment, name: myapp}
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource: {name: cpu, target: {type: Utilization, averageUtilization: 70}}</div>
+<p>Métricas customizadas (fila de mensagens, requests/s) exigem um adapter, como o Prometheus Adapter, que expõe essas métricas na API de metrics do K8s para o HPA consumir.</p>` },
       enter(ctx) {
         showBase(ctx);
         ctx.show("hpa_panel"); ctx.show("hpa_t"); ctx.show("hpa_d1"); ctx.show("hpa_d2");
@@ -311,10 +388,16 @@
     },
     {
       title: "Rolling Deploy: Zero Downtime",
-      text: "RollingUpdate cria novos Pods v2 gradualmente enquanto remove os v1. maxUnavailable e maxSurge controlam a velocidade. Rollback em segundos.",
-      why: "Usuários nunca vêem downtime. Se a v2 estiver unhealthy, o deploy para e você faz rollback.",
-      balloonAnchor: { x: 480, y: CP_Y + CP_H + 100 },
-      placement: "top",
+      balloon: { anchor: { x: 480, y: CP_Y + CP_H + 100 }, placement: "top",
+        text: "RollingUpdate cria novos Pods v2 gradualmente enquanto remove os v1. maxUnavailable e maxSurge controlam a velocidade. Rollback em segundos.",
+        why: "Usuários nunca vêem downtime. Se a v2 estiver unhealthy, o deploy para e você faz rollback.",
+        deep: `<p><code>maxUnavailable</code> limita quantos Pods antigos podem estar indisponíveis durante o rollout; <code>maxSurge</code> limita quantos Pods extras (acima do <code>replicas</code> desejado) podem existir temporariamente. Juntos, controlam o ritmo do rollout entre "mais rápido, mais recursos" e "mais lento, mais conservador".</p>
+<div class="xp-example"><strong>Estratégia no manifesto</strong>strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxUnavailable: 1
+    maxSurge: 1</div>
+<p>Se um readinessProbe do Pod v2 falhar continuamente, o rollout <strong>pausa automaticamente</strong> — ele nunca remove mais Pods v1 do que <code>maxUnavailable</code> permite, evitando derrubar a versão estável antes da nova estar confirmadamente saudável.</p>` },
       enter(ctx) {
         showBase(ctx);
         ctx.show("roll_panel"); ctx.show("roll_t"); ctx.show("roll_d1"); ctx.show("roll_d2"); ctx.show("roll_d3");
@@ -337,10 +420,8 @@
     },
     {
       title: "Resumo",
-      text: "K8s = Control Plane (API, etcd, Scheduler, CM) + Worker Nodes (kubelet, kube-proxy, Pods). Tudo declarativo e auto-reconciliado.",
-      why: "",
-      balloonAnchor: { x: 640, y: 680 },
-      placement: "top",
+      balloon: { anchor: { x: 640, y: 680 }, placement: "top",
+        text: "K8s = Control Plane (API, etcd, Scheduler, CM) + Worker Nodes (kubelet, kube-proxy, Pods). Tudo declarativo e auto-reconciliado." },
       enter(ctx) {
         ALL_IDS.forEach(id => ctx.hide(id));
         ctx.show("sum_panel"); ctx.show("sum_title");

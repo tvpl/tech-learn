@@ -45,6 +45,11 @@
  * @property {"top"|"right"|"bottom"|"left"} [placement]
  * @property {string} [text]   HTML do corpo (aceita <span class="xp-term" data-tip>).
  * @property {string} [why]    Bloco "Por que?" (opcional).
+ * @property {string} [deep]   HTML de aprofundamento (exemplos, listas, comparações
+ *                              "evite/prefira"); some botão "🔎 Saiba mais" que abre
+ *                              um painel modal. Use as classes .xp-example/.xp-good/
+ *                              .xp-bad para reaproveitar o visual do motor.
+ * @property {string} [deepTitle]  Título do painel (padrão: title da cena).
  */
 
 /**

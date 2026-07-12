@@ -100,6 +100,17 @@
     /* no-results message */
     #no-results { display: none; text-align: center; color: var(--muted); padding: 48px 0; font-size: 15px; }
 
+    /* Level filter chips */
+    .level-filter { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin: -18px 0 36px; }
+    .lvl-chip {
+      appearance: none; cursor: pointer; font: 600 12.5px "Inter", sans-serif;
+      color: var(--ink-soft); background: var(--panel); border: 1px solid var(--line);
+      border-radius: 999px; padding: 6px 14px;
+      transition: all var(--t-fast) var(--ease);
+    }
+    .lvl-chip:hover { border-color: var(--accent); color: var(--ink); }
+    .lvl-chip.is-active { color: var(--bg); background: var(--accent); border-color: var(--accent); }
+
     /* Trilhas sugeridas */
     .tracks-section { margin-bottom: 52px; }
     .tracks { display: grid; gap: 12px; }
@@ -119,6 +130,20 @@
     .track a:hover { color: var(--accent); border-color: var(--accent); }
     .track-arrow { color: var(--muted); font-size: 12px; }
     @media (max-width: 620px) { .track-name { min-width: 100%; margin-bottom: 4px; } }
+
+    /* Progress banner: continuar de onde parei + contador */
+    #progress-banner {
+      display: none; align-items: center; justify-content: center; gap: 14px;
+      flex-wrap: wrap; margin: 0 0 24px; font-size: 13.5px; color: var(--ink-soft);
+    }
+    #progress-banner.has-data { display: flex; }
+    #progress-banner .continue-link {
+      color: var(--ink); text-decoration: none; font-weight: 600;
+      background: var(--panel-2); border: 1px solid var(--line); border-radius: 999px;
+      padding: 7px 16px; transition: border-color var(--t-fast) var(--ease);
+    }
+    #progress-banner .continue-link:hover { border-color: var(--accent); }
+    #progress-banner .count { color: var(--muted); }
   </style>
 </head>
 <body>
@@ -132,8 +157,20 @@
       <p class="lead">Diagramas interativos que explicam conceitos de tecnologia passo a passo, com animação e balões — construídos sobre um motor reutilizável.</p>
     </header>
 
+    <div id="progress-banner">
+      <a class="continue-link" id="continue-link" href="#">▶ Continuar: <span id="continue-title"></span> →</a>
+      <span class="count" id="visited-count"></span>
+    </div>
+
     <div class="search-wrap">
       <input id="search" type="search" placeholder="🔍  Buscar explicador..." autocomplete="off" aria-label="Buscar explicador" />
+    </div>
+
+    <div class="level-filter" role="group" aria-label="Filtrar por nível">
+      <button type="button" class="lvl-chip is-active" data-level="all">Todos</button>
+      <button type="button" class="lvl-chip" data-level="intro">Iniciante</button>
+      <button type="button" class="lvl-chip" data-level="medio">Intermediário</button>
+      <button type="button" class="lvl-chip" data-level="avancado">Avançado</button>
     </div>
 
     <p id="no-results">Nenhum explicador encontrado para "<span id="no-results-q"></span>".</p>
@@ -508,26 +545,52 @@
         localStorage.setItem(VISITED_KEY, JSON.stringify([...v]));
       }
       const visited = getVisited();
+      const LAST_KEY = 'xp-last-visited';
       document.querySelectorAll('.card').forEach(card => {
         const href = card.getAttribute('href');
         if (href && visited.has(href)) card.classList.add('visited');
-        card.addEventListener('click', () => markVisited(href));
+        card.addEventListener('click', () => {
+          markVisited(href);
+          const title = card.querySelector('h3')?.textContent.replace(/\s*→\s*$/, '') || href;
+          try { localStorage.setItem(LAST_KEY, JSON.stringify({ href, title })); } catch {}
+        });
       });
 
-      // ── Search / filter ───────────────────────────────────────────────────
+      // ── Banner: continuar de onde parei + contador de visitados ──────────
+      const banner = document.getElementById('progress-banner');
+      const totalCards = document.querySelectorAll('.card').length;
+      const visitedCount = visited.size;
+      let last = null;
+      try { last = JSON.parse(localStorage.getItem(LAST_KEY) || 'null'); } catch {}
+      if (last && last.href) {
+        document.getElementById('continue-link').href = last.href;
+        document.getElementById('continue-title').textContent = last.title;
+        document.getElementById('visited-count').textContent = `${visitedCount}/${totalCards} explicadores visitados`;
+        banner.classList.add('has-data');
+      } else if (visitedCount > 0) {
+        document.getElementById('continue-link').remove();
+        document.getElementById('visited-count').textContent = `${visitedCount}/${totalCards} explicadores visitados`;
+        banner.classList.add('has-data');
+      }
+
+      // ── Search + nível: filtro combinado ────────────────────────────────
       const search = document.getElementById('search');
       const noResults = document.getElementById('no-results');
       const noResultsQ = document.getElementById('no-results-q');
       const sections = document.querySelectorAll('.cat-section');
+      const levelChips = document.querySelectorAll('.lvl-chip');
+      let activeLevel = 'all';
 
-      search.addEventListener('input', () => {
+      function applyFilters() {
         const q = search.value.trim().toLowerCase();
         let totalVisible = 0;
         sections.forEach(sec => {
           const cards = sec.querySelectorAll('.card');
           let visible = 0;
           cards.forEach(card => {
-            const match = !q || card.textContent.toLowerCase().includes(q);
+            const matchesText = !q || card.textContent.toLowerCase().includes(q);
+            const matchesLevel = activeLevel === 'all' || !!card.querySelector('.lvl-' + activeLevel);
+            const match = matchesText && matchesLevel;
             card.classList.toggle('is-filtered', !match);
             if (match) visible++;
           });
@@ -536,6 +599,15 @@
         });
         noResults.style.display = totalVisible === 0 ? 'block' : 'none';
         noResultsQ.textContent = q;
+      }
+
+      search.addEventListener('input', applyFilters);
+      levelChips.forEach(chip => {
+        chip.addEventListener('click', () => {
+          activeLevel = chip.dataset.level;
+          levelChips.forEach(c => c.classList.toggle('is-active', c === chip));
+          applyFilters();
+        });
       });
     })();
   </script>
