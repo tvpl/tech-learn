@@ -212,34 +212,47 @@
   const steps = [
     {
       title: "EKS: Kubernetes Gerenciado na AWS",
-      text: "Amazon EKS (Elastic Kubernetes Service) executa Kubernetes na AWS com o Control Plane totalmente gerenciado — você não precisa instalar, operar ou fazer patch do etcd ou API Server.",
-      why: "K8s auto-gerenciado exige expertise profunda. EKS remove essa carga operacional mantendo a API padrão K8s.",
-      balloonAnchor: { x: 640, y: 680 },
-      placement: "top",
+      balloon: { anchor: { x: 640, y: 680 }, placement: "top",
+        text: "Amazon EKS (Elastic Kubernetes Service) executa Kubernetes na AWS com o Control Plane totalmente gerenciado — você não precisa instalar, operar ou fazer patch do etcd ou API Server.",
+        why: "K8s auto-gerenciado exige expertise profunda. EKS remove essa carga operacional mantendo a API padrão K8s." },
       enter(ctx) { showBase(ctx); }
     },
     {
       title: "Control Plane Gerenciado pela AWS",
-      text: "A AWS roda o Control Plane em 3 AZs, garantindo HA. API Server, etcd, Scheduler e Controller Manager são opacos para você — zero gerenciamento.",
-      why: "Falha de uma AZ? O Control Plane continua funcionando. EKS tem SLA de 99.95%.",
-      balloonAnchor: "cp_box",
-      placement: "right",
+      balloon: { anchor: "cp_box", placement: "right",
+        text: "A AWS roda o Control Plane em 3 AZs, garantindo HA. API Server, etcd, Scheduler e Controller Manager são opacos para você — zero gerenciamento.",
+        why: "Falha de uma AZ? O Control Plane continua funcionando. EKS tem SLA de 99.95%.",
+        deep: `<p>Diferente de um cluster self-managed, você nunca acessa diretamente o etcd ou os nós do Control Plane no EKS — a AWS expõe apenas o endpoint da API. Isso remove uma classe inteira de tarefas operacionais: upgrade de versão do etcd, backup/restore, tuning de performance do Raft.</p>
+<div class="xp-example"><strong>O que você configura vs. o que a AWS gerencia</strong>Você define: versão do K8s do cluster (eksctl create cluster --version 1.29)
+AWS cuida de: HA do etcd/API Server nas 3 AZs, patches de segurança, upgrades do Control Plane</div>
+<p>O upgrade de versão do Control Plane é iniciado por você (não é automático), mas a execução — incluindo failover das réplicas do etcd — é toda gerenciada pela AWS, sem downtime perceptível para a API.</p>` },
       enter(ctx) { showBase(ctx); }
     },
     {
       title: "Node Groups: EC2 Managed",
-      text: "Worker Nodes são EC2 instances em Node Groups. A AWS gerencia o provisionamento e atualização dos nodes — você escolhe o tipo de instância e o AMI K8s.",
-      why: "Node Groups permitem múltiplos pools com tipos diferentes: on-demand para stateful, spot para stateless.",
-      balloonAnchor: "ng1_box",
-      placement: "bottom",
+      balloon: { anchor: "ng1_box", placement: "bottom",
+        text: "Worker Nodes são EC2 instances em Node Groups. A AWS gerencia o provisionamento e atualização dos nodes — você escolhe o tipo de instância e o AMI K8s.",
+        why: "Node Groups permitem múltiplos pools com tipos diferentes: on-demand para stateful, spot para stateless.",
+        deep: `<p>Um Managed Node Group é, por baixo, um Auto Scaling Group da AWS com um launch template usando uma AMI otimizada para EKS. O kubelet já vem configurado para registrar o nó automaticamente no cluster ao subir — sem passos manuais de <code>kubeadm join</code>.</p>
+<div class="xp-example"><strong>Criando um node group com eksctl</strong>eksctl create nodegroup \\
+  --cluster meu-cluster \\
+  --node-type m5.large \\
+  --nodes-min 2 --nodes-max 6 \\
+  --spot</div>
+<p>Node Groups distintos permitem misturar perfis de capacidade: um pool On-Demand para workloads stateful sensíveis a interrupção, e outro Spot para workloads stateless tolerantes a preempção, ambos registrados no mesmo cluster.</p>` },
       enter(ctx) { showBase(ctx); }
     },
     {
       title: "Fargate Profiles: Serverless Nodes",
-      text: "Com Fargate, cada Pod roda em uma microVM isolada (Firecracker). Sem gerenciar nodes — você paga só pelo que o Pod usa.",
-      why: "Ideal para workloads variáveis. Sem over-provisioning de nodes. Isolamento de segurança por Pod.",
-      balloonAnchor: "fg_box",
-      placement: "right",
+      balloon: { anchor: "fg_box", placement: "right",
+        text: "Com Fargate, cada Pod roda em uma microVM isolada (Firecracker). Sem gerenciar nodes — você paga só pelo que o Pod usa.",
+        why: "Ideal para workloads variáveis. Sem over-provisioning de nodes. Isolamento de segurança por Pod.",
+        deep: `<p>Um Fargate Profile seleciona quais Pods rodam em Fargate via namespace + labels — não é "tudo ou nada" no cluster. Pods que casam com o profile ganham automaticamente um nó Fargate dedicado, sem passar pelo Scheduler tradicional de bin-packing em EC2.</p>
+<div class="xp-example"><strong>Selecionando Pods para Fargate</strong>eksctl create fargateprofile \\
+  --cluster meu-cluster \\
+  --name fp-batch \\
+  --namespace batch-jobs</div>
+<p>Trade-off: sem DaemonSets (não há nó compartilhado para eles rodarem) e cobrança por vCPU/memória do Pod, arredondada para cima — mais caro por unidade de compute que EC2 Spot, mas sem o trabalho de dimensionar nodes.</p>` },
       enter(ctx) {
         showBase(ctx);
         ctx.show("fg_box"); ctx.show("fg_lbl"); ctx.show("fg_sub"); ctx.show("fg_sub2"); ctx.show("fg_sub3");
@@ -248,18 +261,32 @@
     },
     {
       title: "VPC e Subnets (vpc-cni)",
-      text: "O add-on vpc-cni dá a cada Pod um IP real da VPC (não overlay). Pods em subnets privadas, nodes em subnets privadas, ALB em subnet pública.",
-      why: "IP real simplifica security groups por Pod, rastreamento de tráfego e integração com outros serviços AWS.",
-      balloonAnchor: "vpc_lbl",
-      placement: "right",
+      balloon: { anchor: "vpc_lbl", placement: "right",
+        text: "O add-on vpc-cni dá a cada Pod um IP real da VPC (não overlay). Pods em subnets privadas, nodes em subnets privadas, ALB em subnet pública.",
+        why: "IP real simplifica security groups por Pod, rastreamento de tráfego e integração com outros serviços AWS.",
+        deep: `<p>Diferente de CNIs overlay (como Flannel/Calico em modo overlay), o vpc-cni aloca ENIs (Elastic Network Interfaces) da própria VPC e atribui IPs secundários dessas ENIs diretamente aos Pods. Isso significa que o IP do Pod é roteável nativamente na VPC, sem NAT ou encapsulamento extra.</p>
+<div class="xp-example"><strong>Consequência prática</strong>Security Group aplicado por Pod:
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    vpc.amazonaws.com/pod-eni: "arn:aws:ec2:..."</div>
+<p>O limite de Pods por nó no EKS não é arbitrário — depende de quantos IPs secundários o tipo de instância EC2 suporta (ex: m5.large suporta bem menos Pods que m5.4xlarge), algo que não existe em CNIs overlay.</p>` },
       enter(ctx) { showBase(ctx); ctx.show("vpc_border"); ctx.show("vpc_lbl"); }
     },
     {
       title: "IRSA: IAM Roles para Service Accounts",
-      text: "IRSA permite que um Pod assuma um IAM Role via Service Account annotation, sem credenciais no código. Usa OIDC federation com AWS STS.",
-      why: "Princípio do menor privilégio por Pod: um Pod que lê S3 não tem acesso ao DynamoDB. Sem rotação manual de secrets.",
-      balloonAnchor: { x: 380, y: 620 },
-      placement: "top",
+      balloon: { anchor: { x: 380, y: 620 }, placement: "top",
+        text: "IRSA permite que um Pod assuma um IAM Role via Service Account annotation, sem credenciais no código. Usa OIDC federation com AWS STS.",
+        why: "Princípio do menor privilégio por Pod: um Pod que lê S3 não tem acesso ao DynamoDB. Sem rotação manual de secrets.",
+        deep: `<p>O EKS expõe um provedor OIDC único por cluster. Quando um Pod usa um Service Account anotado com um IAM Role, o kubelet injeta um token JWT temporário no Pod; a aplicação (via AWS SDK) troca esse token por credenciais IAM temporárias chamando <code>sts:AssumeRoleWithWebIdentity</code> — tudo isso sem nenhuma chave de acesso estática.</p>
+<div class="xp-example"><strong>Service Account anotado</strong>apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: app-sa
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::123456789012:role/app-s3-reader</div>
+<p>A Trust Policy do IAM Role restringe <em>qual</em> Service Account pode assumi-lo (via <code>sub</code> claim do OIDC), então mesmo que dois Pods rodem no mesmo nó, cada um só acessa os recursos AWS que sua própria Service Account autoriza.</p>` },
       enter(ctx) {
         showBase(ctx);
         ctx.show("irsa_panel"); ctx.show("irsa_t"); ctx.show("irsa_d1"); ctx.show("irsa_d2"); ctx.show("irsa_d3");
@@ -267,10 +294,15 @@
     },
     {
       title: "EKS Add-ons (Gerenciados)",
-      text: "EKS Add-ons são components essenciais gerenciados pela AWS: coredns (DNS), vpc-cni (rede), kube-proxy (services), ebs-csi (storage), metrics-server.",
-      why: "Add-ons recebem updates automáticos de segurança — sem gerenciar versões manualmente.",
-      balloonAnchor: "add_title",
-      placement: "bottom",
+      balloon: { anchor: "add_title", placement: "bottom",
+        text: "EKS Add-ons são components essenciais gerenciados pela AWS: coredns (DNS), vpc-cni (rede), kube-proxy (services), ebs-csi (storage), metrics-server.",
+        why: "Add-ons recebem updates automáticos de segurança — sem gerenciar versões manualmente.",
+        deep: `<p>Antes dos EKS Add-ons existirem como recurso gerenciado, esses components eram instalados como manifests comuns — e ficava por sua conta acompanhar releases e aplicar upgrades manualmente. Como Add-on gerenciado, a AWS versiona, testa compatibilidade com a versão do cluster e permite upgrade com um comando.</p>
+<div class="xp-example"><strong>Atualizando um add-on</strong>aws eks update-addon \\
+  --cluster-name meu-cluster \\
+  --addon-name vpc-cni \\
+  --addon-version v1.18.1-eksbuild.1</div>
+<p>Nem todo componente do cluster é um EKS Add-on — ferramentas de terceiros (ArgoCD, cert-manager, ingress-nginx) continuam sendo instaladas via Helm/manifests normais, gerenciadas por você.</p>` },
       enter(ctx) {
         showBase(ctx);
         ctx.show("add_border"); ctx.show("add_title");
@@ -279,10 +311,14 @@
     },
     {
       title: "ECR: Container Registry Integrado",
-      text: "ECR (Elastic Container Registry) é o registry privado da AWS. Integra com IAM, escaneia vulnerabilidades e replica imagens entre regiões.",
-      why: "Node Groups puxam imagens do ECR sem credenciais — IAM role do node tem permissão implícita.",
-      balloonAnchor: "ecr_box",
-      placement: "left",
+      balloon: { anchor: "ecr_box", placement: "left",
+        text: "ECR (Elastic Container Registry) é o registry privado da AWS. Integra com IAM, escaneia vulnerabilidades e replica imagens entre regiões.",
+        why: "Node Groups puxam imagens do ECR sem credenciais — IAM role do node tem permissão implícita.",
+        deep: `<p>O node role do EC2 (ou a execution role do Fargate) inclui a policy <code>AmazonEC2ContainerRegistryReadOnly</code>, que autoriza <code>ecr:GetAuthorizationToken</code> e <code>ecr:BatchGetImage</code> — por isso o kubelet consegue puxar imagens do ECR sem nenhum <code>imagePullSecret</code> configurado manualmente no Pod.</p>
+<div class="xp-example"><strong>Referenciando uma imagem do ECR</strong>containers:
+- name: myapp
+  image: 123456789012.dkr.ecr.us-east-1.amazonaws.com/myapp:v2</div>
+<p>O scan de vulnerabilidades do ECR (baseado em Clair ou Amazon Inspector, dependendo da configuração) roda automaticamente a cada push de imagem, sinalizando CVEs conhecidas antes da imagem chegar a produção.</p>` },
       enter(ctx) {
         showBase(ctx);
         ctx.show("ecr_box"); ctx.show("ecr_lbl"); ctx.show("ecr_sub"); ctx.show("arr_ecr_ng");
@@ -290,10 +326,16 @@
     },
     {
       title: "AWS Load Balancer Controller",
-      text: "O ALB Controller cria ALBs e NLBs AWS automaticamente a partir de Ingress e Service resources. Suporta WAF, ACM (TLS), e IP target mode (Pods diretamente).",
-      why: "IP mode elimina o hop extra do kube-proxy — tráfego vai direto do ALB para o Pod, reduzindo latência.",
-      balloonAnchor: { x: 940, y: 620 },
-      placement: "top",
+      balloon: { anchor: { x: 940, y: 620 }, placement: "top",
+        text: "O ALB Controller cria ALBs e NLBs AWS automaticamente a partir de Ingress e Service resources. Suporta WAF, ACM (TLS), e IP target mode (Pods diretamente).",
+        why: "IP mode elimina o hop extra do kube-proxy — tráfego vai direto do ALB para o Pod, reduzindo latência.",
+        deep: `<p>O controller roda como um Deployment dentro do próprio cluster e observa (watch) objetos <code>Ingress</code>/<code>Service</code> via API Server, chamando a API da AWS para provisionar o ALB real. Em <strong>IP target mode</strong>, os Target Groups do ALB apontam direto para os IPs dos Pods (via vpc-cni) — em <strong>instance mode</strong>, apontam para as portas NodePort nos EC2, exigindo o hop extra do kube-proxy.</p>
+<div class="xp-example"><strong>Ingress anotado para IP mode</strong>metadata:
+  annotations:
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:...</div>
+<p>Como o ALB fala HTTP/HTTPS nativamente, ele também faz o papel de terminação TLS (via ACM) e integra com WAF sem precisar de um proxy adicional dentro do cluster.</p>` },
       enter(ctx) {
         showBase(ctx);
         ctx.show("alb_panel"); ctx.show("alb_t"); ctx.show("alb_d1"); ctx.show("alb_d2"); ctx.show("alb_d3");
@@ -301,10 +343,12 @@
     },
     {
       title: "EKS vs Self-managed K8s vs ECS",
-      text: "EKS: K8s padrão gerenciado, portável. Self-managed: máxima liberdade, máximo trabalho. ECS: simples, AWS-only, sem K8s.",
-      why: "Para nova workload na AWS: EKS se precisar de K8s/portabilidade, ECS se quiser simplicidade máxima.",
-      balloonAnchor: { x: 640, y: 660 },
-      placement: "top",
+      balloon: { anchor: { x: 640, y: 660 }, placement: "top",
+        text: "EKS: K8s padrão gerenciado, portável. Self-managed: máxima liberdade, máximo trabalho. ECS: simples, AWS-only, sem K8s.",
+        why: "Para nova workload na AWS: EKS se precisar de K8s/portabilidade, ECS se quiser simplicidade máxima.",
+        deep: `<p>A decisão raramente é só técnica — costuma refletir o quanto o time já sabe de K8s e o quanto a portabilidade multi-cloud importa para o negócio. ECS usa conceitos próprios da AWS (Task Definition, Service, Cluster) que não têm equivalente fora da AWS; EKS usa a API padrão do Kubernetes, portável para qualquer provedor ou on-prem.</p>
+<div class="xp-good"><strong>Escolha EKS quando</strong>o time já opera K8s, precisa de portabilidade/multi-cloud, ou quer usar o ecossistema CNCF (Helm charts, Operators, service mesh).</div>
+<div class="xp-bad"><strong>Evite EKS quando</strong>o time nunca operou K8s e a workload é simples — nesse caso, o overhead de aprender K8s pode superar o ganho, e ECS resolve com uma curva de aprendizado bem menor.</div>` },
       enter(ctx) {
         ALL_IDS.forEach(id => ctx.hide(id));
         ctx.show("title_main");
@@ -332,10 +376,8 @@
     },
     {
       title: "Resumo",
-      text: "EKS = K8s gerenciado na AWS com integrações nativas (IAM, VPC, ALB, ECR). Control Plane é responsabilidade da AWS.",
-      why: "",
-      balloonAnchor: { x: 640, y: 680 },
-      placement: "top",
+      balloon: { anchor: { x: 640, y: 680 }, placement: "top",
+        text: "EKS = K8s gerenciado na AWS com integrações nativas (IAM, VPC, ALB, ECR). Control Plane é responsabilidade da AWS." },
       enter(ctx) {
         ALL_IDS.forEach(id => ctx.hide(id));
         ctx.show("sum_panel"); ctx.show("sum_title");
