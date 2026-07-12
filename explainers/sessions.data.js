@@ -120,7 +120,7 @@ Request 2: GET /dashboard → servidor não tem ideia de quem fez a request 1</d
       highlight: ['col_a', 'col_r'],
       balloon: {
         anchor: 'msg_store_l', placement: 'top',
-        text: 'Após validar as credenciais, o servidor gera um **session_id** aleatório (ex: UUID v4) e armazena `{userId, role, ...}` no Redis com `SET session:abc123 ...`.',
+        text: 'Após validar as credenciais, o servidor gera um <strong>session_id</strong> aleatório (ex: UUID v4) e armazena `{userId, role, ...}` no Redis com `SET session:abc123 ...`.',
         why: 'O session_id deve ser criptograficamente aleatório — não sequencial ou previsível.',
         deep: `<p>A aleatoriedade do session_id é a única coisa que protege a sessão — se fosse previsível (ex: um contador incremental), um atacante poderia simplesmente adivinhar IDs de outros usuários e sequestrar sessões sem nunca roubar um cookie. Por isso o gerador precisa ser criptograficamente seguro (não <code>Math.random()</code>).</p>
 <div class="xp-bad"><strong>Session ID previsível</strong>session_id = ++counter; // "session:1001", "session:1002"...</div>
@@ -151,7 +151,7 @@ Cookie: sid=abc123</div>` },
       highlight: ['cookie_bg'],
       balloon: {
         anchor: 'cookie_bg', placement: 'right',
-        text: '**HttpOnly**: protege contra XSS (JS não acessa o cookie).\n**Secure**: só trafega em HTTPS.\n**SameSite=Strict**: bloqueia envio cross-site → principal defesa contra CSRF.',
+        text: '<strong>HttpOnly</strong>: protege contra XSS (JS não acessa o cookie).\n<strong>Secure</strong>: só trafega em HTTPS.\n<strong>SameSite=Strict</strong>: bloqueia envio cross-site → principal defesa contra CSRF.',
         why: 'Sem HttpOnly, um script malicioso pode roubar o session_id via `document.cookie`.',
         deep: `<p>Cada atributo neutraliza uma classe de ataque diferente, e combiná-los é o que torna um cookie de sessão razoavelmente seguro por padrão nos browsers modernos.</p>
 <div class="xp-bad"><strong>Cookie sem atributos</strong>Set-Cookie: sid=abc123
@@ -195,7 +195,7 @@ Se o usuário está logado no banco.com, o browser anexa o cookie de sessão aut
       highlight: ['col_r', 'store_bg'],
       balloon: {
         anchor: 'store_bg', placement: 'left',
-        text: '**Redis** é o padrão para session stores distribuídos: O(1) GET/SET, TTL nativo (auto-expire), suporte a cluster. Evite sticky sessions — acoplam usuários a servidores específicos.',
+        text: '<strong>Redis</strong> é o padrão para session stores distribuídos: O(1) GET/SET, TTL nativo (auto-expire), suporte a cluster. Evite sticky sessions — acoplam usuários a servidores específicos.',
         why: 'In-memory funciona apenas com uma instância — morre junto com o processo.',
         deep: `<p>A escolha do store determina se a aplicação escala horizontalmente sem dor. In-memory funciona apenas enquanto existir uma única instância do servidor — assim que um load balancer distribui requests entre múltiplas instâncias, cada uma teria sua própria cópia da sessão, e o usuário "perderia" a sessão ao cair numa instância diferente.</p>
 <div class="xp-bad"><strong>Sticky sessions</strong>Load balancer força o mesmo usuário sempre no mesmo servidor — funciona, mas acopla escalabilidade e complica deploys (reiniciar aquele servidor derruba as sessões dele).</div>
@@ -208,7 +208,7 @@ Se o usuário está logado no banco.com, o browser anexa o cookie de sessão aut
       highlight: ['csrf_bg'],
       balloon: {
         anchor: 'csrf_bg', placement: 'right',
-        text: '**CSRF**: site malicioso faz request em nome do usuário usando seu cookie. **Session fixation**: atacante força um session_id — regenerar ID após login. **Hijacking**: detectar mudanças de IP/User-Agent.',
+        text: '<strong>CSRF</strong>: site malicioso faz request em nome do usuário usando seu cookie. <strong>Session fixation</strong>: atacante força um session_id — regenerar ID após login. <strong>Hijacking</strong>: detectar mudanças de IP/User-Agent.',
         deep: `<p>Os três ataques listados exploram propriedades diferentes do modelo de cookies: CSRF abusa do envio automático, session fixation abusa de reaproveitar um ID já conhecido pelo atacante, e hijacking abusa de um cookie efetivamente roubado (via rede insegura, malware, ou XSS).</p>
 <div class="xp-example"><strong>Session fixation</strong>1. Atacante define session_id=FIXO em um link enviado à vítima
 2. Vítima faz login usando esse session_id sem o servidor gerar um novo
@@ -223,7 +223,7 @@ Se o usuário está logado no banco.com, o browser anexa o cookie de sessão aut
       highlight: ['col_r'],
       balloon: {
         anchor: 'msg_sdel_l', placement: 'top',
-        text: 'Logout **deve** deletar a session do store (`DEL session:abc123`) E expirar o cookie (`Max-Age=0`). Só limpar o cookie é insuficiente — token ainda seria válido no store.',
+        text: 'Logout <strong>deve</strong> deletar a session do store (`DEL session:abc123`) E expirar o cookie (`Max-Age=0`). Só limpar o cookie é insuficiente — token ainda seria válido no store.',
         why: 'Se apenas o cookie for removido, alguém com o session_id ainda teria acesso.',
         deep: `<p>Esse é um erro comum de implementação: times que só limpam o cookie no logout (client-side) mas esquecem de deletar a sessão correspondente no store — a sessão continua "viva" no Redis, e qualquer pessoa que já tivesse capturado aquele session_id (via XSS, log, ou man-in-the-middle antes do logout) continuaria com acesso válido indefinidamente até o TTL expirar.</p>
 <div class="xp-bad"><strong>Logout incompleto</strong>res.clearCookie('sid'); // só isso — sessão continua no Redis</div>
@@ -237,7 +237,7 @@ res.clearCookie('sid');</div>` },
              'cookie_bg', 'cookie_title', 'ca1', 'ca2', 'ca3', 'ca4', 'ca5'],
       balloon: {
         anchor: 'store_bg', placement: 'top',
-        text: '**Sessions**: revogação imediata, dados server-side (menores cookies). Requer session store.\n**JWT**: stateless, sem store, escala horizontal — mas revogação complexa. Sessions são preferíveis para web apps tradicionais.',
+        text: '<strong>Sessions</strong>: revogação imediata, dados server-side (menores cookies). Requer session store.\n<strong>JWT</strong>: stateless, sem store, escala horizontal — mas revogação complexa. Sessions são preferíveis para web apps tradicionais.',
         deep: `<p>Uma forma prática de decidir: se a resposta para "preciso conseguir derrubar o acesso de um usuário AGORA, sem esperar expiração" é sim (banco, admin, conta comprometida), sessions ganham. Se a prioridade é escalar sem coordenação entre serviços (múltiplos microserviços verificando o mesmo token independentemente), JWT ganha.</p>
 <div class="xp-good"><strong>Sessions</strong>revogação instantânea, cookie pequeno (só o ID), requer store compartilhado — ideal para monolitos web tradicionais.</div>
 <div class="xp-good"><strong>JWT</strong>verificação local sem consulta, token maior (carrega claims), revogação difícil antes do exp — ideal para APIs distribuídas e microserviços.</div>

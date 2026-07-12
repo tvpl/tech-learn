@@ -134,7 +134,7 @@
              'cmp_bg', 'cmp_title', 'cm1', 'cm2', 'cm3', 'cm4'],
       balloon: {
         anchor: 'cmp_bg', placement: 'left',
-        text: 'API Keys são tokens opacos que identificam/autenticam um **cliente programático** (M2M). Ideais para CLIs, webhooks e integração B2B onde não há usuário interativo.',
+        text: 'API Keys são tokens opacos que identificam/autenticam um <strong>cliente programático</strong> (M2M). Ideais para CLIs, webhooks e integração B2B onde não há usuário interativo.',
         deep: `<p>API Keys existem porque nem todo cliente de uma API é uma pessoa navegando num browser — muitas vezes é um script, um cron job, um webhook consumer ou uma integração entre empresas, onde não faz sentido pedir login interativo ou implementar OAuth completo para uma única aplicação confiável.</p>
 <div class="xp-good"><strong>Bom uso</strong>Servidor A chama a API do Stripe usando uma secret key fixa, configurada uma vez em variável de ambiente.</div>
 <div class="xp-bad"><strong>Uso indevido</strong>Expor uma API Key com permissão total num app frontend público — ela aparece no código-fonte do JS, visível a qualquer visitante.</div>` },
@@ -146,7 +146,7 @@
       highlight: ['st_gen', 'gen_bg'],
       balloon: {
         anchor: 'gen_bg', placement: 'right',
-        text: '`crypto.randomBytes(32)` gera 256 bits de entropia. O **prefixo legível** (`sk_live_`, `ghp_`) facilita identificar o tipo e ambiente da chave — essencial para buscar em logs sem expor o valor real.',
+        text: '`crypto.randomBytes(32)` gera 256 bits de entropia. O <strong>prefixo legível</strong> (`sk_live_`, `ghp_`) facilita identificar o tipo e ambiente da chave — essencial para buscar em logs sem expor o valor real.',
         why: 'Nunca use UUIDs sequenciais ou hashes de dados previsíveis como API Keys.',
         deep: `<p>O prefixo (<code>sk_live_</code>, <code>sk_test_</code>) não tem função criptográfica — é só um identificador legível, mas evita erros caros na prática: uma chave de teste usada acidentalmente em produção (ou vice-versa) costuma ser detectável só de olhar o prefixo, antes mesmo de rodar o código.</p>
 <div class="xp-example"><strong>Padrão real (estilo Stripe)</strong>sk_live_&lt;32 caracteres aleatórios&gt;
@@ -192,7 +192,7 @@ ghp_&lt;36 caracteres aleatórios&gt; (GitHub)</div>
       highlight: ['st_rl', 'rl_bg'],
       balloon: {
         anchor: 'rl_bg', placement: 'right',
-        text: 'Contador Redis por chave: `INCR ratelimit:sk_live_Xk9m` — se `count > limit`, retorna **429**. `EXPIRE` define a janela de tempo (60s, 1h...). Headers informam o cliente quanto falta.',
+        text: 'Contador Redis por chave: `INCR ratelimit:sk_live_Xk9m` — se `count > limit`, retorna <strong>429</strong>. `EXPIRE` define a janela de tempo (60s, 1h...). Headers informam o cliente quanto falta.',
         why: 'Rate limit por chave evita que um abusador impacte outros clientes da API.',
         deep: `<p>Rate limiting por chave (em vez de por IP) é essencial para APIs B2B: várias integrações legítimas de clientes diferentes podem compartilhar o mesmo IP de saída (NAT corporativo, proxy), então limitar por IP penalizaria injustamente clientes que nada têm a ver com o abuso de outro.</p>
 <div class="xp-example"><strong>Janela deslizante simples com Redis</strong>INCR ratelimit:sk_live_Xk9m
@@ -238,7 +238,7 @@ Dia 15: revoga key_v1 (após confirmar que parou de ser usada nos logs)</div>
              'rev_bg', 'rev_title', 'rv1', 'rv2'],
       balloon: {
         anchor: 'cmp_bg', placement: 'top',
-        text: '**API Keys**: simples, M2M, sem claims. **JWT**: stateless com claims embutidas. **Sessions**: estado server-side, revogação fácil. **OAuth**: delegação de acesso com user flow. Use API Keys quando o cliente é confiável e controlado.',
+        text: '<strong>API Keys</strong>: simples, M2M, sem claims. <strong>JWT</strong>: stateless com claims embutidas. <strong>Sessions</strong>: estado server-side, revogação fácil. <strong>OAuth</strong>: delegação de acesso com user flow. Use API Keys quando o cliente é confiável e controlado.',
         deep: `<p>Nenhuma dessas quatro opções é estritamente "melhor" — cada uma otimiza para um cenário diferente de quem é o cliente e como ele se relaciona com o servidor.</p>
 <div class="xp-example"><strong>Regra prática</strong>Usuário humano num browser → Sessions ou OAuth (login)
 App móvel/SPA acessando API em nome de um usuário → OAuth + tokens

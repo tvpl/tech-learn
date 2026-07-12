@@ -130,7 +130,7 @@
              'ps1', 'po1', 'ps2', 'po2', 'ps3', 'po3', 'ps4', 'po4', 'ps5', 'po5', 'ps6', 'po6'],
       balloon: {
         anchor: 'idp', placement: 'left',
-        text: '**User** = quem autentica. **SP** (Service Provider) = a app. **IdP** = servidor de identidade central.',
+        text: '<strong>User</strong> = quem autentica. <strong>SP</strong> (Service Provider) = a app. <strong>IdP</strong> = servidor de identidade central.',
         deep: `<p>Vale notar a diferença entre a sessão do <strong>SP</strong> (local, específica daquele app) e a sessão do <strong>IdP</strong> (global, é ela que sustenta o SSO). Um logout no SP não necessariamente derruba a sessão do IdP — por isso existe o Single Logout como mecanismo separado.</p>
 <div class="xp-example"><strong>Analogia</strong>IdP = balcão único de identidade de um condomínio (a portaria).
 SP = cada apartamento — confia que quem a portaria deixou passar é quem diz ser, sem verificar documento de novo na porta.</div>` },
@@ -185,7 +185,7 @@ SP = cada apartamento — confia que quem a portaria deixou passar é quem diz s
       highlight: ['idp', 'sso_cookie', 'sp1'],
       balloon: {
         anchor: 'sso_cookie', placement: 'bottom',
-        text: 'IdP grava SSO session cookie no **seu próprio domínio** (ex: `sso.empresa.com`). Depois envia Assertion (SAML) ou `id_token` (OIDC) ao SP1.',
+        text: 'IdP grava SSO session cookie no <strong>seu próprio domínio</strong> (ex: `sso.empresa.com`). Depois envia Assertion (SAML) ou `id_token` (OIDC) ao SP1.',
         deep: `<p>O cookie de sessão do IdP normalmente é <code>HttpOnly</code>, <code>Secure</code> e escopado ao domínio do próprio IdP — nenhum SP consegue lê-lo diretamente, o que é intencional: o SP só recebe a <em>assertion assinada</em>, nunca acesso à sessão do IdP em si.</p>
 <div class="xp-example"><strong>Set-Cookie do IdP</strong>Set-Cookie: idp_session=xyz789; Domain=sso.empresa.com; HttpOnly; Secure; SameSite=Lax</div>
 <p>É por causa desse cookie, e não de mágica, que a próxima vez que qualquer SP redirecionar o usuário ao IdP, ele já estará "logado" sem digitar nada.</p>` },
@@ -210,7 +210,7 @@ SP = cada apartamento — confia que quem a portaria deixou passar é quem diz s
       highlight: ['idp', 'sp2'],
       balloon: {
         anchor: 'a_idp_sp2_l', placement: 'right',
-        text: 'IdP emite nova assertion para SP2. Usuário obtém acesso sem digitar senha — **esse é o valor do SSO**.',
+        text: 'IdP emite nova assertion para SP2. Usuário obtém acesso sem digitar senha — <strong>esse é o valor do SSO</strong>.',
         deep: `<p>Cada SP recebe sua própria assertion, com <code>aud</code> (audience) específico daquele SP — uma assertion emitida para App1 não pode ser reaproveitada em App2, mesmo que ambos confiem no mesmo IdP. Isso evita que uma assertion vazada de um app comprometa outro.</p>
 <div class="xp-bad"><strong>Sem audience restriction</strong>Um SP malicioso poderia capturar a assertion destinada a outro SP e reapresentá-la como se fosse dele.</div>
 <div class="xp-good"><strong>Com aud checado</strong>Cada SP valida que a assertion foi emitida especificamente para ele antes de aceitar.</div>` },
@@ -222,7 +222,7 @@ SP = cada apartamento — confia que quem a portaria deixou passar é quem diz s
              'ps1', 'po1', 'ps2', 'po2', 'ps3', 'po3', 'ps4', 'po4', 'ps5', 'po5', 'ps6', 'po6'],
       balloon: {
         anchor: 'proto_bg', placement: 'left',
-        text: '**SAML 2.0**: padrão enterprise, XML verboso, muito usado com apps legadas. **OIDC**: baseado em OAuth 2.0, JSON/JWT, cloud-native — tendência moderna.',
+        text: '<strong>SAML 2.0</strong>: padrão enterprise, XML verboso, muito usado com apps legadas. <strong>OIDC</strong>: baseado em OAuth 2.0, JSON/JWT, cloud-native — tendência moderna.',
         why: 'Novos sistemas quase sempre preferem OIDC pela simplicidade e tooling moderno.',
         deep: `<p>SAML nasceu nos anos 2000 para SSO corporativo entre grandes empresas e ainda domina em integrações enterprise legadas (ex: Active Directory Federation Services). OIDC é mais recente, construído sobre OAuth 2.0, e se tornou o padrão de fato para SSO cloud-native e aplicações modernas.</p>
 <div class="xp-example"><strong>SAML — trecho de assertion XML</strong>&lt;saml:Assertion&gt;
@@ -257,7 +257,7 @@ SP = cada apartamento — confia que quem a portaria deixou passar é quem diz s
           'No localStorage do browser, acessível por qualquer SP',
         ],
         answer: 2,
-        explain: 'O SSO session cookie fica no domínio do **IdP** (ex: sso.empresa.com). Isso permite que o IdP reconheça sessões ativas quando qualquer SP redireciona o usuário para autenticação — os SPs nunca leem esse cookie diretamente.',
+        explain: 'O SSO session cookie fica no domínio do <strong>IdP</strong> (ex: sso.empresa.com). Isso permite que o IdP reconheça sessões ativas quando qualquer SP redireciona o usuário para autenticação — os SPs nunca leem esse cookie diretamente.',
       },
     },
     {
@@ -271,7 +271,7 @@ SP = cada apartamento — confia que quem a portaria deixou passar é quem diz s
              'slo_bg', 'slo_title', 'slo1', 'slo2', 'slo3', 'slo4'],
       balloon: {
         anchor: 'idp', placement: 'left',
-        text: '**SSO** centraliza autenticação num IdP. Uma sessão → acesso a N apps. SAML (enterprise) ou OIDC (moderno). SLO encerra sessões em todos os SPs.',
+        text: '<strong>SSO</strong> centraliza autenticação num IdP. Uma sessão → acesso a N apps. SAML (enterprise) ou OIDC (moderno). SLO encerra sessões em todos os SPs.',
       },
     },
   ];

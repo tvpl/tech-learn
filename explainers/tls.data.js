@@ -141,7 +141,7 @@
       highlight: ['col_n'],
       balloon: {
         anchor: 'col_n', placement: 'bottom',
-        text: 'HTTP sem TLS: qualquer intermediário (roteador, ISP, attacker) pode **ler e modificar** o tráfego. Senha, tokens e dados sensíveis viajam em texto claro.',
+        text: 'HTTP sem TLS: qualquer intermediário (roteador, ISP, attacker) pode <strong>ler e modificar</strong> o tráfego. Senha, tokens e dados sensíveis viajam em texto claro.',
         why: 'HTTPS = HTTP sobre TLS — o protocolo de aplicação não muda, só o transporte é cifrado.',
         deep: `<p>Um MITM (man-in-the-middle) na mesma rede — um Wi-Fi público, um roteador comprometido, um proxy corporativo — consegue ler cada byte de uma conexão HTTP sem TLS, porque nada ali é cifrado: nem os headers, nem o corpo, nem os cookies de sessão.</p>
 <div class="xp-example"><strong>O que um sniffer vê em HTTP puro</strong>GET /api/token HTTP/1.1
@@ -160,7 +160,7 @@ Cookie: sessionid=abc123def456
              'keys_bg', 'keys_title', 'k1', 'k2', 'k3'],
       balloon: {
         anchor: 'col_s', placement: 'top',
-        text: 'TLS (Transport Layer Security) opera entre TCP e a camada de aplicação. Oferece: **confidencialidade** (cifração), **integridade** (AEAD), **autenticação** (certificados X.509) e **Perfect Forward Secrecy**.',
+        text: 'TLS (Transport Layer Security) opera entre TCP e a camada de aplicação. Oferece: <strong>confidencialidade</strong> (cifração), <strong>integridade</strong> (AEAD), <strong>autenticação</strong> (certificados X.509) e <strong>Perfect Forward Secrecy</strong>.',
         deep: `<p>TLS não substitui TCP — ele roda logo acima, como uma camada adicional que qualquer protocolo de aplicação pode usar (HTTP, SMTP, gRPC...). O handshake TLS acontece imediatamente após o handshake TCP, antes de qualquer byte da aplicação trafegar.</p>
 <div class="xp-example"><strong>Pilha de camadas</strong>Aplicação:  HTTP (GET /index.html)
 Segurança:  TLS (cifra tudo acima)
@@ -181,7 +181,7 @@ Rede:       IP</div>
       highlight: ['col_c'],
       balloon: {
         anchor: 'client_hello_l', placement: 'bottom',
-        text: '`ClientHello` contém: versão máxima suportada (TLS 1.3), lista de **cipher suites** aceitas (`TLS_AES_256_GCM_SHA384`, etc.), `random_C` (32 bytes aleatórios) e extensões como SNI (Server Name Indication).',
+        text: '`ClientHello` contém: versão máxima suportada (TLS 1.3), lista de <strong>cipher suites</strong> aceitas (`TLS_AES_256_GCM_SHA384`, etc.), `random_C` (32 bytes aleatórios) e extensões como SNI (Server Name Indication).',
         why: 'SNI permite ao servidor escolher o certificado correto em hosts com múltiplos domínios.',
         deep: `<p>O ClientHello é a única mensagem do handshake enviada totalmente em texto claro — faz sentido, já que nesse ponto ainda não existe chave nenhuma combinada. É por isso que a SNI (o domínio que o cliente quer acessar) historicamente vazava mesmo em conexões HTTPS — TLS 1.3 com Encrypted Client Hello resolve isso em implementações mais recentes.</p>
 <div class="xp-example"><strong>ClientHello (campos principais)</strong>Version: TLS 1.3
@@ -198,7 +198,7 @@ Extensions: server_name=app.exemplo.com (SNI), key_share, supported_versions</di
       highlight: ['col_s'],
       balloon: {
         anchor: 'cert_send_l', placement: 'bottom',
-        text: '`ServerHello` responde com a cipher suite escolhida, `random_S` e sua chave pública efêmera. Em seguida envia o **Certificate X.509** com informações de identidade e a chave pública para verificação.',
+        text: '`ServerHello` responde com a cipher suite escolhida, `random_S` e sua chave pública efêmera. Em seguida envia o <strong>Certificate X.509</strong> com informações de identidade e a chave pública para verificação.',
         deep: `<p>O servidor não escolhe a cipher suite sozinho por capricho — ele intersecta a lista do cliente com o que ele mesmo suporta e escolhe a mais forte disponível nos dois lados. A partir daqui, ambos já sabem qual algoritmo simétrico vão usar, mas ainda não têm a chave.</p>
 <div class="xp-example"><strong>ServerHello + Certificate</strong>ServerHello:
   cipher_suite: TLS_AES_256_GCM_SHA384
@@ -217,7 +217,7 @@ Certificate:
       highlight: ['cert_bg'],
       balloon: {
         anchor: 'cert_bg', placement: 'left',
-        text: 'O campo mais crítico para validação é o **SAN** (Subject Alternative Names) — lista de domínios válidos para o cert. O `CN` está obsoleto; browsers modernos só aceitam SANs.',
+        text: 'O campo mais crítico para validação é o <strong>SAN</strong> (Subject Alternative Names) — lista de domínios válidos para o cert. O `CN` está obsoleto; browsers modernos só aceitam SANs.',
         why: 'Validity period curto (90 dias, como Let\'s Encrypt) reduz janela de comprometimento.',
         deep: `<p>Um certificado X.509 é, na prática, um documento assinado digitalmente: contém a identidade de quem o possui, a chave pública dele, e a assinatura da CA que garante que essa identidade foi verificada.</p>
 <div class="xp-example"><strong>Campos essenciais para validação</strong>Subject:  CN=app.exemplo.com
@@ -235,7 +235,7 @@ PubKey:   EC secp256r1</div>
       highlight: ['ca_root'],
       balloon: {
         anchor: 'chain_bg', placement: 'left',
-        text: 'O OS/browser tem uma lista de **Root CAs confiáveis** pré-instalada. A Root CA assina a Intermediate CA, que assina o Leaf Certificate do servidor. Cliente verifica cada assinatura na cadeia.',
+        text: 'O OS/browser tem uma lista de <strong>Root CAs confiáveis</strong> pré-instalada. A Root CA assina a Intermediate CA, que assina o Leaf Certificate do servidor. Cliente verifica cada assinatura na cadeia.',
         why: 'Root CAs raramente assinam diretamente — Intermediate CAs ficam online para operação diária, protegendo a Root (offline em air-gapped HSMs).',
         deep: `<p>A cadeia existe porque manter a Root CA online o tempo todo seria um risco enorme — se a chave privada da Root vazasse, toda a confiança do ecossistema desmoronaria. Por isso a Root normalmente fica offline (HSM air-gapped) e só assina Intermediate CAs esporadicamente.</p>
 <div class="xp-example"><strong>Verificação da cadeia (de baixo para cima)</strong>1. Leaf cert (app.exemplo.com) — assinado pela Intermediate CA
@@ -270,7 +270,7 @@ Cliente refaz cada verificação de assinatura até chegar numa Root já confiá
       highlight: ['ecdhe_bg', 'key_ex'],
       balloon: {
         anchor: 'ecdhe_bg', placement: 'left',
-        text: 'ECDHE: cliente e servidor geram pares de chaves **efêmeros** (descartados após o handshake). O segredo compartilhado é derivado via curva elíptica — sem nunca transmitir a chave secreta.',
+        text: 'ECDHE: cliente e servidor geram pares de chaves <strong>efêmeros</strong> (descartados após o handshake). O segredo compartilhado é derivado via curva elíptica — sem nunca transmitir a chave secreta.',
         why: 'Ephemeral = PFS: se a private key de longo-prazo for comprometida no futuro, o tráfego passado permanece protegido.',
         deep: `<p>ECDHE resolve um problema clássico de criptografia: como dois lados combinam um segredo compartilhado através de um canal que um atacante pode estar observando, sem nunca transmitir o segredo em si? A matemática de curvas elípticas permite calcular o mesmo valor final a partir de peças diferentes, sem revelar as peças privadas.</p>
 <div class="xp-example"><strong>O truque matemático</strong>Cliente:  gera (priv_C, pub_C), envia só pub_C
@@ -288,7 +288,7 @@ Servidor calcula: ECDH(priv_S, pub_C) = mesmo segredo</div>
       highlight: ['keys_bg'],
       balloon: {
         anchor: 'keys_bg', placement: 'left',
-        text: '`HKDF-Expand(master_secret)` deriva chaves simétricas **separadas por direção**: `client_write_key` (cliente cifra) e `server_write_key` (servidor cifra). Cada direção também tem seu próprio IV (nonce).',
+        text: '`HKDF-Expand(master_secret)` deriva chaves simétricas <strong>separadas por direção</strong>: `client_write_key` (cliente cifra) e `server_write_key` (servidor cifra). Cada direção também tem seu próprio IV (nonce).',
         why: '`Finished` é um HMAC de todo o handshake — detecta qualquer adulteração nos passos anteriores.',
         deep: `<p>Usar chaves separadas por direção (client_write_key vs server_write_key) evita um problema sutil: se os dois lados usassem a mesma chave para cifrar, um atacante poderia potencialmente "espelhar" uma mensagem do cliente de volta como se fosse do servidor (reflection attack).</p>
 <div class="xp-example"><strong>HKDF-Expand deriva 4 valores do master_secret</strong>client_write_key   → cifra dados enviados pelo cliente
@@ -304,7 +304,7 @@ server_write_IV    → nonce inicial do lado servidor</div>
       highlight: ['app_data'],
       balloon: {
         anchor: 'app_data_l', placement: 'top',
-        text: 'Dados são fragmentados em **TLS Records** (≤16 KB), cifrados com AES-256-GCM (AEAD). O AEAD garante confidencialidade + integridade num único passo. O MITM vê apenas bytes cifrados.',
+        text: 'Dados são fragmentados em <strong>TLS Records</strong> (≤16 KB), cifrados com AES-256-GCM (AEAD). O AEAD garante confidencialidade + integridade num único passo. O MITM vê apenas bytes cifrados.',
         deep: `<p>O AEAD (Authenticated Encryption with Associated Data) faz duas coisas numa única operação: cifra o conteúdo (confidencialidade) e gera uma tag de autenticação (integridade) — se um único bit for alterado em trânsito, a verificação da tag falha e o record inteiro é rejeitado.</p>
 <div class="xp-example"><strong>TLS Record cifrado (estrutura)</strong>Header:    tipo=application_data, versão, tamanho
 Payload:   ciphertext (dado real cifrado com AES-256-GCM)
@@ -319,7 +319,7 @@ Auth Tag:  16 bytes — prova que o ciphertext não foi alterado</div>
       highlight: ['col_c', 'mtls_req'],
       balloon: {
         anchor: 'mtls_req_l', placement: 'top',
-        text: 'Em mTLS, o servidor envia `CertificateRequest`. O cliente responde com seu próprio certificado X.509. O servidor valida a cadeia do cliente — **autenticação mútua** (ambos se provam).',
+        text: 'Em mTLS, o servidor envia `CertificateRequest`. O cliente responde com seu próprio certificado X.509. O servidor valida a cadeia do cliente — <strong>autenticação mútua</strong> (ambos se provam).',
         why: 'Diferente do TLS padrão onde apenas o servidor se identifica. mTLS elimina a necessidade de API keys ou tokens em comunicação serviço-a-serviço.',
         deep: `<p>Em TLS padrão só o servidor prova identidade — o cliente segue anônimo do ponto de vista criptográfico (a autenticação de usuário, se houver, acontece depois, na camada de aplicação, via senha ou token). mTLS empurra essa prova de identidade para dentro do próprio handshake.</p>
 <div class="xp-example"><strong>Handshake mTLS (mensagens extras)</strong>Servidor → Cliente: CertificateRequest
@@ -334,7 +334,7 @@ Servidor: valida a cadeia do cert do cliente → autenticado</div>
              'mtls_req', 'mtls_req_l', 'mtls_cert', 'mtls_cert_l', 'mtls_ok', 'mtls_ok_l'],
       balloon: {
         anchor: 'col_s', placement: 'top',
-        text: '**Istio / Envoy** (Kubernetes): injeta sidecar proxy que estabelece mTLS transparente entre pods. **Zero-trust networking**: sem VPN — cada serviço prova identidade com cert. **APIs B2B**: clientes recebem cert para autenticar além de HTTPS.',
+        text: '<strong>Istio / Envoy</strong> (Kubernetes): injeta sidecar proxy que estabelece mTLS transparente entre pods. <strong>Zero-trust networking</strong>: sem VPN — cada serviço prova identidade com cert. <strong>APIs B2B</strong>: clientes recebem cert para autenticar além de HTTPS.',
         deep: `<p>mTLS resolve um problema específico de comunicação serviço-a-serviço: como dois serviços internos se autenticam mutuamente sem depender de segredos compartilhados (API keys) que precisam ser distribuídos, rotacionados e podem vazar em logs ou repositórios.</p>
 <div class="xp-example"><strong>Service mesh (Istio/Envoy) — na prática</strong>Pod A (sidecar Envoy) ←── mTLS automático ──→ Pod B (sidecar Envoy)
 
@@ -355,7 +355,7 @@ o sidecar cuida de todo o handshake mTLS entre os pods.</div>
           'Porque AES-GCM criptografa as chaves efêmeras antes de transmiti-las',
         ],
         answer: 1,
-        explain: 'PFS é garantido pelo caráter **efêmero** das chaves ECDHE: cada sessão usa um par de chaves novo, descartado imediatamente após a derivação do master_secret. Mesmo que um atacante grave o tráfego cifrado hoje e obtenha a private key do servidor no futuro, ele não conseguirá decifrar — pois as chaves efêmeras (que seriam necessárias) já foram destruídas.',
+        explain: 'PFS é garantido pelo caráter <strong>efêmero</strong> das chaves ECDHE: cada sessão usa um par de chaves novo, descartado imediatamente após a derivação do master_secret. Mesmo que um atacante grave o tráfego cifrado hoje e obtenha a private key do servidor no futuro, ele não conseguirá decifrar — pois as chaves efêmeras (que seriam necessárias) já foram destruídas.',
       },
     },
     {

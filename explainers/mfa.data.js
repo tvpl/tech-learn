@@ -129,7 +129,7 @@
       show: ['f_know', 'f_know_sub', 'f_have', 'f_have_sub', 'f_is', 'f_is_sub'],
       balloon: {
         anchor: 'f_have', placement: 'bottom',
-        text: '**Saber** (senha, PIN): fácil de phishing. **Ter** (device com TOTP/FIDO2): precisa roubar o aparelho. **Ser** (biometria): não pode ser compartilhado. MFA combina ≥2 fatores **diferentes**.',
+        text: '<strong>Saber</strong> (senha, PIN): fácil de phishing. <strong>Ter</strong> (device com TOTP/FIDO2): precisa roubar o aparelho. <strong>Ser</strong> (biometria): não pode ser compartilhado. MFA combina ≥2 fatores <strong>diferentes</strong>.',
         why: '2FA com duas senhas diferentes não é MFA real — ambas pertencem ao mesmo fator "saber".',
         deep: `<p>Combinar dois fatores do <em>mesmo</em> tipo não é MFA de verdade — é só duplicar a exposição ao mesmo risco.</p>
 <div class="xp-bad"><strong>Não é MFA real</strong>Senha + pergunta de segurança ("nome do seu primeiro animal") — ambos são "algo que você sabe", e ambos podem vazar juntos no mesmo phishing.</div>
@@ -143,7 +143,7 @@
       highlight: ['f_have', 'totp_bg'],
       balloon: {
         anchor: 'totp_bg', placement: 'right',
-        text: '`HMAC-SHA1(secret, ⌊time/30⌋)` — ambos o app e servidor calculam o mesmo código com base no **tempo atual** e no segredo compartilhado. Código muda a cada 30s.',
+        text: '`HMAC-SHA1(secret, ⌊time/30⌋)` — ambos o app e servidor calculam o mesmo código com base no <strong>tempo atual</strong> e no segredo compartilhado. Código muda a cada 30s.',
         why: 'O segredo está no QR code do setup. Sem acesso ao device (app authenticator), o código não pode ser gerado.',
         deep: `<p>O "segredo compartilhado" é criado uma única vez, no setup — depois disso, app e servidor nunca mais trocam esse valor pela rede, só o código de 6 dígitos derivado dele.</p>
 <div class="xp-example"><strong>Por que muda a cada 30s</strong>time_step = ⌊unix_time / 30⌋
@@ -173,7 +173,7 @@ Em t=30..59s → time_step=X+1 → código B (diferente)</div>
       highlight: ['f_have', 'f_is', 'wa_bg'],
       balloon: {
         anchor: 'wa_bg', placement: 'left',
-        text: 'O authenticator (YubiKey, biometria do phone) gera um par de chaves. O servidor guarda apenas a **chave pública**. A chave privada nunca sai do device.',
+        text: 'O authenticator (YubiKey, biometria do phone) gera um par de chaves. O servidor guarda apenas a <strong>chave pública</strong>. A chave privada nunca sai do device.',
         why: 'Mesmo que o servidor seja comprometido, o atacante não pode impersonar o usuário — a private key é inviolável no hardware.',
         deep: `<p>É criptografia assimétrica aplicada a login: em vez de um segredo compartilhado (como no TOTP), cada lado guarda uma metade do par de chaves — e só uma metade nunca sai do dispositivo.</p>
 <div class="xp-example"><strong>O que cada lado guarda</strong>Device (YubiKey/celular): chave PRIVADA — nunca sai do hardware seguro
@@ -186,7 +186,7 @@ Servidor: chave PÚBLICA + credential_id — inútil sozinha para logar</div>
              'wa_bg', 'wa_title', 'w1', 'w2', 'w3', 'w4', 'w5', 'w6', 'w7', 'w8', 'w9'],
       balloon: {
         anchor: 'wa_bg', placement: 'right',
-        text: '**Registro**: `credentials.create()` → gera chave pública + attestation → servidor armazena.\n**Auth**: `credentials.get()` → assina challenge com private key → servidor verifica com public key. O challenge inclui o domínio → phishing falha.',
+        text: '<strong>Registro</strong>: `credentials.create()` → gera chave pública + attestation → servidor armazena.\n<strong>Auth</strong>: `credentials.get()` → assina challenge com private key → servidor verifica com public key. O challenge inclui o domínio → phishing falha.',
         deep: `<p>Repare que em nenhum momento uma senha ou segredo trafega pela rede — só assinaturas criptográficas de um desafio (challenge) gerado a cada tentativa.</p>
 <div class="xp-example"><strong>Ciclo de autenticação</strong>1. Servidor gera challenge aleatório + rpId (domínio)
 2. Device assina challenge+rpId com a chave privada
@@ -201,7 +201,7 @@ Servidor: chave PÚBLICA + credential_id — inútil sozinha para logar</div>
       highlight: ['sms_bg'],
       balloon: {
         anchor: 'sms_bg', placement: 'left',
-        text: '**SIM swap**: atacante convence a operadora a transferir seu número. **SS7 attack**: falha na rede de telecomunicações permite interceptar SMS. SMS OTP é melhor que nada, mas não use como único 2FA.',
+        text: '<strong>SIM swap</strong>: atacante convence a operadora a transferir seu número. <strong>SS7 attack</strong>: falha na rede de telecomunicações permite interceptar SMS. SMS OTP é melhor que nada, mas não use como único 2FA.',
         deep: `<p>O problema do SMS não é o código em si — é que ele depende de um canal (a rede de telefonia) que o usuário não controla e que tem décadas de falhas conhecidas de segurança.</p>
 <div class="xp-bad"><strong>SIM swap</strong>Atacante liga para a operadora se passando pelo dono da linha, pede portabilidade do número para um chip dele — a partir daí recebe todos os SMS, inclusive OTPs.</div>
 <div class="xp-good"><strong>Alternativa recomendada</strong>Usar SMS só como fallback de recuperação, com TOTP ou FIDO2 como método principal.</div>
@@ -239,7 +239,7 @@ Servidor: chave PÚBLICA + credential_id — inútil sozinha para logar</div>
       highlight: ['phi_bg'],
       balloon: {
         anchor: 'phi_bg', placement: 'left',
-        text: 'TOTP pode ser phished: o usuário é enganado a digitar o código em um site falso que o repassa em tempo real ao site real. FIDO2 vincula a assinatura ao **domínio de origem** — em site.com.br falso, o challenge falha silenciosamente.',
+        text: 'TOTP pode ser phished: o usuário é enganado a digitar o código em um site falso que o repassa em tempo real ao site real. FIDO2 vincula a assinatura ao <strong>domínio de origem</strong> — em site.com.br falso, o challenge falha silenciosamente.',
         deep: `<p>A diferença central: TOTP autentica "alguém que sabe o código agora", sem verificar onde esse código está sendo digitado; FIDO2 autentica "alguém que está literalmente no site certo".</p>
 <div class="xp-example"><strong>Ataque de phishing em tempo real (contra TOTP)</strong>1. Vítima acessa site-falso.com (clone visual do banco)
 2. Digita usuário, senha e código TOTP no site falso

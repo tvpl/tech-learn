@@ -75,6 +75,7 @@
       this.btnFull = el("button", { class: "xp-icon", title: "Modo apresentação (f)", "aria-label": "Entrar no modo apresentação" }, "⛶");
       this.btnPeek = el("button", { class: "xp-icon", title: "Espiar diagrama (tecla v)", "aria-label": "Mostrar diagrama sem os balões", "aria-pressed": "false" }, "👁️");
       this.btnOpacity = el("button", { class: "xp-icon", title: "Transparência do balão", "aria-label": "Ajustar transparência do balão", "aria-expanded": "false" }, "🎚️");
+      this.btnRead = el("button", { class: "xp-icon", title: "Modo leitura (tecla r)", "aria-label": "Abrir modo leitura com todas as cenas", "aria-expanded": "false" }, "📖");
       this.btnHelp = el("button", { class: "xp-icon", title: "Atalhos de teclado (?)", "aria-label": "Mostrar atalhos de teclado" }, "⌨️");
       const home = el("a", { class: "xp-home", href: this.d.homeHref || "../index.html" }, "↩ Todos");
       this.btnTheme.addEventListener("click", () => this._toggleTheme());
@@ -83,8 +84,9 @@
       this.btnFull.addEventListener("click", () => this._togglePresent());
       this.btnPeek.addEventListener("click", () => this._togglePeek());
       this.btnOpacity.addEventListener("click", () => this._toggleOpacity());
+      this.btnRead.addEventListener("click", () => this._toggleReading());
       this.btnHelp.addEventListener("click", () => this._toggleHelp());
-      tools.append(this.btnTheme, this.btnMap, this.btnLink, this.btnFull, this.btnPeek, this.btnOpacity, this.btnHelp, home);
+      tools.append(this.btnTheme, this.btnMap, this.btnLink, this.btnFull, this.btnPeek, this.btnOpacity, this.btnRead, this.btnHelp, home);
       head.appendChild(tools);
       this.root.appendChild(head);
       this._buildOpacityPanel(head);
@@ -170,6 +172,7 @@
         if (e.key === "Escape" && this.root.classList.contains("show-help")) { this._toggleHelp(false); return; }
         if (e.key === "Escape" && this.root.classList.contains("show-opacity")) { this._toggleOpacity(false); return; }
         if (e.key === "Escape" && this.root.classList.contains("show-deep")) { this._toggleDeep(false); return; }
+        if (e.key === "Escape" && this.root.classList.contains("show-reading")) { this._toggleReading(false); return; }
         if (e.key === "ArrowRight") this.next();
         else if (e.key === "ArrowLeft") this.prev();
         else if (e.key === " ") { e.preventDefault(); this.togglePlay(); }
@@ -177,6 +180,7 @@
         else if (e.key === "m") this._toggleMinimap();
         else if (e.key === "d") this._toggleDebug();
         else if (e.key === "v") this._togglePeek();
+        else if (e.key === "r") this._toggleReading();
         else if (e.key === "[") this._nudgeBalloonAlpha(-0.05);
         else if (e.key === "]") this._nudgeBalloonAlpha(0.05);
         else if (e.key === "?" || e.key === "h") this._toggleHelp();
@@ -868,6 +872,7 @@
         ["m", "Minimapa"],
         ["d", "Modo debug (grade + ids)"],
         ["v", "Espiar diagrama (esconder balões)"],
+        ["r", "Modo leitura (recap de todas as cenas)"],
         ["[ ]", "Diminuir / aumentar transparência do balão"],
         ["+ −", "Zoom; arraste para mover"],
         ["0", "Resetar zoom"],
@@ -924,6 +929,59 @@
       this.root.classList.toggle("show-deep", on);
       this.deep.setAttribute("aria-hidden", on ? "false" : "true");
       if (on) this.deep.querySelector(".xp-deep-close")?.focus();
+    }
+
+    /* ---- modo leitura: recap de todas as cenas, base p/ imprimir/exportar */
+    _buildReadingPanel() {
+      const overlay = el("div", { class: "xp-reading", role: "dialog", "aria-modal": "true",
+        "aria-label": "Modo leitura", "aria-hidden": "true" });
+      const card = el("div", { class: "xp-reading-card" });
+      const head = el("div", { class: "xp-reading-head" });
+      head.appendChild(el("h2", null, this.d.title || "Modo leitura"));
+      const actions = el("div", { class: "xp-reading-actions" });
+      const printBtn = el("button", { class: "xp-btn" }, "🖨️ Imprimir / Exportar PDF");
+      printBtn.addEventListener("click", () => window.print());
+      const close = el("button", { class: "xp-btn xp-reading-close" }, "Fechar");
+      close.addEventListener("click", () => this._toggleReading(false));
+      actions.append(printBtn, close);
+      head.appendChild(actions);
+      const body = el("div", { class: "xp-reading-body" });
+      this.steps.forEach((s, i) => {
+        const sec = el("section", { class: "xp-reading-scene" });
+        sec.appendChild(el("h3", null, `${i + 1}. ${s.title || `Etapa ${i + 1}`}`));
+        const b = s.balloon || {};
+        if (b.text) sec.appendChild(el("p", null, b.text));
+        if (b.why) sec.appendChild(el("div", { class: "xp-why" }, b.why));
+        if (b.deep) sec.appendChild(el("div", { class: "xp-reading-deep" }, b.deep));
+        if (s.quiz) {
+          const q = s.quiz;
+          const qw = el("div", { class: "xp-reading-quiz" });
+          qw.appendChild(el("p", { class: "xp-reading-quiz-q" }, `❓ ${q.question}`));
+          const ol = el("ol");
+          (q.options || []).forEach((opt, oi) => {
+            ol.appendChild(el("li", { class: oi === q.answer ? "is-correct" : "" }, opt));
+          });
+          qw.appendChild(ol);
+          if (q.explain) qw.appendChild(el("p", { class: "xp-reading-quiz-explain" }, q.explain));
+          sec.appendChild(qw);
+        }
+        body.appendChild(sec);
+      });
+      card.append(head, body);
+      overlay.appendChild(card);
+      // clique fora do cartão fecha
+      overlay.addEventListener("click", (e) => { if (e.target === overlay) this._toggleReading(false); });
+      this.reading = overlay;
+      this.root.appendChild(overlay);
+    }
+    _toggleReading(force) {
+      if (!this.reading) this._buildReadingPanel();
+      const on = force != null ? force : !this.root.classList.contains("show-reading");
+      this.root.classList.toggle("show-reading", on);
+      this.reading.setAttribute("aria-hidden", on ? "false" : "true");
+      this.btnRead?.setAttribute("aria-expanded", String(on));
+      if (on) this.reading.querySelector(".xp-reading-close")?.focus();
+      else this.btnRead?.focus();
     }
 
     /* ---- autoplay + barra de tempo da cena ----------------------------- */

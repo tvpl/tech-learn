@@ -130,6 +130,20 @@
     .track a:hover { color: var(--accent); border-color: var(--accent); }
     .track-arrow { color: var(--muted); font-size: 12px; }
     @media (max-width: 620px) { .track-name { min-width: 100%; margin-bottom: 4px; } }
+
+    /* Progress banner: continuar de onde parei + contador */
+    #progress-banner {
+      display: none; align-items: center; justify-content: center; gap: 14px;
+      flex-wrap: wrap; margin: 0 0 24px; font-size: 13.5px; color: var(--ink-soft);
+    }
+    #progress-banner.has-data { display: flex; }
+    #progress-banner .continue-link {
+      color: var(--ink); text-decoration: none; font-weight: 600;
+      background: var(--panel-2); border: 1px solid var(--line); border-radius: 999px;
+      padding: 7px 16px; transition: border-color var(--t-fast) var(--ease);
+    }
+    #progress-banner .continue-link:hover { border-color: var(--accent); }
+    #progress-banner .count { color: var(--muted); }
   </style>
 </head>
 <body>
@@ -142,6 +156,11 @@
       <h1>🧠 tech-learn</h1>
       <p class="lead">Diagramas interativos que explicam conceitos de tecnologia passo a passo, com animação e balões — construídos sobre um motor reutilizável.</p>
     </header>
+
+    <div id="progress-banner">
+      <a class="continue-link" id="continue-link" href="#">▶ Continuar: <span id="continue-title"></span> →</a>
+      <span class="count" id="visited-count"></span>
+    </div>
 
     <div class="search-wrap">
       <input id="search" type="search" placeholder="🔍  Buscar explicador..." autocomplete="off" aria-label="Buscar explicador" />
@@ -526,11 +545,33 @@
         localStorage.setItem(VISITED_KEY, JSON.stringify([...v]));
       }
       const visited = getVisited();
+      const LAST_KEY = 'xp-last-visited';
       document.querySelectorAll('.card').forEach(card => {
         const href = card.getAttribute('href');
         if (href && visited.has(href)) card.classList.add('visited');
-        card.addEventListener('click', () => markVisited(href));
+        card.addEventListener('click', () => {
+          markVisited(href);
+          const title = card.querySelector('h3')?.textContent.replace(/\s*→\s*$/, '') || href;
+          try { localStorage.setItem(LAST_KEY, JSON.stringify({ href, title })); } catch {}
+        });
       });
+
+      // ── Banner: continuar de onde parei + contador de visitados ──────────
+      const banner = document.getElementById('progress-banner');
+      const totalCards = document.querySelectorAll('.card').length;
+      const visitedCount = visited.size;
+      let last = null;
+      try { last = JSON.parse(localStorage.getItem(LAST_KEY) || 'null'); } catch {}
+      if (last && last.href) {
+        document.getElementById('continue-link').href = last.href;
+        document.getElementById('continue-title').textContent = last.title;
+        document.getElementById('visited-count').textContent = `${visitedCount}/${totalCards} explicadores visitados`;
+        banner.classList.add('has-data');
+      } else if (visitedCount > 0) {
+        document.getElementById('continue-link').remove();
+        document.getElementById('visited-count').textContent = `${visitedCount}/${totalCards} explicadores visitados`;
+        banner.classList.add('has-data');
+      }
 
       // ── Search + nível: filtro combinado ────────────────────────────────
       const search = document.getElementById('search');

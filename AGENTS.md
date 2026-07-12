@@ -93,7 +93,8 @@ minimapa, **zoom/pan** (roda/pinça/teclado `+ - 0`, arrasto) e **swipe** no toq
 **retomar** última cena (localStorage), **modo debug** (tecla `d`: grade + ids),
 **quiz** (`step.quiz`, lembra a resposta na sessão), **glossário** (`<span
 class="xp-term" data-tip="...">`), **painel "Saiba mais"** (`balloon.deep`/
-`deepTitle`, ver 3.6.1), teclado (← → espaço f m d v [ ] + − 0), `aria-live`,
+`deepTitle`, ver 3.6.1), **modo leitura** (tecla `r`, ver 3.6.2), teclado
+(← → espaço f m d v r [ ] + − 0), `aria-live`,
 `prefers-reduced-motion`, validador que avisa no console sobre ids inexistentes,
 reposicionamento do balão no `resize` da janela, e o "próximos explicadores"
 injetado por `engine/related.js` (mapa de relações por página, independente do
@@ -121,8 +122,22 @@ Se `step.balloon.deep` (HTML) estiver presente, o balão ganha um botão
 comparações e detalhes que não cabem no balão principal (`text`/`why`), sem
 inflar o balão em si. Classes utilitárias disponíveis dentro do `deep`:
 `.xp-example` (bloco mono, `<strong>` inicial vira rótulo), `.xp-good`/`.xp-bad`
-(comparações "prefira/evite"), além de `h4`/`ul`/`code` normais. Veja
+(comparações "prefira/evite"), além de `h4`/`ul`/`code`/`img` normais. Veja
 `explainers/prompt-eng.data.js` como referência de tom e estrutura.
+
+#### 3.6.2 Modo leitura (recap / ler tudo / imprimir)
+`_buildReadingPanel` (chamado sob demanda, não no `mount()`) monta um artigo
+com **todas** as cenas — construído a partir de `this.steps`, sem precisar de
+dado novo no `.data.js`: título, `text`, `why`, `deep` (se houver) e, se a
+cena tiver `quiz`, pergunta + opções + resposta correta + `explain`. Overlay
+`.xp-reading`, alternado por `_toggleReading` (classe `show-reading`), botão
+📖 no cabeçalho ou tecla `r`, fecha com Esc/clique fora igual aos outros
+overlays. O botão "Imprimir/Exportar PDF" dentro do painel só chama
+`window.print()` — o `@media print` em `explainer.css` esconde todo o resto
+de `.xp-app` e tira `.xp-reading` do fluxo do CSS Grid via `position:
+absolute` (⚠️ **não** use `position: static` aqui — `.xp-app` é
+`display: grid`, e um filho `static` vira item de grid e é espremido numa
+coluna, foi um bug real durante o desenvolvimento).
 
 ### 3.7 Tipos (autocomplete sem TypeScript)
 `engine/explainer.types.js` traz `@typedef`s do contrato. Comece um `.data.js` com

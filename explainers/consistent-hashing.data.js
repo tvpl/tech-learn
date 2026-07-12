@@ -263,7 +263,7 @@ Só as chaves entre C e D (270°→340°) migram para D.</div>
       highlight: ['rep_bg'],
       balloon: {
         anchor: 'rep_bg', placement: 'left',
-        text: 'Para replicação com fator 3: a chave é copiada para os **próximos 3 nós** no ring. Se o nó primário falhar, as réplicas assumem sem reconfiguração. Quorum R+W > N garante consistência.',
+        text: 'Para replicação com fator 3: a chave é copiada para os <strong>próximos 3 nós</strong> no ring. Se o nó primário falhar, as réplicas assumem sem reconfiguração. Quorum R+W > N garante consistência.',
         deep: `<p>A réplica não precisa de nenhuma estrutura extra — é só continuar andando clockwise a partir do nó primário e pegar os próximos N-1 nós <em>distintos</em> (pulando vnodes do mesmo nó físico).</p>
 <div class="xp-example"><strong>Replication factor 3</strong>key → Node B (primary)
               → Node C (replica 1)
@@ -279,7 +279,7 @@ Só as chaves entre C e D (270°→340°) migram para D.</div>
              'rep_bg', 'rep_title', 'r1', 'r3'],
       balloon: {
         anchor: 'con_bg', placement: 'left',
-        text: '**Cassandra & DynamoDB**: particionamento + replicação. **Redis Cluster**: 16384 hash slots distribuídos. **CDNs (Akamai, Fastly)**: roteamento de requisições para edge servers. **Memcached**: balanceamento de cache.',
+        text: '<strong>Cassandra & DynamoDB</strong>: particionamento + replicação. <strong>Redis Cluster</strong>: 16384 hash slots distribuídos. <strong>CDNs (Akamai, Fastly)</strong>: roteamento de requisições para edge servers. <strong>Memcached</strong>: balanceamento de cache.',
         deep: `<p>Apesar de partirem do mesmo princípio, cada sistema adapta o hash ring ao seu contexto: o Redis Cluster, por exemplo, não usa um ring contínuo — usa 16.384 "hash slots" fixos, distribuídos entre os nós, o que simplifica resharding manual sem perder a ideia central de remapeamento mínimo.</p>
 <div class="xp-example"><strong>Redis Cluster</strong>slot = CRC16(key) % 16384
 Cada nó é dono de um intervalo de slots (ex: 0–5460)</div>

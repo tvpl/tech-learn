@@ -44,6 +44,10 @@ dados. Isso é a prova de que a estrutura se reaproveita.
 - 🔎 **"Saiba mais"**: nas cenas com conteúdo mais denso, um botão no balão abre
   um painel com exemplos, comparações e detalhes extras — para quem quer se
   aprofundar sem poluir o balão principal.
+- 📖 **Modo leitura** (botão no cabeçalho ou tecla `r`): compila todas as
+  cenas — texto, "por quê" e aprofundamento, incluindo quiz com resposta —
+  num artigo rolável, para ler tudo direto ou revisar no final. De lá dá
+  para **imprimir/exportar em PDF** (🖨️, usa o diálogo nativo do navegador).
 - 🫥 **Balões translúcidos e arrastáveis**: o fundo do balão é semitransparente
   (efeito vidro fosco) para não esconder o diagrama atrás dele, e dá para
   arrastá-lo pelo título (segure e mova) quando ele ainda assim atrapalhar a
@@ -82,6 +86,7 @@ o índice lateral de etapas, ou o teclado:
 | **+ / − / 0** | zoom: aproxima / afasta / reseta |
 | **d** | modo debug (grade de coordenadas + ids) — ajuda a posicionar elementos |
 | **v** | espiar diagrama (esconde os balões sem sair da cena) |
+| **r** | modo leitura (recap de todas as cenas; de lá dá para imprimir/exportar PDF) |
 | **[ / ]** | diminui / aumenta a transparência do balão |
 | **? / h** | mostra os atalhos de teclado (Esc fecha) |
 
@@ -90,9 +95,13 @@ reseta; segure o **título do balão** para arrastá-lo (duplo-clique nele recol
 lugar) e clique no ▾ pra recolher/expandir. No **toque**: *swipe* horizontal troca
 de cena, pinça dá zoom e arrastar faz *pan*. No cabeçalho há botões para **tema**
 (🌓), **minimapa** (🗺️), **copiar link da cena** (🔗), **apresentação** (⛶),
-**espiar diagrama** (👁️), **opacidade do balão** (🎚️) e **atalhos** (⌨️). A última
-cena vista é
-**retomada** ao reabrir.
+**espiar diagrama** (👁️), **opacidade do balão** (🎚️), **modo leitura** (📖) e
+**atalhos** (⌨️). A última cena vista é **retomada** ao reabrir.
+
+Na home (`index.html`) dá para **filtrar por nível** (Iniciante/Intermediário/
+Avançado, combinado com a busca por texto) e, depois de visitar pelo menos um
+explicador, aparece um atalho **"Continuar de onde parei"** com o contador de
+quantos você já visitou.
 
 ## 🧪 Testes
 
@@ -241,6 +250,10 @@ livremente `<h4>`, `<ul>/<li>`, `<code>` e as classes prontas:
 <div class="xp-good">Prefira isto…</div>
 <div class="xp-bad">Evite isto…</div>
 ```
+
+`<img src="...">` também é suportado (responsivo, com borda arredondada) — tanto
+no "Saiba mais" quanto no modo leitura — mas nenhum explicador usa imagem hoje;
+é só a base técnica para quem quiser usar no futuro.
 
 Qualquer lista (`show`, `hide`, `highlight`…) aceita `"@nome"` para expandir um
 **grupo** de elementos de uma vez — ex.: `show: ["@tokens"]`.

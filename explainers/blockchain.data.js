@@ -164,7 +164,7 @@
       show: ['chain_title', 'blk0', 'blk1', 'blk2', 'blk3', 'ch0', 'ch1', 'ch2', 'chl0', 'chl1', 'chl2'],
       balloon: {
         anchor: 'blk2', placement: 'bottom',
-        text: 'Milhares de nós ao redor do mundo têm **cópia idêntica** da cadeia. Cada um valida independentemente toda nova transação e bloco. Para fraudar, precisaria enganar a maioria dos nós.',
+        text: 'Milhares de nós ao redor do mundo têm <strong>cópia idêntica</strong> da cadeia. Cada um valida independentemente toda nova transação e bloco. Para fraudar, precisaria enganar a maioria dos nós.',
         deep: `<p>Cada nó "completo" (full node) baixa e valida a cadeia inteira desde o bloco genesis — não confia em ninguém, apenas recalcula os hashes e reexecuta as regras de consenso localmente. É isso que torna a rede "trustless": você não precisa confiar em nenhum nó específico, só no protocolo.</p>
 <div class="xp-example"><strong>Validação local de um nó</strong>1. Recebe bloco novo via P2P
 2. Verifica: hash do bloco &lt; alvo de dificuldade?
@@ -203,7 +203,7 @@ root = hash(h12+h34)</div>
       highlight: ['blk2', 'blk3', 'immut_bg'],
       balloon: {
         anchor: 'immut_lbl', placement: 'top',
-        text: 'O `hash` do bloco 1 vira o `prev_hash` do bloco 2. Se qualquer campo do bloco 2 mudar, seu hash muda — e o `prev_hash` do bloco 3 fica inconsistente. A cadeia é **imutável retroativamente**.',
+        text: 'O `hash` do bloco 1 vira o `prev_hash` do bloco 2. Se qualquer campo do bloco 2 mudar, seu hash muda — e o `prev_hash` do bloco 3 fica inconsistente. A cadeia é <strong>imutável retroativamente</strong>.',
         why: 'Para reescrever o bloco 2, precisaria re-minerar 2, 3, 4... e superar o poder computacional de toda a rede.',
         deep: `<p>"Imutável retroativamente" não significa impossível — significa <em>caro o suficiente para ser inviável</em>. Reescrever o bloco 2 exige reminerar o bloco 2 (achar um novo nonce válido) <strong>e</strong> todos os blocos depois dele, porque cada um referencia o hash do anterior.</p>
 <div class="xp-example"><strong>Custo de reescrever o histórico</strong>Cadeia com 100 blocos após o bloco alvo →
@@ -249,7 +249,7 @@ nova_dificuldade = dificuldade_atual × (20160 / 16000)</div>
       highlight: ['con_bg'],
       balloon: {
         anchor: 'con_bg', placement: 'left',
-        text: 'Quando dois nós mineram simultaneamente, há um fork temporário. A rede adota a cadeia com **mais trabalho acumulado** (geralmente a mais longa). Forks curtos se resolvem em 1-2 blocos.',
+        text: 'Quando dois nós mineram simultaneamente, há um fork temporário. A rede adota a cadeia com <strong>mais trabalho acumulado</strong> (geralmente a mais longa). Forks curtos se resolvem em 1-2 blocos.',
         why: 'Ataque 51%: se um grupo controla >50% do hashrate, pode criar uma cadeia alternativa mais rápida e revisar transações recentes — extremamente caro em Bitcoin.',
         deep: `<p>"Mais longa" é uma simplificação — a regra exata é a cadeia com <strong>mais trabalho acumulado</strong> (soma da dificuldade de cada bloco), que normalmente coincide com a mais longa. Forks acontecem quando dois mineradores encontram um bloco válido quase ao mesmo tempo; a rede segue as duas cadeias temporariamente até o próximo bloco desempatar.</p>
 <div class="xp-bad"><strong>Ataque 51%</strong>Atacante com &gt;50% do hashrate mina uma cadeia alternativa em segredo, mais longa que a pública, e a libera de uma vez — a rede descarta a cadeia "oficial" e adota a do atacante (reorg).</div>
@@ -272,7 +272,7 @@ Tx B: fee 5 sat/vByte  → pode esperar horas em período de alta demanda</div>
       show: ['con_bg', 'con_title', 'con4', 'con5', 'con6', 'con7'],
       balloon: {
         anchor: 'con_bg', placement: 'right',
-        text: '**PoW** (Bitcoin): computacionalmente intenso, muito seguro, sem finality imediata. **PoS** (Ethereum 2.0): validators apostam ETH como garantia — 99% menos energia, finality em 2 épocas. **BFT** (Hyperledger): permissioned, finality instantânea, ideal para consortium.',
+        text: '<strong>PoW</strong> (Bitcoin): computacionalmente intenso, muito seguro, sem finality imediata. <strong>PoS</strong> (Ethereum 2.0): validators apostam ETH como garantia — 99% menos energia, finality em 2 épocas. <strong>BFT</strong> (Hyperledger): permissioned, finality instantânea, ideal para consortium.',
         deep: `<p>A escolha do mecanismo de consenso é um trade-off entre descentralização, segurança e desempenho. PoW prioriza descentralização e resistência a censura ao custo de energia; PoS troca parte dessa descentralização por eficiência; BFT sacrifica abertura (é permissioned) para ganhar finality instantânea.</p>
 <div class="xp-good"><strong>PoS: staking como garantia</strong>Validador deposita ETH como colateral. Se validar transações fraudulentas, perde parte do stake ("slashing") — o incentivo econômico substitui o custo computacional do PoW.</div>
 <p>BFT (Byzantine Fault Tolerance) funciona bem quando os validadores são conhecidos e permissionados (ex.: um consórcio de bancos) — não faz sentido em redes públicas abertas como Bitcoin ou Ethereum.</p>` },
