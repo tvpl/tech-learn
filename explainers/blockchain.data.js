@@ -155,7 +155,9 @@
       balloon: {
         anchor: 'blk1', placement: 'bottom',
         text: 'Como garantir que uma transação é válida sem confiar em um banco central? Blockchain resolve o double-spend com um ledger distribuído e imutável.',
-      },
+        deep: `<p>O "double-spend problem" é o desafio central que blockchain resolve: numa moeda puramente digital, um arquivo pode ser copiado infinitamente. Sem um livro-razão compartilhado e verificado, nada impede alguém de gastar o mesmo saldo duas vezes em transações simultâneas.</p>
+<div class="xp-bad"><strong>Sem blockchain</strong>Alice envia 1 BTC para Bob e, ao mesmo tempo, os mesmos 1 BTC para Carol — sem um consenso global, ambas as transações parecem válidas.</div>
+<div class="xp-good"><strong>Com blockchain</strong>A rede só aceita a primeira transação confirmada num bloco; a segunda é rejeitada por tentar gastar um saldo já consumido.</div>` },
     },
     {
       title: 'Ledger distribuído: todos os nós verificam',
@@ -163,7 +165,13 @@
       balloon: {
         anchor: 'blk2', placement: 'bottom',
         text: 'Milhares de nós ao redor do mundo têm **cópia idêntica** da cadeia. Cada um valida independentemente toda nova transação e bloco. Para fraudar, precisaria enganar a maioria dos nós.',
-      },
+        deep: `<p>Cada nó "completo" (full node) baixa e valida a cadeia inteira desde o bloco genesis — não confia em ninguém, apenas recalcula os hashes e reexecuta as regras de consenso localmente. É isso que torna a rede "trustless": você não precisa confiar em nenhum nó específico, só no protocolo.</p>
+<div class="xp-example"><strong>Validação local de um nó</strong>1. Recebe bloco novo via P2P
+2. Verifica: hash do bloco &lt; alvo de dificuldade?
+3. Verifica: todas as txs têm assinatura válida?
+4. Verifica: prev_hash bate com o topo da cadeia local?
+5. Se tudo ok → adiciona à própria cópia e propaga</div>
+<p>Nós "leves" (SPV), como carteiras mobile, não baixam a cadeia inteira — confiam em provas parciais (Merkle proofs) para validar apenas as transações que lhes interessam.</p>` },
     },
     {
       title: 'Anatomia de um bloco',
@@ -178,7 +186,12 @@
       balloon: {
         anchor: 'zoom_bg', placement: 'left',
         text: 'Cada bloco contém: `index`, `timestamp`, `txs[]`, `nonce`, `prev_hash` e o próprio `hash = SHA256(todos os campos)`. O `prev_hash` é o elo que cria a "cadeia".',
-      },
+        deep: `<p>O Merkle root resume milhares de transações num único hash de 32 bytes: as transações são agrupadas aos pares e hasheadas recursivamente até sobrar um único hash no topo da árvore. Isso permite provar que uma transação está num bloco sem baixar o bloco inteiro (Merkle proof).</p>
+<div class="xp-example"><strong>Montando o Merkle root (simplificado)</strong>h1 = hash(tx1), h2 = hash(tx2)
+h3 = hash(tx3), h4 = hash(tx4)
+h12 = hash(h1+h2), h34 = hash(h3+h4)
+root = hash(h12+h34)</div>
+<p>Se qualquer transação mudar, o hash dela muda, propagando até o root — o que também muda o <code>hash</code> do bloco inteiro, já que o root entra na fórmula do hash do bloco.</p>` },
     },
     {
       title: 'Encadeamento: prev_hash cria imutabilidade',
@@ -192,7 +205,10 @@
         anchor: 'immut_lbl', placement: 'top',
         text: 'O `hash` do bloco 1 vira o `prev_hash` do bloco 2. Se qualquer campo do bloco 2 mudar, seu hash muda — e o `prev_hash` do bloco 3 fica inconsistente. A cadeia é **imutável retroativamente**.',
         why: 'Para reescrever o bloco 2, precisaria re-minerar 2, 3, 4... e superar o poder computacional de toda a rede.',
-      },
+        deep: `<p>"Imutável retroativamente" não significa impossível — significa <em>caro o suficiente para ser inviável</em>. Reescrever o bloco 2 exige reminerar o bloco 2 (achar um novo nonce válido) <strong>e</strong> todos os blocos depois dele, porque cada um referencia o hash do anterior.</p>
+<div class="xp-example"><strong>Custo de reescrever o histórico</strong>Cadeia com 100 blocos após o bloco alvo →
+atacante precisa minerar 101 blocos MAIS RÁPIDO do que a rede honesta minera novos blocos no mesmo período.</div>
+<p>Por isso "6 confirmações" é considerado seguro no Bitcoin: depois de 6 blocos, reescrever a história exigiria mais poder computacional do que a rede honesta consegue gerar naquele intervalo — economicamente inviável.</p>` },
     },
     {
       title: 'Proof of Work: encontrar o nonce certo',
@@ -204,7 +220,14 @@
         anchor: 'mine_bg', placement: 'left',
         text: 'O hash precisa começar com N zeros: `0000ab2c3d...`. Para isso, o minerador testa bilhões de valores de `nonce` até encontrar um que satisfaça essa condição — puro brute-force intencional.',
         why: 'O custo computacional é a "prova de trabalho" — torna inviável reescrever a história.',
-      },
+        deep: `<p>O nonce não tem significado — é só um contador que o minerador incrementa até o hash resultante satisfazer a condição de dificuldade. Como SHA-256 é uma função de hash criptográfica, não existe atalho: a única forma de achar um nonce válido é tentar valores até acertar.</p>
+<div class="xp-example"><strong>Brute force simplificado</strong>nonce = 0
+while True:
+    h = sha256(header + nonce)
+    if h.startswith("0000"): break
+    nonce += 1
+# nonce = 83721, hash = 0000ab2c3d...</div>
+<p>Essa propriedade — fácil de <em>verificar</em>, difícil de <em>encontrar</em> — é o que torna PoW uma prova de trabalho real: qualquer nó confirma o resultado em microssegundos, mas produzi-lo exigiu bilhões de tentativas.</p>` },
     },
     {
       title: 'Mining: brute-force e dificuldade ajustável',
@@ -213,7 +236,11 @@
       balloon: {
         anchor: 'mine_bg', placement: 'right',
         text: 'A rede Bitcoin ajusta a dificuldade a cada 2016 blocos (~2 semanas) para manter ~10 min/bloco, independente de quantos mineradores entrarem na rede. Mais hashrate = dificuldade maior.',
-      },
+        deep: `<p>O ajuste de dificuldade compara o tempo real gasto para minerar os últimos 2016 blocos contra o alvo de ~10 min/bloco (20160 minutos no total). Se a rede minerou mais rápido que isso (mais hashrate entrou), a dificuldade sobe na mesma proporção — e vice-versa.</p>
+<div class="xp-example"><strong>Ajuste simplificado</strong>tempo_esperado = 2016 × 10min = 20160min
+tempo_real = 16000min (rede mais rápida)
+nova_dificuldade = dificuldade_atual × (20160 / 16000)</div>
+<p>Esse mecanismo de feedback é o que mantém o tempo de bloco estável mesmo com o hashrate global do Bitcoin variando por ordens de magnitude ao longo dos anos.</p>` },
     },
     {
       title: 'Consensus: longest chain wins',
@@ -224,7 +251,9 @@
         anchor: 'con_bg', placement: 'left',
         text: 'Quando dois nós mineram simultaneamente, há um fork temporário. A rede adota a cadeia com **mais trabalho acumulado** (geralmente a mais longa). Forks curtos se resolvem em 1-2 blocos.',
         why: 'Ataque 51%: se um grupo controla >50% do hashrate, pode criar uma cadeia alternativa mais rápida e revisar transações recentes — extremamente caro em Bitcoin.',
-      },
+        deep: `<p>"Mais longa" é uma simplificação — a regra exata é a cadeia com <strong>mais trabalho acumulado</strong> (soma da dificuldade de cada bloco), que normalmente coincide com a mais longa. Forks acontecem quando dois mineradores encontram um bloco válido quase ao mesmo tempo; a rede segue as duas cadeias temporariamente até o próximo bloco desempatar.</p>
+<div class="xp-bad"><strong>Ataque 51%</strong>Atacante com &gt;50% do hashrate mina uma cadeia alternativa em segredo, mais longa que a pública, e a libera de uma vez — a rede descarta a cadeia "oficial" e adota a do atacante (reorg).</div>
+<p>Esse ataque é teoricamente possível mas, em redes grandes como Bitcoin, exigiria um investimento em hardware e energia tão alto que geralmente não compensa financeiramente.</p>` },
     },
     {
       title: 'Ciclo de vida de uma transação',
@@ -233,7 +262,10 @@
       balloon: {
         anchor: 'mem_bg', placement: 'right',
         text: 'Tx assinada → broadcast P2P → Mempool → minerador seleciona (por fee) → bloco minerado → propagado → validado. 6 confirmações = ~60 min = irreversível na prática.',
-      },
+        deep: `<p>O mempool não é compartilhado de forma idêntica entre todos os nós — cada nó mantém sua própria fila de transações pendentes, e mineradores tipicamente priorizam por <strong>fee por byte</strong> (sat/vByte no Bitcoin), não pela ordem de chegada.</p>
+<div class="xp-example"><strong>Priorização por fee</strong>Tx A: fee 50 sat/vByte → minerada primeiro
+Tx B: fee 5 sat/vByte  → pode esperar horas em período de alta demanda</div>
+<p>Em momentos de congestionamento, usuários pagam fees mais altas para "furar a fila" — um leilão implícito pelo espaço limitado de cada bloco.</p>` },
     },
     {
       title: 'PoW vs PoS vs BFT',
@@ -241,7 +273,9 @@
       balloon: {
         anchor: 'con_bg', placement: 'right',
         text: '**PoW** (Bitcoin): computacionalmente intenso, muito seguro, sem finality imediata. **PoS** (Ethereum 2.0): validators apostam ETH como garantia — 99% menos energia, finality em 2 épocas. **BFT** (Hyperledger): permissioned, finality instantânea, ideal para consortium.',
-      },
+        deep: `<p>A escolha do mecanismo de consenso é um trade-off entre descentralização, segurança e desempenho. PoW prioriza descentralização e resistência a censura ao custo de energia; PoS troca parte dessa descentralização por eficiência; BFT sacrifica abertura (é permissioned) para ganhar finality instantânea.</p>
+<div class="xp-good"><strong>PoS: staking como garantia</strong>Validador deposita ETH como colateral. Se validar transações fraudulentas, perde parte do stake ("slashing") — o incentivo econômico substitui o custo computacional do PoW.</div>
+<p>BFT (Byzantine Fault Tolerance) funciona bem quando os validadores são conhecidos e permissionados (ex.: um consórcio de bancos) — não faz sentido em redes públicas abertas como Bitcoin ou Ethereum.</p>` },
     },
     {
       title: 'Smart Contracts: código autoexecutável no bloco',
@@ -251,7 +285,11 @@
       balloon: {
         anchor: 'sc_bg', placement: 'right',
         text: 'Smart contracts são programas armazenados no blockchain, executados deterministicamente por todos os nós. Quando condições são cumpridas, executam automaticamente — sem intermediário. EVM (Ethereum), Solana, etc.',
-      },
+        deep: `<p>Cada operação de um smart contract (armazenar dado, somar, chamar outro contrato) tem um custo fixo de "gas" — uma unidade que mede esforço computacional. O usuário define um gas price (quanto paga por unidade) e um gas limit (o máximo que aceita gastar); se a execução excede o limit, ela reverte, mas o gas já consumido não é devolvido.</p>
+<div class="xp-example"><strong>Exemplo de custo (Ethereum, valores ilustrativos)</strong>Transferência simples de ETH: 21000 gas
+Chamada a um contrato (ex: swap num DEX): 100000–300000 gas
+custo_total = gas_usado × gas_price</div>
+<p>Esse modelo evita loops infinitos travando a rede: se o gas acabar no meio da execução, o contrato simplesmente para (out-of-gas), independente de quão complexo era o código.</p>` },
     },
     {
       title: 'Quiz',

@@ -80,7 +80,11 @@
       highlight: ["reg_box"],
       balloon: { anchor: "reg_box", placement: "right",
         text: "Uma <strong>Skill</strong> é uma capacidade nomeada e descrita que o agente pode invocar. Ela encapsula uma ação (executar código, buscar na web, ler arquivo) com um contrato claro de input/output.",
-        why: "Skills são a ponte entre o raciocínio do LLM e a execução de ações no mundo real. Elas são mais ricas que tools MCP porque incluem lógica de trigger e podem ser compostas." },
+        why: "Skills são a ponte entre o raciocínio do LLM e a execução de ações no mundo real. Elas são mais ricas que tools MCP porque incluem lógica de trigger e podem ser compostas.",
+        deep: `<p>A diferença prática entre uma "skill" e uma tool MCP costuma estar na camada de abstração: uma skill pode encapsular lógica de decisão (quando usar, como validar o resultado) além da execução em si, enquanto uma tool MCP tende a ser uma função mais direta — ainda que os conceitos se sobreponham bastante entre frameworks diferentes.</p>
+<div class="xp-example"><strong>Contrato de uma skill</strong>input: { cmd: "pytest ./tests" }
+output: { stdout: "...", stderr: "", exit_code: 0 }</div>
+<p>O contrato de input/output é o que permite ao LLM usar a skill sem conhecer a implementação — ele só precisa saber o que mandar e o que esperar de volta, como uma interface bem definida em qualquer API.</p>` },
     },
     {
       title: "O Registry de Skills",
@@ -88,7 +92,11 @@
       highlight: ["sk_code", "sk_web"],
       balloon: { anchor: "sk_web", placement: "right",
         text: "O <strong>Skill Registry</strong> é o catálogo de capacidades do agente. Cada skill tem nome, descrição (para o LLM entender quando usar) e triggers (palavras-chave que ativam a escolha).",
-        why: "O registry é dinâmico: skills podem ser adicionadas, removidas ou desabilitadas sem mudar o modelo. Isso torna o agente extensível e configurável por domínio." },
+        why: "O registry é dinâmico: skills podem ser adicionadas, removidas ou desabilitadas sem mudar o modelo. Isso torna o agente extensível e configurável por domínio.",
+        deep: `<p>Manter o registry dinâmico (skills carregadas em runtime, não compiladas no código do agente) é o que permite habilitar/desabilitar capacidades por ambiente sem tocar no "cérebro" do agente — por exemplo, desabilitar a skill de envio de e-mail num ambiente de testes.</p>
+<div class="xp-example"><strong>Registry como configuração</strong>agent.skills = ["run-code", "web-search"]  // ambiente de dev
+agent.skills = ["run-code", "web-search", "notify", "code-review"]  // ambiente de produção</div>
+<p>Isso também é uma camada de segurança: um agente só pode fazer o que está no seu registry — se "delete_database" nunca foi registrada como skill, o LLM não tem como invocá-la, independente do que o prompt do usuário peça.</p>` },
       enter: (ctx) => {
         ["sk_code","sk_web","sk_file","sk_review","sk_notify"].forEach((id, i) => setTimeout(() => ctx.show(id), i * 100));
       },
@@ -99,7 +107,11 @@
       highlight: ["anat_trig", "anat_input", "anat_output"],
       balloon: { anchor: "anat_box", placement: "left",
         text: "Cada Skill tem 5 componentes: <strong>name</strong> (identificador único), <strong>description</strong> (texto que o LLM lê), <strong>trigger</strong> (palavras que ativam), <strong>input schema</strong> e <strong>output schema</strong>.",
-        why: "A description é o componente mais crítico: o LLM decide qual skill invocar lendo as descriptions e comparando com a tarefa. Uma boa description é concisa, específica e com exemplos de uso." },
+        why: "A description é o componente mais crítico: o LLM decide qual skill invocar lendo as descriptions e comparando com a tarefa. Uma boa description é concisa, específica e com exemplos de uso.",
+        deep: `<p>Vale notar o paralelo direto com <em>function calling</em>/tool use de APIs de LLM: name, description e schemas são exatamente o que a maioria das APIs de modelos exige para declarar uma ferramenta — "skill" é um conceito de mais alto nível construído sobre essa mesma base.</p>
+<div class="xp-good"><strong>Description bem escrita</strong>"Executa um comando de teste no diretório do projeto e retorna stdout/stderr/exit_code. Use quando o usuário pedir para rodar, testar ou verificar se o código passa nos testes."</div>
+<div class="xp-bad"><strong>Description ruim</strong>"Roda comandos" — não diz quando usar, nem o que esperar de volta, forçando o LLM a adivinhar.</div>
+<p>O input schema, tipicamente em JSON Schema, também documenta quais campos são opcionais (<code>timeout?</code>) — isso evita que o LLM precise inventar valores para parâmetros que nem são obrigatórios.</p>` },
       enter: (ctx) => {
         ["anat_name","anat_desc","anat_trig","anat_input","anat_output"].forEach((id, i) => setTimeout(() => ctx.show(id), i * 100));
       },
@@ -110,7 +122,11 @@
       highlight: ["llm_box", "sk_code"],
       balloon: { anchor: "llm_box", placement: "right",
         text: "Quando o usuário pede algo, o LLM analisa a mensagem e <strong>compara com os triggers</strong> de cada skill no registry. Ao detectar 'execute os testes', faz match com run-code (trigger: 'execute', 'run', 'test').",
-        why: "O trigger não é só pattern matching — o LLM faz match semântico usando as descriptions. Isso permite que 'rode os unit tests' acione run-code mesmo sem a palavra exata 'execute'." },
+        why: "O trigger não é só pattern matching — o LLM faz match semântico usando as descriptions. Isso permite que 'rode os unit tests' acione run-code mesmo sem a palavra exata 'execute'.",
+        deep: `<p>O termo "trigger" nesse diagrama é didático — na prática, a maioria dos frameworks de agente não faz correspondência literal de palavras-chave. O LLM lê todas as descriptions disponíveis e escolhe pela mesma capacidade de compreensão que usa para qualquer outra tarefa: entender a intenção por trás do pedido.</p>
+<div class="xp-example"><strong>Match semântico, não literal</strong>Trigger declarado: "execute / run / test"
+Pedido do usuário: "confirma que o build não quebrou?" → o LLM ainda escolhe run-code, mesmo sem nenhuma palavra do trigger aparecer literalmente.</div>
+<p>Isso significa que descriptions ambíguas entre skills diferentes são o principal risco: se duas skills têm descriptions parecidas, o LLM pode escolher a errada — testar o agente com pedidos variados (não só os "óbvios") ajuda a pegar essa ambiguidade cedo.</p>` },
       enter: (ctx) => { ctx.drawArrow("a_usr_llm"); },
     },
     {
@@ -119,7 +135,11 @@
       highlight: ["inv_box", "sk_code"],
       balloon: { anchor: "inv_box", placement: "right",
         text: "O LLM emite uma chamada de skill com o <strong>nome da skill e os argumentos</strong> preenchidos conforme o input schema: <code>run-code(cmd='pytest')</code>. O framework valida os args antes de executar.",
-        why: "Validar o input schema antes de executar evita que o LLM passe argumentos inválidos ao handler — o que causaria erros difíceis de diagnosticar no runtime." },
+        why: "Validar o input schema antes de executar evita que o LLM passe argumentos inválidos ao handler — o que causaria erros difíceis de diagnosticar no runtime.",
+        deep: `<p>Validar contra o schema antes de executar é o que separa um erro "barato" (rejeitado na borda, com mensagem clara) de um erro "caro" (o handler recebe um argumento inesperado, quebra no meio da execução e talvez deixe efeitos colaterais parciais).</p>
+<div class="xp-bad"><strong>Sem validação</strong>run-code(cmd=null) chega direto ao handler → exceção não tratada, possivelmente um processo travado.</div>
+<div class="xp-good"><strong>Com validação de schema</strong>run-code(cmd=null) é rejeitado antes de chamar o handler: "erro: campo 'cmd' é obrigatório e deve ser string" — o LLM recebe esse erro e pode tentar de novo com o argumento correto.</div>
+<p>Esse ciclo de "erro claro → LLM corrige → tenta de novo" é o que torna agentes resilientes a pequenos erros de geração de argumentos, sem precisar de intervenção humana.</p>` },
       enter: (ctx) => { ctx.drawArrow("a_llm_sk"); },
     },
     {
@@ -128,7 +148,11 @@
       highlight: ["exec_box"],
       balloon: { anchor: "exec_box", placement: "right",
         text: "O <strong>handler</strong> é a implementação real da skill: código que roda pytest, faz uma chamada de API, lê um arquivo. O handler é isolado do LLM e pode ser escrito em qualquer linguagem.",
-        why: "Separar handler da descrição é fundamental: o LLM não precisa saber como a skill é implementada — só o contrato (input/output). Isso permite trocar a implementação sem mudar o agente." },
+        why: "Separar handler da descrição é fundamental: o LLM não precisa saber como a skill é implementada — só o contrato (input/output). Isso permite trocar a implementação sem mudar o agente.",
+        deep: `<p>Isolar o handler do LLM tem um benefício de segurança importante: o handler pode aplicar suas próprias regras de negócio (permissões, rate limiting, sandboxing) <em>independente</em> do que o LLM "decidiu" — o LLM propõe, mas o handler ainda pode recusar.</p>
+<div class="xp-example"><strong>Handler com regra própria</strong>run-code recebe cmd="rm -rf /" do LLM
+Handler tem uma allowlist de comandos permitidos → rejeita antes de executar, mesmo que o LLM tenha "decidido" chamar isso.</div>
+<p>Essa camada de execução isolada (muitas vezes um processo separado ou sandbox) é uma das defesas mais eficazes contra um LLM comprometido por prompt injection tentando executar uma ação perigosa através de uma skill legítima.</p>` },
       enter: (ctx) => { ctx.drawArrow("a_inv_ex"); },
     },
     {
@@ -137,7 +161,11 @@
       highlight: ["res_box"],
       balloon: { anchor: "res_box", placement: "right",
         text: "O handler executa e retorna o resultado conforme o <strong>output schema</strong>: stdout, stderr, exit_code. O framework serializa e injeta como <code>tool_result</code> no próximo turno do LLM.",
-        why: "O LLM recebe o resultado e decide o próximo passo: responder ao usuário, invocar outra skill, ou pedir mais informações. O loop continua até a tarefa ser concluída." },
+        why: "O LLM recebe o resultado e decide o próximo passo: responder ao usuário, invocar outra skill, ou pedir mais informações. O loop continua até a tarefa ser concluída.",
+        deep: `<p>O formato do resultado importa tanto quanto o conteúdo: <code>exit_code: 0</code> é um sinal estruturado que o LLM pode usar para decidir automaticamente "os testes passaram, prossiga" sem precisar interpretar texto livre de log — reduz ambiguidade no próximo passo do agente.</p>
+<div class="xp-example"><strong>Resultado estruturado</strong>{ "stdout": "12 passed, 0 failed", "stderr": "", "exit_code": 0 }
+LLM: "Os testes passaram. Vou prosseguir com o commit."</div>
+<p>Esse padrão de "resultado estruturado → decisão do LLM → possível nova invocação" é o mesmo loop de ReAct/tool-use: o agente não tenta prever tudo de antemão, ele reage ao resultado real de cada ação antes de decidir a próxima.</p>` },
       enter: (ctx) => { ctx.drawArrow("a_ex_res"); },
     },
     {
@@ -147,7 +175,14 @@
       highlight: ["comp_sk1", "comp_sk2", "comp_sk3"],
       balloon: { anchor: "comp_box", placement: "left",
         text: "<strong>Skills compostas</strong> orquestram sub-skills internamente. Ex.: code-review primeiro lê o arquivo (read-write-file) e depois faz lint (run-code). O LLM invoca só a skill de alto nível.",
-        why: "Composição cria uma hierarquia de abstração: o LLM raciocina em alto nível (review my PR) e a skill cuida dos detalhes (ler arquivos, rodar lint, formatar resultado). Reduz a carga cognitiva do LLM." },
+        why: "Composição cria uma hierarquia de abstração: o LLM raciocina em alto nível (review my PR) e a skill cuida dos detalhes (ler arquivos, rodar lint, formatar resultado). Reduz a carga cognitiva do LLM.",
+        deep: `<p>Composição reduz a carga cognitiva do LLM orquestrador: em vez de ter que decidir "primeiro leio o arquivo, depois rodo o lint, depois formato o resultado" a cada chamada, ele invoca uma única skill de alto nível (code-review) que já sabe orquestrar essa sequência internamente.</p>
+<div class="xp-example"><strong>Skill composta em pseudo-código</strong>function code-review(path) {
+  const content = read-write-file.read(path)
+  const lint = run-code.lint(content)
+  return format_review(content, lint)
+}</div>
+<p>O trade-off é flexibilidade: uma skill composta é mais fácil de usar mas menos ajustável — se o LLM precisar de um passo intermediário diferente, pode precisar cair para as sub-skills individuais em vez da composta.</p>` },
       enter: (ctx) => {
         ["comp_sk1"].forEach(id => ctx.show(id));
         setTimeout(() => { ctx.drawArrow("a_comp1"); ctx.show("comp_sk2"); }, 200);
@@ -159,7 +194,10 @@
       highlight: ["sk_code", "sk_web", "sk_notify"],
       balloon: { anchor: "sk_notify", placement: "right",
         text: "<strong>Built-in</strong>: skills que vêm com o framework (web-search, run-code, read-file). <strong>Customizadas</strong>: skills específicas do seu domínio (consultar-CRM, gerar-relatorio, aprovar-pedido). O registry é extensível.",
-        why: "Skills customizadas são onde o valor de negócio mora. Elas encapsulam processos internos da empresa e permitem que o agente execute tarefas específicas do domínio sem o LLM precisar conhecer detalhes de implementação." },
+        why: "Skills customizadas são onde o valor de negócio mora. Elas encapsulam processos internos da empresa e permitem que o agente execute tarefas específicas do domínio sem o LLM precisar conhecer detalhes de implementação.",
+        deep: `<p>A fronteira entre built-in e customizada normalmente reflete o quão genérica é a capacidade: ler um arquivo é útil para qualquer agente (built-in); consultar o CRM interno da empresa só faz sentido para aquele agente específico (customizada).</p>
+<div class="xp-example"><strong>Skill customizada de domínio</strong>{ name: "consultar-crm", description: "Busca dados de um cliente pelo CPF ou email no CRM interno. Retorna nome, plano contratado e histórico de tickets." }</div>
+<p>Skills customizadas costumam ser onde vazamentos de segurança acontecem, porque conectam o agente a sistemas internos sensíveis — vale aplicar o mesmo cuidado de guardrails e permissões que se aplicaria a qualquer integração com dados de produção.</p>` },
     },
     {
       title: "Quiz rápido",

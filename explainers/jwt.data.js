@@ -122,8 +122,13 @@
       balloon: {
         anchor: { x: BX + BW/2, y: BY + 145 }, placement: "right",
         text: "HTTP é stateless. Sem state, como o servidor sabe quem fez a request? Opção 1: session cookie (banco consulta a cada request). Opção 2: <strong>JWT</strong> — o token carrega as informações e prova que são autênticas.",
-        why: "JWT transfere o estado para o cliente de forma segura. O servidor verifica a assinatura criptográfica — sem consultar banco para cada request."
-      }
+        why: "JWT transfere o estado para o cliente de forma segura. O servidor verifica a assinatura criptográfica — sem consultar banco para cada request.",
+        deep: `<p>Antes de JWT virar popular, a alternativa dominante era session cookie: o servidor guarda o estado (quem é o usuário) num banco/cache e devolve ao cliente apenas um ID opaco. JWT inverte essa lógica — o próprio token carrega as claims, assinadas, então o servidor não precisa perguntar a ninguém "quem é esse token?".</p>
+<div class="xp-example"><strong>Sessão tradicional</strong>Cookie: sid=a1b2c3
+Servidor: SELECT * FROM sessions WHERE id='a1b2c3'  -- 1 lookup por request</div>
+<div class="xp-example"><strong>JWT</strong>Authorization: Bearer eyJhbGci...
+Servidor: verify(token, publicKey)  -- 0 lookups, tudo já está no token</div>
+<p>O trade-off: JWT elimina o lookup, mas dificulta revogar um token antes de expirar — ele é "verdade" enquanto a assinatura for válida.</p>` },
     },
     {
       title: "JWT = 3 Partes Separadas por Ponto",
@@ -131,8 +136,12 @@
       balloon: {
         anchor: { x: BX + BW/2, y: BY + 145 }, placement: "right",
         text: "Um JWT é: <strong>base64url(header)</strong> + <strong>.</strong> + <strong>base64url(payload)</strong> + <strong>.</strong> + <strong>signature</strong>. Tudo numa única string compacta — pode ir em headers, cookies, URL.",
-        why: "Base64url (sem +, / e =) é safe para URL e headers HTTP. O ponto como separador é simples de parsear — nenhuma biblioteca especial necessária."
-      }
+        why: "Base64url (sem +, / e =) é safe para URL e headers HTTP. O ponto como separador é simples de parsear — nenhuma biblioteca especial necessária.",
+        deep: `<p>Cada segmento é codificado em Base64url isoladamente, não o token inteiro — por isso dá para inspecionar o header e o payload sem sequer ter a chave de verificação (em jwt.io, por exemplo). Só a signature exige a chave para ser calculada ou validada.</p>
+<div class="xp-example"><strong>Token completo (compacto)</strong>eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.
+eyJzdWIiOiJ1c2VyXzQyIiwiZXhwIjoxNzIwMDAwOTAwfQ.
+SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c</div>
+<p>Base64url difere do Base64 padrão em dois caracteres (<code>-</code> e <code>_</code> em vez de <code>+</code> e <code>/</code>) e não usa padding <code>=</code> — isso evita que o token precise de escaping ao viajar em URLs e headers HTTP.</p>` },
     },
     {
       title: "Header: Algoritmo e Tipo",
@@ -142,8 +151,12 @@
       balloon: {
         anchor: { x: BX + BW/2, y: BY + 250 }, placement: "right",
         text: "<code>alg</code>: o algoritmo de assinatura (<code>HS256</code>, <code>RS256</code>, <code>ES256</code>). <code>typ</code>: sempre <code>JWT</code>. Verifique o <code>alg</code> ao validar — nunca aceite <code>alg:none</code>.",
-        why: "Ataques 'alg:none' tentam forjar tokens sem assinatura. Implmentações devem exigir explicitamente o algoritmo esperado, nunca aceitar o que o token declara às cegas."
-      }
+        why: "Ataques 'alg:none' tentam forjar tokens sem assinatura. Implmentações devem exigir explicitamente o algoritmo esperado, nunca aceitar o que o token declara às cegas.",
+        deep: `<p>O ataque "alg:none" é um dos mais conhecidos contra implementações ingênuas de JWT: se a biblioteca de verificação simplesmente confia no <code>alg</code> declarado pelo próprio token, um atacante pode reescrever o header para <code>{"alg":"none"}</code>, remover a signature, e o servidor aceita o token sem checar nada.</p>
+<div class="xp-bad"><strong>Verificação vulnerável</strong>const alg = jwt.header.alg; // lê do token
+verify(token, key, { algorithm: alg }); // atacante controla "alg"</div>
+<div class="xp-good"><strong>Verificação segura</strong>verify(token, publicKey, { algorithms: ["RS256"] }); // servidor fixa o algoritmo esperado, ignora o que o token declara</div>
+<p>Outra variante ataca bibliotecas que aceitam tanto HS256 quanto RS256: o atacante usa a public key RS256 (conhecida publicamente) como se fosse o secret de um HS256 forjado.</p>` },
     },
     {
       title: "Payload: Claims do Token",
@@ -154,8 +167,11 @@
       balloon: {
         anchor: { x: BX + BW/2, y: BY + 440 }, placement: "right",
         text: "<strong>iss</strong>: quem emitiu. <strong>sub</strong>: sujeito (user_id). <strong>aud</strong>: audiência (para qual API). <strong>exp</strong>: expiração Unix timestamp. <strong>iat</strong>: issued at. <strong>jti</strong>: ID único do token.",
-        why: "⚠️ O payload é apenas base64 — não criptografado. Qualquer um pode decodificar e ler. Nunca coloque dados sensíveis (senha, CPF) no payload. Use JWE se precisar criptografar."
-      },
+        why: "⚠️ O payload é apenas base64 — não criptografado. Qualquer um pode decodificar e ler. Nunca coloque dados sensíveis (senha, CPF) no payload. Use JWE se precisar criptografar.",
+        deep: `<p>As claims "registered" (iss, sub, aud, exp, iat, jti) têm significado padronizado pelo RFC 7519, e a maioria das bibliotecas já valida automaticamente exp/aud/iss. Claims customizadas (como <code>role</code>) são livres, mas devem ser tratadas como dados públicos — qualquer um com o token consegue lê-las.</p>
+<div class="xp-bad"><strong>Payload perigoso</strong>{ "sub": "user_42", "cpf": "123.456.789-00", "senha_hash": "$2b$..." }</div>
+<div class="xp-good"><strong>Payload adequado</strong>{ "sub": "user_42", "role": "admin", "exp": 1720000900 }</div>
+<p>Se realmente precisar transportar dados sensíveis dentro de um token, use JWE (JSON Web Encryption) em vez de JWT/JWS puro — JWE cifra o payload, não só assina.</p>` },
       enter(ctx) {
         ["pay_1","pay_2","pay_3","pay_4","pay_5","pay_6","pay_7","pay_warn"].forEach((id,k) =>
           setTimeout(() => ctx.show(id), k * 120));

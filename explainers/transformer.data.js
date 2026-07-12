@@ -434,7 +434,13 @@ P("carpete") = 0.08
       title: "Atenção causal (no decoder)",
       balloon: { anchor: "cm_box", placement: "left",
         text: "Em modelos geradores (decoder, estilo GPT), a self-attention é <span class=\"xp-term\" tabindex=\"0\" data-tip=\"As posições futuras recebem -infinito antes do softmax, então seu peso vira zero.\">mascarada</span>: cada posição só atende às <strong>anteriores</strong> e a si mesma (triângulo inferior).",
-        why: "Durante a geração, o modelo não pode “espiar” a palavra que ainda vai prever. A máscara triangular garante isso." },
+        why: "Durante a geração, o modelo não pode “espiar” a palavra que ainda vai prever. A máscara triangular garante isso.",
+        deep: `<p>Na prática, a máscara soma <code>-infinito</code> aos scores Q·K das posições futuras <em>antes</em> do softmax — e como <code>e^(-infinito) = 0</code>, essas posições recebem peso exatamente zero depois do softmax, sem precisar de nenhuma lógica condicional especial.</p>
+<div class="xp-example"><strong>Matriz de atenção causal (linha = quem atende, coluna = quem é atendido)</strong>token 1 ("O")      → só pode ver: token 1
+token 2 ("gato")   → pode ver: tokens 1, 2
+token 3 ("sentou") → pode ver: tokens 1, 2, 3
+...cada linha "acende" um pouco mais que a anterior — forma um triângulo</div>
+<p>Esse mesmo mecanismo é o que permite treinar em paralelo: o modelo prevê todas as posições da sequência de uma vez durante o treino, mas cada previsão só "enxergou" o passado — exatamente como aconteceria gerando token a token.</p>` },
       enter: (ctx) => {
         ctx.reveal(["cm_box", "cm_t", "cm_n"], 90);
         const cells = [];
@@ -447,7 +453,12 @@ P("carpete") = 0.08
       show: ["gen_loop"], highlight: ["li_input", "li_out"],
       balloon: { anchor: "gen_box", placement: "bottom",
         text: "A palavra escolhida é <strong>anexada à entrada</strong> e todo o fluxo recomeça para prever a próxima — e assim sucessivamente.",
-        why: "Por isso o texto sai palavra a palavra. O mesmo passo se repete até sair um token de parada (fim de texto)." },
+        why: "Por isso o texto sai palavra a palavra. O mesmo passo se repete até sair um token de parada (fim de texto).",
+        deep: `<p>"Autoregressivo" significa que cada previsão depende das previsões anteriores — o modelo nunca gera a frase inteira de uma vez, mas sim um token, olha para trás (incluindo o que acabou de gerar) e prevê o próximo.</p>
+<div class="xp-example"><strong>Três passos do loop</strong>Entrada: "O gato sentou no" → gera "tapete"
+Entrada: "O gato sentou no tapete" → gera "."
+Entrada: "O gato sentou no tapete." → gera token especial de fim de texto (para)</div>
+<p>Esse loop custa uma passada completa pela rede por token gerado — é o motivo de gerar textos longos ser mais lento que gerar textos curtos, e por que técnicas de cache (guardar os K/V já calculados dos tokens anteriores) são essenciais para tornar isso rápido o suficiente para uso interativo.</p>` },
       enter: (ctx) => { ctx.show("gen_box"); ctx.drawArrow("gen_loop"); ctx.pulse("gen_loop", true); },
     },
     { // 16
@@ -473,7 +484,14 @@ P("carpete") = 0.08
         anchor: { x: 850, y: 400 }, placement: "top",
         text: "Esse é o caminho completo: <strong>texto → tokens → embeddings (+posição) → blocos de atenção → cabeça de saída → próxima palavra</strong>.",
         why: "A peça-chave é a self-attention: deixa cada palavra ‘olhar’ todas as outras e construir contexto. Empilhada muitas vezes, é o que torna os Transformers tão poderosos.",
-      },
+        deep: `<p>Vale destacar o que muda entre treino e uso (inferência): durante o treino, o modelo vê o texto inteiro de uma vez e aprende a prever cada posição em paralelo (com a máscara causal garantindo que não "veja o futuro"); durante a geração, ele de fato roda o loop token a token descrito nas últimas cenas.</p>
+<div class="xp-example"><strong>O pipeline completo, de ponta a ponta</strong>"O gato sentou no tapete"
+→ tokens: [O, gato, sentou, no, tap, ete]
+→ embeddings + posição: vetores densos por token
+→ N blocos de atenção + feed-forward: contexto se acumula
+→ cabeça de saída: distribuição de probabilidade sobre o vocabulário
+→ próxima palavra escolhida, e o ciclo recomeça</div>
+<p>Essa mesma arquitetura, com pequenas variações (encoder-only, decoder-only, encoder-decoder), é a base de praticamente todos os LLMs modernos de texto — o que muda entre modelos é sobretudo escala (número de blocos, dimensões) e dados de treino, não o mecanismo central.</p>` },
       enter: (ctx) => {
         reveal(ctx, ["sum_lab", "sum_sub"], 150);
         ["a1", "a2", "a3", "a4", "a5", "a6"].forEach((a, k) => setTimeout(() => ctx.pulse(a, true), k * 120));

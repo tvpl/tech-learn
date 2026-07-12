@@ -128,7 +128,12 @@
       balloon: {
         anchor: { x: 440, y: 200 }, placement: "right",
         text: "HTTP é <strong>request-response</strong>: o servidor só responde quando o cliente pergunta. Para chat, jogos ou dashboards ao vivo, precisamos que o servidor envie dados <em>a qualquer momento</em>.",
-        why: "Cada requisição HTTP cria nova conexão TCP (ou reutiliza via keep-alive), mas o servidor nunca inicia a comunicação — o cliente sempre puxa."
+        why: "Cada requisição HTTP cria nova conexão TCP (ou reutiliza via keep-alive), mas o servidor nunca inicia a comunicação — o cliente sempre puxa.",
+        deep: `<p>Numa API REST tradicional, toda troca de dados nasce de uma pergunta do cliente: o servidor nunca fala primeiro. Isso funciona bem para páginas estáticas, mas fica caro quando o servidor precisa avisar o cliente de algo que aconteceu — uma nova mensagem, um preço que mudou, a jogada de outro jogador.</p>
+<div class="xp-example"><strong>Sem canal persistente</strong>Cliente: "Tem mensagem nova?" → Servidor: "Não"
+Cliente: "Tem mensagem nova?" → Servidor: "Não"
+Cliente: "Tem mensagem nova?" → Servidor: "Sim! ..."</div>
+<p>Cada pergunta é uma requisição HTTP nova, com seus próprios headers e (se TLS) potencial overhead de handshake — desperdício quando a resposta é "não" na maior parte do tempo.</p>`
       }
     },
     {
@@ -138,7 +143,15 @@
       balloon: {
         anchor: { x: 440, y: 230 }, placement: "right",
         text: "Long-polling: o cliente faz GET e o servidor <strong>segura a conexão aberta</strong> até ter algo para responder. Quando responde, o cliente abre outra conexão imediatamente.",
-        why: "Funciona, mas desperdiça threads no servidor, tem latência de reconexão e explode em escala. Não é uma solução, é uma adaptação."
+        why: "Funciona, mas desperdiça threads no servidor, tem latência de reconexão e explode em escala. Não é uma solução, é uma adaptação.",
+        deep: `<p>Long-polling melhora o polling comum (perguntar a cada N segundos) ao segurar a conexão aberta até haver algo para responder — reduz requisições vazias, mas ainda reabre uma conexão HTTP inteira a cada ciclo, com os mesmos headers repetidos.</p>
+<div class="xp-example"><strong>Ciclo de long-polling</strong>GET /updates HTTP/1.1
+Host: chat.exemplo.com
+Cookie: sessionid=abc123
+(conexão fica aberta até 30s...)
+→ 200 OK { "msg": "oi" }
+(cliente reabre imediatamente)</div>
+<div class="xp-bad"><strong>Custo</strong>Cada ciclo consome uma thread/worker no servidor esperando, mesmo sem dado novo — não escala bem com muitos clientes simultâneos.</div>`
       }
     },
     {
@@ -148,7 +161,11 @@
       balloon: {
         anchor: { x: 440, y: 200 }, placement: "right",
         text: "WebSocket estabelece um <strong>canal TCP persistente e bidirecional</strong>. Depois do handshake inicial, tanto cliente quanto servidor podem enviar mensagens a qualquer momento, sem overhead de headers HTTP.",
-        why: "TCP já é bidirecional — WebSocket apenas expõe isso na camada de aplicação com um protocolo de framing leve."
+        why: "TCP já é bidirecional — WebSocket apenas expõe isso na camada de aplicação com um protocolo de framing leve.",
+        deep: `<p>WebSocket não inventa um transporte novo — ele reaproveita a mesma conexão TCP, que já é full-duplex, mas expõe isso à aplicação com um protocolo de enquadramento simples em vez de reabrir HTTP a cada mensagem.</p>
+<div class="xp-good"><strong>WebSocket</strong>1 conexão TCP, aberta uma vez → mensagens nos dois sentidos a qualquer momento, com poucos bytes de overhead por frame</div>
+<div class="xp-bad"><strong>Polling/long-polling</strong>1 conexão HTTP por ciclo → headers repetidos, latência de reconexão, mais carga no servidor</div>
+<p>O protocolo é padronizado na RFC 6455 e usa os esquemas <code>ws://</code> (texto claro) e <code>wss://</code> (sobre TLS) — o equivalente do <code>http://</code>/<code>https://</code>.</p>`
       }
     },
     {
@@ -157,7 +174,20 @@
       balloon: {
         anchor: { x: 440, y: 210 }, placement: "right",
         text: "<strong>O handshake começa como HTTP/1.1 GET</strong> com headers especiais:<br><code>Upgrade: websocket</code><br><code>Connection: Upgrade</code><br><code>Sec-WebSocket-Key: &lt;base64 random&gt;</code><br>Servidor responde <strong>101 Switching Protocols</strong>.",
-        why: "Usar HTTP para negociar o upgrade permite atravessar proxies e firewalls que já entendem HTTP. A partir daí o protocolo muda para WebSocket frames."
+        why: "Usar HTTP para negociar o upgrade permite atravessar proxies e firewalls que já entendem HTTP. A partir daí o protocolo muda para WebSocket frames.",
+        deep: `<p>O truque do handshake é começar como uma requisição HTTP/1.1 GET perfeitamente normal — isso deixa o pedido atravessar proxies e firewalls corporativos que só entendem HTTP. Só depois da resposta 101 é que o significado dos bytes na conexão muda.</p>
+<div class="xp-example"><strong>Requisição de upgrade</strong>GET /chat HTTP/1.1
+Host: chat.exemplo.com
+Upgrade: websocket
+Connection: Upgrade
+Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==
+Sec-WebSocket-Version: 13
+
+HTTP/1.1 101 Switching Protocols
+Upgrade: websocket
+Connection: Upgrade
+Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=</div>
+<p>O <code>Sec-WebSocket-Accept</code> é calculado a partir da <code>Sec-WebSocket-Key</code> concatenada com um GUID fixo da RFC e um hash SHA-1 — prova que o servidor de fato entendeu o pedido de upgrade.</p>`
       },
       enter(ctx) { ctx.drawArrow("hs1"); ctx.drawArrow("hs2"); }
     },
@@ -167,7 +197,12 @@
       balloon: {
         anchor: "hs_badge", placement: "right",
         text: "Após o 101, a <strong>mesma conexão TCP</strong> é reutilizada para o protocolo WebSocket. Não há mais overhead de cabeçalhos HTTP nem nova conexão a cada mensagem.",
-        why: "O TCP three-way handshake (e TLS se wss://) foi feito uma única vez. Economiza ~100ms por mensagem em redes típicas."
+        why: "O TCP three-way handshake (e TLS se wss://) foi feito uma única vez. Economiza ~100ms por mensagem em redes típicas.",
+        deep: `<p>Nada na camada de transporte muda depois do 101 — é a mesma conexão TCP (e o mesmo canal TLS, se wss://), só que agora os bytes trocados seguem o formato de frame do WebSocket em vez de requisições/respostas HTTP.</p>
+<div class="xp-example"><strong>O que já não se repete a cada mensagem</strong>❌ novo three-way handshake TCP
+❌ novo TLS handshake
+❌ headers HTTP completos (Host, Cookie, User-Agent...)</div>
+<p>Isso é o que torna o WebSocket tão mais leve que HTTP polling para tráfego frequente: o custo de abrir a conexão é pago uma única vez, não a cada troca de dados.</p>`
       }
     },
     {
@@ -178,7 +213,14 @@
       balloon: {
         anchor: { x: FX + FW/2, y: FY + 50 }, placement: "bottom",
         text: "<strong>FIN</strong>: último fragmento do msg. <strong>Opcode</strong>: tipo (text/binary/close/ping/pong). <strong>MASK</strong>: clientes mascariam payload (segurança contra proxies). <strong>Payload Len</strong>: tamanho variável.",
-        why: "Frames são leves: header mínimo de 2 bytes (vs ~400 bytes em headers HTTP típicos). Ideal para mensagens frequentes e pequenas."
+        why: "Frames são leves: header mínimo de 2 bytes (vs ~400 bytes em headers HTTP típicos). Ideal para mensagens frequentes e pequenas.",
+        deep: `<p>O header de um frame WebSocket é minúsculo comparado a um request HTTP — é essa economia que faz o protocolo brilhar em troca de mensagens pequenas e frequentes (chat, jogos, telemetria).</p>
+<div class="xp-example"><strong>Frame de texto simples ("oi", 2 bytes)</strong>Byte 1: FIN=1, RSV=000, Opcode=0001 (text)
+Byte 2: MASK=1, Payload len=2
++ 4 bytes de masking key (se MASK=1)
++ 2 bytes de payload ("oi")
+Total: 8 bytes de frame para 2 bytes de dado</div>
+<p><strong>FIN=0</strong> indica que a mensagem continua num frame seguinte — permite enviar mensagens grandes fragmentadas sem esperar o payload inteiro estar pronto.</p>`
       },
       enter(ctx) {
         ["fr_r1","fr_r2","fr_r3","fr_r4","fr_r5","fr_r6","fr_r7"].forEach((id, k) =>
@@ -193,7 +235,12 @@
       balloon: {
         anchor: { x: (CX+SX)/2, y: 330 }, placement: "bottom",
         text: "<strong>Opcode 0x1</strong> (text frame). Payload é UTF-8. O bit MASK está ativado — cliente <em>deve</em> mascarar todos os frames enviados ao servidor (RFC 6455).",
-        why: "A máscara (XOR com 32-bit key aleatória) evita que proxies transparentes cacheiem ou modifiquem dados WebSocket incorretamente."
+        why: "A máscara (XOR com 32-bit key aleatória) evita que proxies transparentes cacheiem ou modifiquem dados WebSocket incorretamente.",
+        deep: `<p>A máscara não é opcional para o cliente — é obrigatória pela RFC 6455. O servidor, ao contrário, nunca mascara seus frames. A assimetria existe porque o risco (proxy mal-intencionado interpretando bytes como uma requisição HTTP) só existe no sentido cliente→servidor.</p>
+<div class="xp-example"><strong>Aplicando a máscara (XOR)</strong>payload original: 'A' = 0x41
+masking key:      0x37, 0xFA, 0x21, 0x3D
+byte mascarado:   0x41 XOR 0x37 = 0x76</div>
+<p>O servidor faz o XOR inverso com a mesma chave (enviada no frame) para recuperar o payload original — é ofuscação contra proxies, não criptografia; a confidencialidade real vem do TLS (<code>wss://</code>).</p>`
       },
       enter(ctx) { ctx.drawArrow("m_cs1"); }
     },
@@ -204,7 +251,13 @@
       balloon: {
         anchor: { x: SX, y: 450 }, placement: "right",
         text: "O servidor pode fazer <strong>broadcast</strong>: enviar a mesma mensagem para múltiplas conexões WebSocket simultâneas. Frames do servidor para o cliente <em>não</em> são mascarados.",
-        why: "Típico em chat: quando um usuário envia, o servidor redistribui para todos na mesma sala. O servidor mantém um registry de conexões ativas."
+        why: "Típico em chat: quando um usuário envia, o servidor redistribui para todos na mesma sala. O servidor mantém um registry de conexões ativas.",
+        deep: `<p>WebSocket em si não tem noção de "salas" ou "broadcast" — é só uma conexão 1-para-1 entre cliente e servidor. Sistemas de chat implementam o broadcast na aplicação: o servidor mantém um mapa de conexões ativas e escreve a mesma mensagem em cada socket relevante.</p>
+<div class="xp-example"><strong>Pseudocódigo de broadcast</strong>on_message(from_conn, msg):
+  room = rooms[from_conn.room_id]
+  for conn in room.connections:
+    conn.send(msg)  # 1 frame por conexão</div>
+<p>Em produção, esse registry de conexões geralmente vive num serviço compartilhado (Redis Pub/Sub, por exemplo) quando há múltiplas instâncias do servidor — cada instância só conhece os sockets que ela mesma aceitou.</p>`
       },
       enter(ctx) {
         ctx.drawArrow("m_sc1");
@@ -219,7 +272,15 @@
       balloon: {
         anchor: { x: FX + 220, y: FY + 70 }, placement: "bottom",
         text: "<strong>0x1</strong> Text (UTF-8) · <strong>0x2</strong> Binary (bytes livres) · <strong>0x8</strong> Close · <strong>0x9</strong> Ping · <strong>0xA</strong> Pong<br>Opcodes 0x3–0x7 e 0xB–0xF reservados para extensões futuras.",
-        why: "Separar text de binary permite que implementações validem UTF-8 só quando necessário. Ping/pong são controle de conexão em nível de protocolo, não de aplicação."
+        why: "Separar text de binary permite que implementações validem UTF-8 só quando necessário. Ping/pong são controle de conexão em nível de protocolo, não de aplicação.",
+        deep: `<p>Opcodes de controle (0x8 close, 0x9 ping, 0xA pong) podem ser injetados <em>no meio</em> de uma mensagem fragmentada (text/binary com FIN=0) — a implementação precisa tratar frames de controle a qualquer momento, mesmo esperando o próximo fragmento de dados.</p>
+<div class="xp-example"><strong>Opcode no primeiro byte do frame</strong>0x0  continuação de frame fragmentado
+0x1  text  (payload deve ser UTF-8 válido)
+0x2  binary (bytes livres, sem validação de charset)
+0x8  close
+0x9  ping
+0xA  pong</div>
+<p>Um payload <code>text</code> com UTF-8 inválido é motivo suficiente para o receptor fechar a conexão com código de erro — diferente de <code>binary</code>, que aceita qualquer sequência de bytes.</p>`
       }
     },
     {
@@ -229,7 +290,13 @@
       balloon: {
         anchor: { x: (CX+SX)/2, y: 530 }, placement: "bottom",
         text: "Cliente (ou servidor) envia <strong>PING</strong> periodicamente. O receptor <em>deve</em> responder com <strong>PONG</strong> imediatamente. Ausência de pong → conexão morta → fechar e reconectar.",
-        why: "Conexões TCP podem ficar 'silenciosamente quebradas' por NATs e firewalls que expiram entradas idle. O heartbeat mantém o estado ativo."
+        why: "Conexões TCP podem ficar 'silenciosamente quebradas' por NATs e firewalls que expiram entradas idle. O heartbeat mantém o estado ativo.",
+        deep: `<p>Sem heartbeat, uma conexão "morta" (cabo desconectado, celular perdeu sinal) pode continuar parecendo aberta para os dois lados por muito tempo — o TCP só percebe a queda quando tenta enviar dados e não recebe ACK, o que pode nunca acontecer se ninguém está enviando nada.</p>
+<div class="xp-example"><strong>Ciclo típico de heartbeat</strong>a cada 30s: Cliente envia PING (0x9)
+              Servidor responde PONG (0xA) na hora
+se 2 PINGs seguidos sem PONG:
+  considera a conexão morta → fecha e reconecta</div>
+<p>Muitas bibliotecas de WebSocket (ws, socket.io) já implementam esse heartbeat automaticamente — mas em conexões atrás de load balancers com timeout de idle agressivo, é comum precisar configurar o intervalo manualmente.</p>`
       },
       enter(ctx) { ctx.drawArrow("ping1"); setTimeout(() => ctx.drawArrow("pong1"), 400); }
     },
@@ -241,7 +308,14 @@
       balloon: {
         anchor: { x: (CX+SX)/2, y: 610 }, placement: "top",
         text: "Quem quer fechar envia <strong>close frame</strong> (opcode 0x8) com código de status. O receptor ecoa o close frame e então o TCP é finalizado. Códigos: 1000=normal, 1001=going away, 1002=protocol error.",
-        why: "Diferente de TCP RST, o close handshake garante que ambos lados concordaram em encerrar e que todos os frames anteriores foram processados."
+        why: "Diferente de TCP RST, o close handshake garante que ambos lados concordaram em encerrar e que todos os frames anteriores foram processados.",
+        deep: `<p>Um close frame carrega, opcionalmente, um código de status de 2 bytes e uma razão em texto — isso permite diagnosticar por que a conexão terminou (o cliente pediu, houve erro de protocolo, o servidor está reiniciando).</p>
+<div class="xp-example"><strong>Códigos de close comuns</strong>1000  Normal Closure     — encerramento esperado
+1001  Going Away          — página fechando/servidor reiniciando
+1002  Protocol Error      — frame malformado
+1006  Abnormal Closure    — conexão caiu sem close frame (ex.: rede)
+1008  Policy Violation    — ex.: mensagem viola regra da aplicação</div>
+<p><strong>1006</strong> nunca aparece "na rede" — é um código sintético que a implementação cliente usa para indicar que a conexão caiu sem um close handshake apropriado, útil para acionar lógica de reconexão.</p>`
       },
       enter(ctx) { ctx.drawArrow("cls1"); setTimeout(() => ctx.drawArrow("cls2"), 400); }
     },
@@ -254,7 +328,16 @@
       balloon: {
         anchor: { x: FX + FW/2, y: FY + 310 }, placement: "top",
         text: "Use <strong>WebSocket</strong> para comunicação bidirecional (chat, games, colaboração). Use <strong>SSE</strong> para push simples server→client (dashboards, notificações). <strong>HTTP/2 Push</strong> é para recursos de página.",
-        why: "SSE é mais simples de implementar e atravessa proxies HTTP com mais facilidade. WebSocket exige suporte explícito em load balancers e reverse proxies."
+        why: "SSE é mais simples de implementar e atravessa proxies HTTP com mais facilidade. WebSocket exige suporte explícito em load balancers e reverse proxies.",
+        deep: `<p>A escolha entre os três normalmente se resolve por uma pergunta: quem precisa falar primeiro? Se só o servidor inicia envios, SSE é mais simples de operar (é HTTP puro, funciona com qualquer proxy). Se ambos os lados precisam iniciar mensagens livremente, WebSocket é a opção nativa para isso.</p>
+<div class="xp-example"><strong>SSE (Server-Sent Events) — exemplo de resposta</strong>Content-Type: text/event-stream
+
+data: {"preco": 105.20}
+
+data: {"preco": 105.35}
+</div>
+<div class="xp-bad"><strong>HTTP/2 Server Push</strong> — pensado para empurrar recursos estáticos (CSS/JS) antes do pedido, não para eventos de aplicação; a maioria dos browsers descontinuou o suporte.</div>
+<p>Regra prática: chat/colaboração/jogos → WebSocket; dashboards e notificações simples → SSE; recursos de página → deixe para HTTP/2 puro (sem Push).</p>`
       }
     },
     {

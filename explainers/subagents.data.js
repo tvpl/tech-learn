@@ -84,7 +84,10 @@
       highlight: ["lim_box"],
       balloon: { anchor: "lim_box", placement: "left",
         text: "Um único agente tem uma <strong>janela de contexto finita</strong>, não pode fazer múltiplas coisas em paralelo e acumula erros em tarefas longas. Para problemas complexos, isso se torna um gargalo.",
-        why: "Assim como times de pessoas são mais produtivos que indivíduos isolados em tarefas complexas, múltiplos agentes especializados superam um único agente genérico." },
+        why: "Assim como times de pessoas são mais produtivos que indivíduos isolados em tarefas complexas, múltiplos agentes especializados superam um único agente genérico.",
+        deep: `<p>O gargalo de janela de contexto é cumulativo: um agente único que pesquisa, codifica e revisa numa única conversa longa acumula tudo isso na mesma janela — o histórico de pesquisa ainda está lá quando ele está tentando revisar código, competindo por espaço e atenção.</p>
+<div class="xp-bad"><strong>Agente único em tarefa complexa</strong>Uma tarefa de "pesquisar a lib X, implementar a integração e revisar o código" pode acumular um volume grande de contexto numa única sessão — boa parte irrelevante para a etapa atual.</div>
+<p>Dividir em subagentes especializados não é só sobre paralelismo — é também sobre manter cada janela de contexto focada só no que é relevante para aquela subtarefa específica.</p>` },
     },
     {
       title: "O Agente Orquestrador",
