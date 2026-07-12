@@ -153,7 +153,12 @@ Cookie: sid=abc123</div>` },
         anchor: 'cookie_bg', placement: 'right',
         text: '**HttpOnly**: protege contra XSS (JS não acessa o cookie).\n**Secure**: só trafega em HTTPS.\n**SameSite=Strict**: bloqueia envio cross-site → principal defesa contra CSRF.',
         why: 'Sem HttpOnly, um script malicioso pode roubar o session_id via `document.cookie`.',
-      },
+        deep: `<p>Cada atributo neutraliza uma classe de ataque diferente, e combiná-los é o que torna um cookie de sessão razoavelmente seguro por padrão nos browsers modernos.</p>
+<div class="xp-bad"><strong>Cookie sem atributos</strong>Set-Cookie: sid=abc123
+Legível por qualquer script (XSS), enviado por HTTP puro (interceptável), enviado em requests cross-site (CSRF).</div>
+<div class="xp-good"><strong>Cookie endurecido</strong>Set-Cookie: sid=abc123; HttpOnly; Secure; SameSite=Strict
+Inacessível a JS, só via HTTPS, não enviado em navegação cross-site.</div>
+<p><code>SameSite=Lax</code> é o meio-termo mais comum: bloqueia a maioria dos vetores de CSRF mas ainda envia o cookie em navegação de topo (clicar num link de outro site), o que <code>Strict</code> bloquearia também.</p>` },
     },
     {
       title: '③ Request subsequente: browser envia cookie automaticamente',
@@ -163,7 +168,9 @@ Cookie: sid=abc123</div>` },
       balloon: {
         anchor: 'msg_req2_l', placement: 'top',
         text: 'O browser anexa automaticamente o cookie a toda request no mesmo domínio: `Cookie: sid=abc123`. O usuário não precisa fazer nada.',
-      },
+        deep: `<p>Esse comportamento automático do browser é conveniente, mas é justamente ele que abre a porta para CSRF: se o cookie é enviado automaticamente em <em>qualquer</em> request para o domínio (inclusive originada de outro site), um site malicioso pode fazer o browser da vítima disparar requests autenticadas sem que ela perceba — daí a importância do <code>SameSite</code>.</p>
+<div class="xp-example"><strong>Anexação automática</strong>&lt;img src="https://banco.com/api/transferir?para=atacante&valor=1000"&gt;
+Se o usuário está logado no banco.com, o browser anexa o cookie de sessão automaticamente a essa request, mesmo vindo de outro site.</div>` },
     },
     {
       title: '④ Servidor valida session no store',
@@ -175,7 +182,11 @@ Cookie: sid=abc123</div>` },
       balloon: {
         anchor: 'msg_sresp_l', placement: 'left',
         text: 'Servidor faz `GET session:abc123` no Redis. Se encontrar, recupera `{userId: 42, role: "admin"}` e processa a request. Se expirado ou inexistente → 401.',
-      },
+        deep: `<p>Esse lookup no store acontece em <em>toda</em> request autenticada — é o custo estrutural do modelo de sessions: cada request paga uma consulta extra (idealmente O(1) num cache como Redis) em troca de poder revogar o acesso instantaneamente a qualquer momento.</p>
+<div class="xp-example"><strong>Resposta quando a sessão não existe</strong>GET session:xyz999
+(nil)
+→ 401 Unauthorized {"error": "session expired or invalid"}</div>
+<p>Comparado a JWT, que verifica localmente sem essa consulta, sessions trocam performance bruta por controle — na prática, com Redis, a diferença de latência costuma ser irrelevante (sub-milissegundo).</p>` },
     },
     {
       title: 'Session Store: onde guardar?',
@@ -186,7 +197,9 @@ Cookie: sid=abc123</div>` },
         anchor: 'store_bg', placement: 'left',
         text: '**Redis** é o padrão para session stores distribuídos: O(1) GET/SET, TTL nativo (auto-expire), suporte a cluster. Evite sticky sessions — acoplam usuários a servidores específicos.',
         why: 'In-memory funciona apenas com uma instância — morre junto com o processo.',
-      },
+        deep: `<p>A escolha do store determina se a aplicação escala horizontalmente sem dor. In-memory funciona apenas enquanto existir uma única instância do servidor — assim que um load balancer distribui requests entre múltiplas instâncias, cada uma teria sua própria cópia da sessão, e o usuário "perderia" a sessão ao cair numa instância diferente.</p>
+<div class="xp-bad"><strong>Sticky sessions</strong>Load balancer força o mesmo usuário sempre no mesmo servidor — funciona, mas acopla escalabilidade e complica deploys (reiniciar aquele servidor derruba as sessões dele).</div>
+<div class="xp-good"><strong>Store compartilhado (Redis)</strong>Qualquer instância do servidor consegue ler/escrever a mesma sessão — load balancer distribui requests livremente, e o TTL nativo do Redis expira sessões automaticamente sem job de limpeza manual.</div>` },
     },
     {
       title: 'CSRF e Session Attacks',
@@ -196,7 +209,11 @@ Cookie: sid=abc123</div>` },
       balloon: {
         anchor: 'csrf_bg', placement: 'right',
         text: '**CSRF**: site malicioso faz request em nome do usuário usando seu cookie. **Session fixation**: atacante força um session_id — regenerar ID após login. **Hijacking**: detectar mudanças de IP/User-Agent.',
-      },
+        deep: `<p>Os três ataques listados exploram propriedades diferentes do modelo de cookies: CSRF abusa do envio automático, session fixation abusa de reaproveitar um ID já conhecido pelo atacante, e hijacking abusa de um cookie efetivamente roubado (via rede insegura, malware, ou XSS).</p>
+<div class="xp-example"><strong>Session fixation</strong>1. Atacante define session_id=FIXO em um link enviado à vítima
+2. Vítima faz login usando esse session_id sem o servidor gerar um novo
+3. Atacante já conhecia FIXO → agora tem acesso à sessão autenticada da vítima</div>
+<div class="xp-good"><strong>Defesa</strong>Sempre regenerar o session_id no momento do login bem-sucedido, mesmo que já existisse um cookie anterior.</div>` },
     },
     {
       title: '⑤ Logout: deletar session + limpar cookie',
@@ -208,7 +225,10 @@ Cookie: sid=abc123</div>` },
         anchor: 'msg_sdel_l', placement: 'top',
         text: 'Logout **deve** deletar a session do store (`DEL session:abc123`) E expirar o cookie (`Max-Age=0`). Só limpar o cookie é insuficiente — token ainda seria válido no store.',
         why: 'Se apenas o cookie for removido, alguém com o session_id ainda teria acesso.',
-      },
+        deep: `<p>Esse é um erro comum de implementação: times que só limpam o cookie no logout (client-side) mas esquecem de deletar a sessão correspondente no store — a sessão continua "viva" no Redis, e qualquer pessoa que já tivesse capturado aquele session_id (via XSS, log, ou man-in-the-middle antes do logout) continuaria com acesso válido indefinidamente até o TTL expirar.</p>
+<div class="xp-bad"><strong>Logout incompleto</strong>res.clearCookie('sid'); // só isso — sessão continua no Redis</div>
+<div class="xp-good"><strong>Logout completo</strong>await redis.del('session:' + sid);
+res.clearCookie('sid');</div>` },
     },
     {
       title: 'Sessions vs JWT — quando usar cada?',
@@ -218,7 +238,10 @@ Cookie: sid=abc123</div>` },
       balloon: {
         anchor: 'store_bg', placement: 'top',
         text: '**Sessions**: revogação imediata, dados server-side (menores cookies). Requer session store.\n**JWT**: stateless, sem store, escala horizontal — mas revogação complexa. Sessions são preferíveis para web apps tradicionais.',
-      },
+        deep: `<p>Uma forma prática de decidir: se a resposta para "preciso conseguir derrubar o acesso de um usuário AGORA, sem esperar expiração" é sim (banco, admin, conta comprometida), sessions ganham. Se a prioridade é escalar sem coordenação entre serviços (múltiplos microserviços verificando o mesmo token independentemente), JWT ganha.</p>
+<div class="xp-good"><strong>Sessions</strong>revogação instantânea, cookie pequeno (só o ID), requer store compartilhado — ideal para monolitos web tradicionais.</div>
+<div class="xp-good"><strong>JWT</strong>verificação local sem consulta, token maior (carrega claims), revogação difícil antes do exp — ideal para APIs distribuídas e microserviços.</div>
+<p>Nada impede um sistema híbrido: session cookie para o app web principal, JWT de vida curta para chamadas entre serviços internos.</p>` },
     },
     {
       title: 'Quiz',

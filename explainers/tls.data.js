@@ -305,7 +305,11 @@ server_write_IV    → nonce inicial do lado servidor</div>
       balloon: {
         anchor: 'app_data_l', placement: 'top',
         text: 'Dados são fragmentados em **TLS Records** (≤16 KB), cifrados com AES-256-GCM (AEAD). O AEAD garante confidencialidade + integridade num único passo. O MITM vê apenas bytes cifrados.',
-      },
+        deep: `<p>O AEAD (Authenticated Encryption with Associated Data) faz duas coisas numa única operação: cifra o conteúdo (confidencialidade) e gera uma tag de autenticação (integridade) — se um único bit for alterado em trânsito, a verificação da tag falha e o record inteiro é rejeitado.</p>
+<div class="xp-example"><strong>TLS Record cifrado (estrutura)</strong>Header:    tipo=application_data, versão, tamanho
+Payload:   ciphertext (dado real cifrado com AES-256-GCM)
+Auth Tag:  16 bytes — prova que o ciphertext não foi alterado</div>
+<p>Fragmentar em records de até 16 KB (em vez de cifrar a conexão inteira como um blob único) permite que o receptor processe e valide dados incrementalmente, sem esperar a mensagem inteira chegar.</p>` },
     },
     {
       title: 'mTLS: o servidor também valida o cliente',
@@ -317,7 +321,12 @@ server_write_IV    → nonce inicial do lado servidor</div>
         anchor: 'mtls_req_l', placement: 'top',
         text: 'Em mTLS, o servidor envia `CertificateRequest`. O cliente responde com seu próprio certificado X.509. O servidor valida a cadeia do cliente — **autenticação mútua** (ambos se provam).',
         why: 'Diferente do TLS padrão onde apenas o servidor se identifica. mTLS elimina a necessidade de API keys ou tokens em comunicação serviço-a-serviço.',
-      },
+        deep: `<p>Em TLS padrão só o servidor prova identidade — o cliente segue anônimo do ponto de vista criptográfico (a autenticação de usuário, se houver, acontece depois, na camada de aplicação, via senha ou token). mTLS empurra essa prova de identidade para dentro do próprio handshake.</p>
+<div class="xp-example"><strong>Handshake mTLS (mensagens extras)</strong>Servidor → Cliente: CertificateRequest
+Cliente  → Servidor: Certificate (cert do cliente, X.509)
+Cliente  → Servidor: CertificateVerify (assinatura provando posse da chave privada)
+Servidor: valida a cadeia do cert do cliente → autenticado</div>
+<p>O <code>CertificateVerify</code> é essencial: só enviar o certificado não prova nada (certificados são públicos) — o cliente precisa assinar algo com a chave privada correspondente para provar que realmente é o dono daquele certificado.</p>` },
     },
     {
       title: 'mTLS: casos de uso — service mesh e zero-trust',
@@ -326,7 +335,12 @@ server_write_IV    → nonce inicial do lado servidor</div>
       balloon: {
         anchor: 'col_s', placement: 'top',
         text: '**Istio / Envoy** (Kubernetes): injeta sidecar proxy que estabelece mTLS transparente entre pods. **Zero-trust networking**: sem VPN — cada serviço prova identidade com cert. **APIs B2B**: clientes recebem cert para autenticar além de HTTPS.',
-      },
+        deep: `<p>mTLS resolve um problema específico de comunicação serviço-a-serviço: como dois serviços internos se autenticam mutuamente sem depender de segredos compartilhados (API keys) que precisam ser distribuídos, rotacionados e podem vazar em logs ou repositórios.</p>
+<div class="xp-example"><strong>Service mesh (Istio/Envoy) — na prática</strong>Pod A (sidecar Envoy) ←── mTLS automático ──→ Pod B (sidecar Envoy)
+
+O app dentro de cada pod fala HTTP puro com o sidecar local;
+o sidecar cuida de todo o handshake mTLS entre os pods.</div>
+<div class="xp-good"><strong>Zero-trust</strong> — cada chamada exige prova de identidade, mesmo dentro da rede interna; não existe "confiar porque está atrás do firewall".</div>` },
     },
     {
       title: 'Quiz',

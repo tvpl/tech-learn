@@ -329,10 +329,14 @@ X-RateLimit-Remaining: 0
     },
     {
       title: "Sliding Window Counter",
-      text: "Conta requisições em uma janela deslizante de tempo (ex: últimos 60 segundos). Evita o spike que ocorre na virada da janela fixa.",
-      why: "No fixed window, 200 requests poderiam passar em 1 segundo na virada. Sliding window previne isso.",
-      balloonAnchor: { x: 1010, y: 460 },
-      placement: "left",
+      balloon: { anchor: { x: 1010, y: 460 }, placement: "left",
+        text: "Conta requisições em uma janela deslizante de tempo (ex: últimos 60 segundos). Evita o spike que ocorre na virada da janela fixa.",
+        why: "No fixed window, 200 requests poderiam passar em 1 segundo na virada. Sliding window previne isso.",
+        deep: `<p>O problema do fixed window é a borda: se o limite é 100 req/min e a janela reseta a cada minuto cheio, um cliente pode enviar 100 requests no último segundo do minuto 1 e mais 100 no primeiro segundo do minuto 2 — 200 requests em 2 segundos, mesmo "respeitando" o limite de 100/min em cada janela isolada.</p>
+<div class="xp-example"><strong>Sliding window log (aproximação simples)</strong>ZADD requests {timestamp} {timestamp}   -- registra cada request com score = timestamp
+ZREMRANGEBYSCORE requests 0 {now - 60000} -- remove requests fora da janela
+ZCARD requests                             -- conta quantas restam na janela</div>
+<p>Sliding Window Counter (a versão aproximada, não o log completo) combina a contagem da janela atual com uma fração ponderada da janela anterior — mais barato em memória que guardar cada timestamp, com precisão quase igual ao sliding log completo.</p>` },
       enter(ctx) {
         ALL_IDS.forEach(id => ctx.hide(id));
         ctx.show("title_main");
@@ -344,10 +348,14 @@ X-RateLimit-Remaining: 0
     },
     {
       title: "Headers: X-RateLimit-*",
-      text: "Retorne sempre os headers padrão para que clientes possam se adaptar: Limit, Remaining, Reset e Retry-After no 429.",
-      why: "Sem esses headers, clientes fazem retry agressivo (backoff exponencial cego) piorando a situação.",
-      balloonAnchor: { x: 1010, y: 640 },
-      placement: "left",
+      balloon: { anchor: { x: 1010, y: 640 }, placement: "left",
+        text: "Retorne sempre os headers padrão para que clientes possam se adaptar: Limit, Remaining, Reset e Retry-After no 429.",
+        why: "Sem esses headers, clientes fazem retry agressivo (backoff exponencial cego) piorando a situação.",
+        deep: `<p>Esses headers não são um padrão oficial único — <code>X-RateLimit-*</code> é a convenção mais adotada na prática (GitHub, Twitter/X, Stripe), enquanto existe também o padrão IETF mais recente <code>RateLimit-Limit</code>/<code>RateLimit-Remaining</code> (sem o prefixo <code>X-</code>). Em qualquer caso, o importante é ser consistente e documentar.</p>
+<div class="xp-example"><strong>Resposta em requisição normal (200)</strong>X-RateLimit-Limit: 100
+X-RateLimit-Remaining: 43
+X-RateLimit-Reset: 1719489600</div>
+<p>Um cliente bem construído usa <code>X-RateLimit-Remaining</code> para se autorregular <em>antes</em> de bater no limite — reduzindo a taxa de chamadas proativamente quando o remaining fica baixo, em vez de continuar batendo até tomar 429.</p>` },
       enter(ctx) {
         ALL_IDS.forEach(id => ctx.hide(id));
         ctx.show("title_main");
@@ -372,10 +380,9 @@ X-RateLimit-Remaining: 0
     },
     {
       title: "Resumo",
-      text: "Rate Limiting protege sistemas contra abuso e garante fairness entre clientes. Token Bucket para APIs, Sliding Window para precisão.",
-      why: "",
-      balloonAnchor: { x: 640, y: 680 },
-      placement: "top",
+      balloon: { anchor: { x: 640, y: 680 }, placement: "top",
+        text: "Rate Limiting protege sistemas contra abuso e garante fairness entre clientes. Token Bucket para APIs, Sliding Window para precisão.",
+        why: "" },
       enter(ctx) {
         ALL_IDS.forEach(id => ctx.hide(id));
         ctx.show("sum_panel"); ctx.show("sum_title");

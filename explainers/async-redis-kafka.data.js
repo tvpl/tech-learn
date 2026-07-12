@@ -177,10 +177,16 @@
   const steps = [
     {
       title: "O Problema: Processamento Lento Bloqueia HTTP",
-      text: "Quando uma requisição HTTP inicia um processamento de vários segundos (relatório, encoding de vídeo, chamada de IA), o thread fica bloqueado esperando. Timeouts, depleted thread pools.",
-      why: "HTTP tem timeout padrão de 30-60s. Workers de thread limitados. Uma operação lenta pode afetar todo o sistema.",
-      balloonAnchor: { x: 640, y: 680 },
-      placement: "top",
+      balloon: { anchor: { x: 640, y: 680 }, placement: "top",
+        text: "Quando uma requisição HTTP inicia um processamento de vários segundos (relatório, encoding de vídeo, chamada de IA), o thread fica bloqueado esperando. Timeouts, depleted thread pools.",
+        why: "HTTP tem timeout padrão de 30-60s. Workers de thread limitados. Uma operação lenta pode afetar todo o sistema.",
+        deep: `<p>O problema piora em cascata: se um endpoint lento consome todas as threads/conexões disponíveis do processo, até requisições rápidas para endpoints não-relacionados começam a enfileirar, porque não sobra capacidade para atendê-las. Um endpoint lento pode derrubar um serviço inteiro.</p>
+<div class="xp-bad"><strong>Síncrono e bloqueante</strong>POST /reports/generate
+# thread HTTP fica presa 45s gerando o relatório
+# se 50 requests chegarem nesse período, thread pool esgota</div>
+<div class="xp-good"><strong>Assíncrono</strong>POST /reports/generate → 202 Accepted {jobId} em &lt;100ms
+# thread HTTP libera imediatamente; worker processa em background</div>
+<p>Load balancers e proxies também têm timeout próprio (nginx: 60s por padrão) — mesmo que o backend "aguentasse" esperar mais, a camada de rede na frente derrubaria a conexão de qualquer forma.</p>` },
       enter(ctx) {
         showBase(ctx);
         ctx.show("sync_problem"); ctx.show("sync_problem_lbl");
@@ -190,10 +196,18 @@
     },
     {
       title: "Padrão: Aceitar → Enfileirar → Processar → Notificar",
-      text: "A API aceita o request, cria um job na fila e responde imediatamente com 202 Accepted. Um worker processa o job de forma independente.",
-      why: "Desacopla o tempo de resposta ao cliente do tempo de processamento real. A API fica sempre rápida.",
-      balloonAnchor: "ac_q_lbl",
-      placement: "bottom",
+      balloon: { anchor: "ac_q_lbl", placement: "bottom",
+        text: "A API aceita o request, cria um job na fila e responde imediatamente com 202 Accepted. Um worker processa o job de forma independente.",
+        why: "Desacopla o tempo de resposta ao cliente do tempo de processamento real. A API fica sempre rápida.",
+        deep: `<p>Esse é o padrão <strong>fire-and-forget assíncrono</strong> — mais precisamente, "fire, track, and notify", já que o cliente não perde o rastro do job: ele recebe um handle (jobId) para acompanhar o progresso depois, diferente de um fire-and-forget puro onde a resposta se perde.</p>
+<h4>As quatro etapas</h4>
+<ul>
+<li><strong>Aceitar</strong> — validar o request, gerar jobId, responder rápido</li>
+<li><strong>Enfileirar</strong> — publicar o job numa fila durável (Redis/Kafka)</li>
+<li><strong>Processar</strong> — worker consome e executa, isolado da API</li>
+<li><strong>Notificar</strong> — resultado salvo, cliente é avisado (poll/webhook/SSE)</li>
+</ul>
+<p>A fila é o componente que dá durabilidade ao padrão: mesmo que a API reinicie logo após aceitar o job, ele já está persistido e será processado quando um worker o consumir.</p>` },
       enter(ctx) {
         showBase(ctx);
         MSG_IDS.forEach(id => ctx.show(id));
@@ -203,10 +217,13 @@
     },
     {
       title: "Request Chega na API",
-      text: "O cliente faz POST /process com o payload. A API valida, cria um jobId único e serializa o job.",
-      why: "O jobId é o handle que o cliente usará para acompanhar o status. UUID v4 ou KSUID são boas escolhas.",
-      balloonAnchor: "m0_lbl",
-      placement: "bottom",
+      balloon: { anchor: "m0_lbl", placement: "bottom",
+        text: "O cliente faz POST /process com o payload. A API valida, cria um jobId único e serializa o job.",
+        why: "O jobId é o handle que o cliente usará para acompanhar o status. UUID v4 ou KSUID são boas escolhas.",
+        deep: `<p>A validação acontece <em>antes</em> de enfileirar, não depois — é bem mais barato rejeitar um payload malformado com 400 na hora do que descobrir isso só quando o worker já consumiu o job da fila, minutos depois.</p>
+<div class="xp-example"><strong>KSUID vs UUID v4</strong>UUID v4: 550e8400-e29b-41d4-a716-446655440000 (aleatório, não ordenável)
+KSUID:   1srOrx2ZWZBpBUvZwXKQmoEYga2 (contém timestamp, ordenável por criação)</div>
+<p>KSUID (ou ULID) é preferível a UUID v4 quando você quer listar jobs "do mais recente para o mais antigo" direto pela chave, sem precisar de um índice secundário por timestamp — o próprio ID já carrega essa ordem.</p>` },
       enter(ctx) {
         showBase(ctx);
         ctx.show("m0_arr"); ctx.show("m0_lbl");
@@ -215,10 +232,15 @@
     },
     {
       title: "Job Publicado na Fila (Redis / Kafka)",
-      text: "A API serializa o job como JSON e publica na fila. Redis: LPUSH. Kafka: Producer.send(). O job fica persistido na fila aguardando um worker.",
-      why: "A fila é o buffer entre produtor e consumidor. Se workers estiverem sobrecarregados, jobs aguardam sem perda.",
-      balloonAnchor: "m1_lbl",
-      placement: "bottom",
+      balloon: { anchor: "m1_lbl", placement: "bottom",
+        text: "A API serializa o job como JSON e publica na fila. Redis: LPUSH. Kafka: Producer.send(). O job fica persistido na fila aguardando um worker.",
+        why: "A fila é o buffer entre produtor e consumidor. Se workers estiverem sobrecarregados, jobs aguardam sem perda.",
+        deep: `<p>O buffer da fila é o que absorve picos de carga: se 1000 jobs chegam num minuto mas os workers só processam 100/min, a fila cresce temporariamente em vez de derrubar a API ou perder requests — os workers processam no seu próprio ritmo, sem pressão de latência do cliente.</p>
+<div class="xp-example"><strong>Publicar no Redis (BullMQ)</strong>await queue.add('processReport', { userId, reportType }, {
+  attempts: 3,
+  backoff: { type: 'exponential', delay: 2000 }
+});</div>
+<p>Isso só funciona se a fila persistir os jobs em disco (ou replicado) — um Redis sem persistência (RDB/AOF desligados) perde todos os jobs enfileirados se o processo reiniciar, o que pode ser inaceitável dependendo da criticidade do job.</p>` },
       enter(ctx) {
         showBase(ctx);
         ctx.show("m0_arr"); ctx.show("m0_lbl");
@@ -230,10 +252,15 @@
     },
     {
       title: "API Responde 202 Accepted",
-      text: "A API responde imediatamente com 202 Accepted e o jobId. O cliente recebe resposta em < 100ms, independente do tempo de processamento.",
-      why: "202 significa 'recebi e enfileirei'. O cliente precisa acompanhar o status separadamente.",
-      balloonAnchor: "m2_lbl",
-      placement: "bottom",
+      balloon: { anchor: "m2_lbl", placement: "bottom",
+        text: "A API responde imediatamente com 202 Accepted e o jobId. O cliente recebe resposta em < 100ms, independente do tempo de processamento.",
+        why: "202 significa 'recebi e enfileirei'. O cliente precisa acompanhar o status separadamente.",
+        deep: `<p>200 OK implicaria que o trabalho terminou; 202 Accepted (RFC 9110) comunica explicitamente "aceitei a tarefa, mas o processamento ainda não é garantido nem concluído" — é o código correto para não induzir o cliente a achar que o resultado já está pronto.</p>
+<div class="xp-example"><strong>Resposta 202 idiomática</strong>HTTP/1.1 202 Accepted
+Location: /jobs/a1b2c3d4
+
+{"jobId": "a1b2c3d4", "status": "queued"}</div>
+<p>O header <code>Location</code> aponta para onde o cliente pode consultar o status — seguindo o mesmo princípio REST usado em criação de recursos (201 Created também costuma incluir <code>Location</code>), o que torna a API mais navegável e autodescritiva.</p>` },
       enter(ctx) {
         showBase(ctx);
         ctx.show("m0_arr"); ctx.show("m0_lbl");
@@ -244,10 +271,14 @@
     },
     {
       title: "Worker Consome o Job",
-      text: "Um worker poll a fila (Redis BRPOP / Kafka Consumer.poll()) e obtém o job. Pode haver múltiplos workers em paralelo, escalando horizontalmente.",
-      why: "Workers são stateless e escaláveis — adicione mais workers para processar mais jobs em paralelo.",
-      balloonAnchor: "m3_lbl",
-      placement: "bottom",
+      balloon: { anchor: "m3_lbl", placement: "bottom",
+        text: "Um worker poll a fila (Redis BRPOP / Kafka Consumer.poll()) e obtém o job. Pode haver múltiplos workers em paralelo, escalando horizontalmente.",
+        why: "Workers são stateless e escaláveis — adicione mais workers para processar mais jobs em paralelo.",
+        deep: `<p><code>BRPOP</code> é uma chamada <em>bloqueante</em> — o worker fica esperando eficientemente até um job aparecer na lista, sem fazer polling ativo em loop (que desperdiçaria CPU e round-trips desnecessários ao Redis). É diferente de fazer <code>LPOP</code> num loop com sleep.</p>
+<div class="xp-example"><strong>Worker consumindo (Redis)</strong>while True:
+    job = redis.brpop("queue:jobs", timeout=0)  # bloqueia até ter job
+    process(job)</div>
+<p>Com Kafka, o equivalente é o <code>consumer group</code>: múltiplos workers no mesmo grupo dividem as partições do tópico entre si automaticamente — cada partição é consumida por exatamente um worker do grupo por vez, o que dá paralelismo sem duplicar processamento.</p>` },
       enter(ctx) {
         showBase(ctx);
         ["m0","m1","m2","m3"].forEach(m => { ctx.show(m + "_arr"); ctx.show(m + "_lbl"); });
@@ -258,10 +289,13 @@
     },
     {
       title: "Resultado Salvo no Result Store",
-      text: "Após processar, o worker salva o resultado no Result Store: Redis (SET job:{id}:result), banco de dados, ou S3. TTL para expirar jobs antigos.",
-      why: "O Result Store é o mecanismo de comunicação entre worker e cliente. Redis TTL evita acúmulo de dados.",
-      balloonAnchor: "m4_lbl",
-      placement: "bottom",
+      balloon: { anchor: "m4_lbl", placement: "bottom",
+        text: "Após processar, o worker salva o resultado no Result Store: Redis (SET job:{id}:result), banco de dados, ou S3. TTL para expirar jobs antigos.",
+        why: "O Result Store é o mecanismo de comunicação entre worker e cliente. Redis TTL evita acúmulo de dados.",
+        deep: `<p>A escolha do Result Store depende do tamanho e vida útil do resultado: um JSON pequeno de status cabe bem no Redis com TTL; um relatório PDF de 50MB deveria ir para S3/blob storage, com só a URL do arquivo salva no Redis — evita inchar a memória do Redis com payloads grandes.</p>
+<div class="xp-example"><strong>SET com TTL</strong>SET job:a1b2c3d4:result '{"status":"done","url":"s3://reports/a1b2c3d4.pdf"}' EX 86400
+# expira em 24h — evita acúmulo indefinido de resultados antigos</div>
+<p>Sem TTL, o Result Store cresce para sempre — em sistemas de alto volume isso vira um vazamento de memória silencioso que só aparece meses depois, quando o Redis fica sem RAM disponível.</p>` },
       enter(ctx) {
         showBase(ctx);
         ["m0","m1","m2","m3","m4"].forEach(m => { ctx.show(m + "_arr"); ctx.show(m + "_lbl"); });
@@ -272,10 +306,17 @@
     },
     {
       title: "Polling pelo Cliente",
-      text: "O cliente faz GET /jobs/{id} periodicamente. A API consulta o Result Store. Quando status=done, retorna o resultado.",
-      why: "Polling com backoff exponencial: 1s, 2s, 4s, 8s... Evita sobrecarregar a API com polling agressivo.",
-      balloonAnchor: "m5_lbl",
-      placement: "bottom",
+      balloon: { anchor: "m5_lbl", placement: "bottom",
+        text: "O cliente faz GET /jobs/{id} periodicamente. A API consulta o Result Store. Quando status=done, retorna o resultado.",
+        why: "Polling com backoff exponencial: 1s, 2s, 4s, 8s... Evita sobrecarregar a API com polling agressivo.",
+        deep: `<p>Polling com intervalo fixo (ex.: sempre a cada 1s) desperdiça requisições quando o job demora muito, e é lento demais para jobs rápidos. Backoff exponencial com um teto (ex.: até 10s) equilibra os dois casos — rápido no início, econômico depois.</p>
+<div class="xp-example"><strong>Backoff exponencial no cliente</strong>let delay = 1000;
+while (status !== 'done') {
+  await sleep(delay);
+  status = await checkJobStatus(jobId);
+  delay = Math.min(delay * 2, 10000); // teto de 10s
+}</div>
+<p>O endpoint de polling em si deve ser barato — uma leitura simples no Result Store, sem tocar em recursos pesados — já que ele pode ser chamado dezenas de vezes durante o ciclo de vida de um único job.</p>` },
       enter(ctx) {
         showBase(ctx);
         MSG_IDS.forEach(id => ctx.show(id));
@@ -285,10 +326,15 @@
     },
     {
       title: "Webhook / SSE: Alternativas ao Polling",
-      text: "Webhook: o worker notifica um callback URL do cliente. SSE: cliente mantém conexão HTTP aberta e recebe notificação quando pronto. WebSocket para bidirecional.",
-      why: "Polling é simples mas ineficiente. Webhook/SSE é push-based — notifica assim que pronto, sem espera.",
-      balloonAnchor: { x: (60 + W - 270) / 2, y: 640 },
-      placement: "top",
+      balloon: { anchor: { x: (60 + W - 270) / 2, y: 640 }, placement: "top",
+        text: "Webhook: o worker notifica um callback URL do cliente. SSE: cliente mantém conexão HTTP aberta e recebe notificação quando pronto. WebSocket para bidirecional.",
+        why: "Polling é simples mas ineficiente. Webhook/SSE é push-based — notifica assim que pronto, sem espera.",
+        deep: `<p>Webhook exige que o worker consiga alcançar o cliente na rede (POST ao callback URL) — funciona bem entre servidores (server-to-server), mas não serve para um navegador, que normalmente não tem endpoint público próprio. SSE resolve isso mantendo a conexão aberta do lado do navegador.</p>
+<div class="xp-example"><strong>Webhook: worker notifica</strong>POST https://cliente.com/webhooks/job-done
+{"jobId": "a1b2c3d4", "status": "done", "resultUrl": "..."}</div>
+<div class="xp-good"><strong>SSE no navegador</strong>const es = new EventSource('/jobs/a1b2c3d4/stream');
+es.onmessage = (e) => updateUI(JSON.parse(e.data));</div>
+<p>Webhooks exigem tratar retry (o receptor pode estar fora do ar) e idempotência (o mesmo evento pode chegar duplicado) — muitas plataformas de webhook assinam o payload com HMAC para o receptor verificar autenticidade.</p>` },
       enter(ctx) {
         showBase(ctx);
         MSG_IDS.forEach(id => ctx.show(id));
@@ -299,10 +345,13 @@
     },
     {
       title: "Redis Queue vs Kafka Stream",
-      text: "Redis/BullMQ: simples, baixa latência, mensagem desaparece após consumo. Kafka: log imutável, replay, múltiplos consumer groups, retenção longa.",
-      why: "Redis para jobs isolados, Kafka para eventos que múltiplos sistemas precisam consumir independentemente.",
-      balloonAnchor: { x: W / 2, y: 640 },
-      placement: "top",
+      balloon: { anchor: { x: W / 2, y: 640 }, placement: "top",
+        text: "Redis/BullMQ: simples, baixa latência, mensagem desaparece após consumo. Kafka: log imutável, replay, múltiplos consumer groups, retenção longa.",
+        why: "Redis para jobs isolados, Kafka para eventos que múltiplos sistemas precisam consumir independentemente.",
+        deep: `<p>A diferença de modelo mental é a chave: Redis como fila trata a mensagem como uma <strong>tarefa</strong> — ela é consumida uma vez e some. Kafka trata a mensagem como um <strong>evento no histórico</strong> — múltiplos consumer groups podem ler o mesmo tópico de forma completamente independente, cada um na sua própria posição (offset).</p>
+<div class="xp-good"><strong>Escolha Redis quando</strong>É uma tarefa de trabalho (job) que só um worker deve processar — envio de e-mail, geração de relatório, resize de imagem</div>
+<div class="xp-good"><strong>Escolha Kafka quando</strong>É um evento de negócio que múltiplos sistemas precisam saber — "pedido criado" pode disparar faturamento, analytics e notificação, cada um consumindo independentemente</div>
+<p>Não é incomum usar os dois no mesmo sistema: Kafka para o barramento de eventos entre serviços, Redis/BullMQ para as filas de trabalho internas de cada serviço.</p>` },
       enter(ctx) {
         ALL_IDS.forEach(id => ctx.hide(id));
         ctx.show("title_main");
@@ -318,10 +367,13 @@
     },
     {
       title: "Dead Letter Queue",
-      text: "Quando um job falha N vezes (timeout, exception, crash), vai para a Dead Letter Queue. Alertas disparam, equipe analisa, reprocessa manualmente se possível.",
-      why: "DLQ evita que jobs problemáticos bloqueiem a fila principal e permite análise post-mortem.",
-      balloonAnchor: { x: W - 145, y: 430 },
-      placement: "left",
+      balloon: { anchor: { x: W - 145, y: 430 }, placement: "left",
+        text: "Quando um job falha N vezes (timeout, exception, crash), vai para a Dead Letter Queue. Alertas disparam, equipe analisa, reprocessa manualmente se possível.",
+        why: "DLQ evita que jobs problemáticos bloqueiem a fila principal e permite análise post-mortem.",
+        deep: `<p>Sem DLQ, um job "veneno" (poison message) que sempre falha pode ficar sendo re-tentado indefinidamente — consumindo capacidade de worker repetidamente e, em algumas implementações, até bloqueando a fila para os jobs seguintes até ser resolvido.</p>
+<div class="xp-example"><strong>Config de retry com DLQ (BullMQ)</strong>{ attempts: 3, backoff: { type: 'exponential', delay: 1000 } }
+// após 3 falhas, o job move automaticamente para a fila "failed"</div>
+<p>Reprocessar um job da DLQ exige cuidado com <strong>idempotência</strong>: se o worker já executou parte do efeito colateral (ex.: cobrou o cliente) antes de falhar, reprocessar às cegas pode duplicar esse efeito. O ideal é que cada job seja seguro para rodar mais de uma vez com o mesmo resultado final.</p>` },
       enter(ctx) {
         showBase(ctx);
         MSG_IDS.forEach(id => ctx.show(id));
@@ -347,10 +399,9 @@
     },
     {
       title: "Resumo",
-      text: "Async desacopla produtores de consumidores. API responde 202 em < 100ms. Workers processam em paralelo. Result Store + polling/webhook fecha o ciclo.",
-      why: "",
-      balloonAnchor: { x: 640, y: 680 },
-      placement: "top",
+      balloon: { anchor: { x: 640, y: 680 }, placement: "top",
+        text: "Async desacopla produtores de consumidores. API responde 202 em < 100ms. Workers processam em paralelo. Result Store + polling/webhook fecha o ciclo.",
+        why: "" },
       enter(ctx) {
         ALL_IDS.forEach(id => ctx.hide(id));
         ctx.show("sum_panel"); ctx.show("sum_title");

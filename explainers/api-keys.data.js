@@ -135,7 +135,9 @@
       balloon: {
         anchor: 'cmp_bg', placement: 'left',
         text: 'API Keys são tokens opacos que identificam/autenticam um **cliente programático** (M2M). Ideais para CLIs, webhooks e integração B2B onde não há usuário interativo.',
-      },
+        deep: `<p>API Keys existem porque nem todo cliente de uma API é uma pessoa navegando num browser — muitas vezes é um script, um cron job, um webhook consumer ou uma integração entre empresas, onde não faz sentido pedir login interativo ou implementar OAuth completo para uma única aplicação confiável.</p>
+<div class="xp-good"><strong>Bom uso</strong>Servidor A chama a API do Stripe usando uma secret key fixa, configurada uma vez em variável de ambiente.</div>
+<div class="xp-bad"><strong>Uso indevido</strong>Expor uma API Key com permissão total num app frontend público — ela aparece no código-fonte do JS, visível a qualquer visitante.</div>` },
     },
     {
       title: '① Geração: token criptograficamente aleatório',
@@ -146,7 +148,11 @@
         anchor: 'gen_bg', placement: 'right',
         text: '`crypto.randomBytes(32)` gera 256 bits de entropia. O **prefixo legível** (`sk_live_`, `ghp_`) facilita identificar o tipo e ambiente da chave — essencial para buscar em logs sem expor o valor real.',
         why: 'Nunca use UUIDs sequenciais ou hashes de dados previsíveis como API Keys.',
-      },
+        deep: `<p>O prefixo (<code>sk_live_</code>, <code>sk_test_</code>) não tem função criptográfica — é só um identificador legível, mas evita erros caros na prática: uma chave de teste usada acidentalmente em produção (ou vice-versa) costuma ser detectável só de olhar o prefixo, antes mesmo de rodar o código.</p>
+<div class="xp-example"><strong>Padrão real (estilo Stripe)</strong>sk_live_&lt;32 caracteres aleatórios&gt;
+sk_test_&lt;32 caracteres aleatórios&gt;
+ghp_&lt;36 caracteres aleatórios&gt; (GitHub)</div>
+<p>256 bits de entropia (32 bytes aleatórios) tornam adivinhação por força bruta computacionalmente inviável — o espaço de busca é astronomicamente grande.</p>` },
     },
     {
       title: '② Armazenamento: guardar o hash, nunca a chave',
@@ -158,7 +164,11 @@
         anchor: 'hash_bg', placement: 'right',
         text: 'O banco guarda apenas `SHA-256(key)`. Um vazamento de banco não expõe as chaves reais. Na verificação, o servidor recalcula `SHA-256(recebida)` e compara com o hash armazenado.',
         why: 'SHA-256 é one-way — mesmo com o hash, não dá para reconstruir a chave original.',
-      },
+        deep: `<p>O princípio é o mesmo usado para senhas de usuário: nunca guarde o segredo em texto plano, guarde algo que permite <em>verificar</em> o segredo sem conseguir recuperá-lo. A diferença é que API Keys já nascem com alta entropia (256 bits gerados por CSPRNG), então um hash simples e rápido como SHA-256 já é suficiente — ao contrário de senhas de usuário (baixa entropia, memorizáveis), que precisam de KDFs lentas como bcrypt/Argon2 para resistir a brute-force.</p>
+<div class="xp-bad"><strong>Guardar em texto puro</strong>INSERT INTO api_keys (key) VALUES ('sk_live_Xk9mB2qR...');
+-- vazamento do banco = todas as chaves comprometidas imediatamente</div>
+<div class="xp-good"><strong>Guardar o hash</strong>INSERT INTO api_keys (key_hash) VALUES (sha256('sk_live_Xk9mB2qR...'));
+-- vazamento do banco = apenas hashes, inúteis sem quebrar SHA-256</div>` },
     },
     {
       title: '③ Uso e verificação no servidor',
@@ -168,7 +178,12 @@
       balloon: {
         anchor: 'use_bg', placement: 'left',
         text: 'Cliente envia via `Authorization: Bearer` ou `X-API-Key`. Servidor usa o prefixo para filtrar candidatos no DB (evitar full-table-scan), depois compara `SHA-256(recebida) == hash_armazenado`.',
-      },
+        deep: `<p>Buscar candidatos pelo prefixo antes de comparar hashes é uma otimização importante: sem isso, verificar uma chave exigiria calcular o hash da chave recebida e comparar contra <em>todas</em> as linhas da tabela — com o prefixo, o banco filtra para poucas linhas (idealmente uma) antes da comparação.</p>
+<div class="xp-example"><strong>Fluxo de verificação</strong>1. Recebe: Authorization: Bearer sk_live_Xk9mB2qR...
+2. Extrai prefixo: sk_live_Xk9m (primeiros chars, indexados)
+3. SELECT * FROM api_keys WHERE prefix = 'sk_live_Xk9m'
+4. Para cada candidato: sha256(recebida) === key_hash ?
+5. Checa expires_at e scopes antes de autorizar</div>` },
     },
     {
       title: '④ Rate Limiting por API Key no Redis',
@@ -179,7 +194,15 @@
         anchor: 'rl_bg', placement: 'right',
         text: 'Contador Redis por chave: `INCR ratelimit:sk_live_Xk9m` — se `count > limit`, retorna **429**. `EXPIRE` define a janela de tempo (60s, 1h...). Headers informam o cliente quanto falta.',
         why: 'Rate limit por chave evita que um abusador impacte outros clientes da API.',
-      },
+        deep: `<p>Rate limiting por chave (em vez de por IP) é essencial para APIs B2B: várias integrações legítimas de clientes diferentes podem compartilhar o mesmo IP de saída (NAT corporativo, proxy), então limitar por IP penalizaria injustamente clientes que nada têm a ver com o abuso de outro.</p>
+<div class="xp-example"><strong>Janela deslizante simples com Redis</strong>INCR ratelimit:sk_live_Xk9m
+EXPIRE ratelimit:sk_live_Xk9m 60   -- só na primeira chamada da janela
+
+if (count > 1000) return 429 {
+  "error": "rate_limit_exceeded",
+  "retry_after": 34
+}</div>
+<p>Para limites mais suaves (sem "reset abrupto" a cada janela), algoritmos como token bucket ou sliding window log são preferíveis ao contador fixo acima.</p>` },
     },
     {
       title: 'Escopos, Permissões e Expiração',
@@ -189,7 +212,10 @@
       balloon: {
         anchor: 'scope_bg', placement: 'left',
         text: 'Escopos definem o que a chave pode fazer (`read:repos`, `write:issues`). Principle of least privilege — chaves com menos permissões limitam o dano de uma chave comprometida. Expiração + revogação imediata completam o ciclo.',
-      },
+        deep: `<p>O princípio do menor privilégio aplicado a API Keys significa: cada integração deveria ter uma chave própria, com só os escopos que ela realmente usa — nunca reutilize uma chave "admin" genérica em vários lugares só por conveniência, porque isso maximiza o dano de qualquer vazamento.</p>
+<div class="xp-bad"><strong>Escopo amplo demais</strong>Uma chave com <code>admin:org</code> usada só para ler relatórios — se vazar, o atacante pode fazer muito mais do que ler.</div>
+<div class="xp-good"><strong>Escopo mínimo</strong>Uma chave com apenas <code>read:reports</code> para o mesmo caso de uso — vazamento expõe só leitura de relatórios.</div>
+<p>Expiração automática (<code>expires_at</code>) força uma revisão periódica: chaves esquecidas ("zumbis") param de funcionar sozinhas em vez de ficarem ativas indefinidamente.</p>` },
     },
     {
       title: '⑤ Rotação de chaves sem downtime',
@@ -199,7 +225,11 @@
       balloon: {
         anchor: 'rev_bg', placement: 'left',
         text: 'Crie a nova chave → aceite v1 e v2 em paralelo → cliente migra → revogue v1. Esse overlap evita downtime durante a troca. Para revogação de emergência: deletar do DB imediatamente.',
-      },
+        deep: `<p>O desafio da rotação não é gerar a chave nova — é fazer isso sem quebrar a integração em produção, já que trocar uma chave instantaneamente exigiria coordenar o deploy exato do lado do cliente, o que raramente é possível numa integração B2B.</p>
+<div class="xp-example"><strong>Janela de overlap</strong>Dia 0: gera key_v2, aceita key_v1 E key_v2
+Dia 1-14: cliente atualiza sua config para key_v2 no próprio ritmo
+Dia 15: revoga key_v1 (após confirmar que parou de ser usada nos logs)</div>
+<p>Monitorar o uso de <code>key_v1</code> durante a janela de overlap é o que permite saber quando é seguro revogá-la — revogar cedo demais derruba integrações que ainda não migraram.</p>` },
     },
     {
       title: 'API Keys vs JWT vs Sessions vs OAuth',
@@ -209,7 +239,12 @@
       balloon: {
         anchor: 'cmp_bg', placement: 'top',
         text: '**API Keys**: simples, M2M, sem claims. **JWT**: stateless com claims embutidas. **Sessions**: estado server-side, revogação fácil. **OAuth**: delegação de acesso com user flow. Use API Keys quando o cliente é confiável e controlado.',
-      },
+        deep: `<p>Nenhuma dessas quatro opções é estritamente "melhor" — cada uma otimiza para um cenário diferente de quem é o cliente e como ele se relaciona com o servidor.</p>
+<div class="xp-example"><strong>Regra prática</strong>Usuário humano num browser → Sessions ou OAuth (login)
+App móvel/SPA acessando API em nome de um usuário → OAuth + tokens
+Serviço-a-serviço, sem usuário → API Key ou OAuth Client Credentials
+Microserviços internos, precisam de claims → JWT assinado internamente</div>
+<p>API Keys se destacam pela simplicidade operacional: não há fluxo de autorização, não há redirect, não há refresh — é literalmente "envie esse valor secreto em todo request". Essa simplicidade é também sua limitação: não representa um usuário, só identifica um cliente.</p>` },
     },
     {
       title: 'Quiz',

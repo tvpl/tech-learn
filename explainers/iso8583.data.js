@@ -259,10 +259,15 @@
   const steps = [
     {
       title: "O Ecossistema de Pagamentos com Cartão",
-      text: "Quando você paga com cartão, uma cadeia de participantes processa a transação: POS Terminal → Adquirente → Bandeira → Emissor → resposta de volta em < 2 segundos.",
-      why: "ISO 8583 é o protocolo que padroniza essas mensagens globalmente desde 1987. Visa Base II e Mastercard IPM são derivações.",
-      balloonAnchor: { x: 640, y: 660 },
-      placement: "top",
+      balloon: { anchor: { x: 640, y: 660 }, placement: "top",
+        text: "Quando você paga com cartão, uma cadeia de participantes processa a transação: POS Terminal → Adquirente → Bandeira → Emissor → resposta de volta em < 2 segundos.",
+        why: "ISO 8583 é o protocolo que padroniza essas mensagens globalmente desde 1987. Visa Base II e Mastercard IPM são derivações.",
+        deep: `<p>Cada participante dessa cadeia tem um papel financeiro distinto, não só técnico: o Adquirente é o banco que atende o lojista (recebe o dinheiro da venda), o Emissor é o banco do portador do cartão (quem efetivamente paga), e a Bandeira roteia e arbitra entre os dois lados sem ser dona do dinheiro em nenhum momento.</p>
+<div class="xp-example"><strong>Quem participa da taxa numa venda de R$150,00</strong>Lojista recebe: R$150,00 − taxa de desconto
+Adquirente:     parte da taxa (processamento)
+Bandeira:       parte da taxa (rede/marca)
+Emissor:        parte da taxa (interchange fee)</div>
+<p>O PIX, por comparação, dispensa boa parte dessa cadeia — por isso costuma ser mais barato para o lojista, mas ainda não substitui cartão de crédito parcelado nem a aceitação internacional que o ISO 8583 já resolveu há décadas.</p>` },
       enter(ctx) {
         ALL_IDS.forEach(id => ctx.hide(id));
         ctx.show("title_main");
@@ -276,10 +281,18 @@
     },
     {
       title: "O que é ISO 8583?",
-      text: "ISO 8583 define o formato binário das mensagens financeiras entre sistemas de pagamento. Uma mensagem consiste em: MTI + Bitmap + Data Elements.",
-      why: "Formato binário compacto (não JSON) para minimizar latência em links de baixa largura de banda.",
-      balloonAnchor: "msg_title",
-      placement: "right",
+      balloon: { anchor: "msg_title", placement: "right",
+        text: "ISO 8583 define o formato binário das mensagens financeiras entre sistemas de pagamento. Uma mensagem consiste em: MTI + Bitmap + Data Elements.",
+        why: "Formato binário compacto (não JSON) para minimizar latência em links de baixa largura de banda.",
+        deep: `<p>Diferente de um payload JSON auto-descritivo (onde cada valor vem com o nome do campo do lado), o ISO 8583 depende do bitmap e de um dicionário de Data Elements conhecido por ambos os lados para saber o que cada bloco de bytes significa — é mais compacto, mas exige que emissor e adquirente concordem exatamente com a especificação de campos.</p>
+<div class="xp-example"><strong>Estrutura de uma mensagem 0100</strong>MTI:              0100
+Bitmap primário:   F2 3A C4 81 E0 28 40 C0
+DE2  (PAN):        4111111111111111
+DE3  (Proc Code):  000000
+DE4  (Amount):     000000015000
+DE11 (STAN):       123456
+...</div>
+<p>Não existem vírgulas, chaves ou aspas — cada Data Element tem um formato fixo ou um comprimento variável precedido por um indicador (LLVAR/LLLVAR), tudo definido pela especificação, não pela mensagem em si.</p>` },
       enter(ctx) { showBase(ctx); }
     },
     {
