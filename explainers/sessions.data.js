@@ -108,7 +108,10 @@
         anchor: 'col_a', placement: 'top',
         text: 'HTTP não tem memória — cada request é independente. O servidor não sabe se a request vem do mesmo usuário que fez login.',
         why: 'Precisamos de um mecanismo para "lembrar" o estado do usuário entre requests.',
-      },
+        deep: `<p>Isso é uma decisão de design do próprio protocolo, não um bug: HTTP foi desenhado para ser simples e sem memória entre requests, o que facilita cache, proxies e escalabilidade horizontal. O preço é que qualquer noção de "usuário logado" precisa ser reconstruída manualmente pela aplicação a cada request.</p>
+<div class="xp-example"><strong>Duas requests, zero relação</strong>Request 1: POST /login {user, pass} → 200 OK
+Request 2: GET /dashboard → servidor não tem ideia de quem fez a request 1</div>
+<p>As duas soluções clássicas para "lembrar" o usuário são cookies de sessão (server-side state) e tokens auto-contidos como JWT (client-side state) — este explicador foca na primeira.</p>` },
     },
     {
       title: '① Login: servidor cria session no store',
@@ -119,7 +122,9 @@
         anchor: 'msg_store_l', placement: 'top',
         text: 'Após validar as credenciais, o servidor gera um **session_id** aleatório (ex: UUID v4) e armazena `{userId, role, ...}` no Redis com `SET session:abc123 ...`.',
         why: 'O session_id deve ser criptograficamente aleatório — não sequencial ou previsível.',
-      },
+        deep: `<p>A aleatoriedade do session_id é a única coisa que protege a sessão — se fosse previsível (ex: um contador incremental), um atacante poderia simplesmente adivinhar IDs de outros usuários e sequestrar sessões sem nunca roubar um cookie. Por isso o gerador precisa ser criptograficamente seguro (não <code>Math.random()</code>).</p>
+<div class="xp-bad"><strong>Session ID previsível</strong>session_id = ++counter; // "session:1001", "session:1002"...</div>
+<div class="xp-good"><strong>Session ID seguro</strong>session_id = crypto.randomUUID(); // "550e8400-e29b-41d4-a716-446655440000" — 122 bits de entropia</div>` },
     },
     {
       title: '② Set-Cookie: session_id para o browser',
@@ -130,7 +135,12 @@
       balloon: {
         anchor: 'msg_cookie_l', placement: 'top',
         text: '`Set-Cookie: sid=abc123; HttpOnly; Secure; SameSite=Strict`\n\nO browser armazena o cookie e o enviará automaticamente em toda request futura.',
-      },
+        deep: `<p>O cabeçalho <code>Set-Cookie</code> é a única forma padrão de o servidor instruir o browser a guardar e reenviar um valor automaticamente — nenhum JavaScript no cliente precisa gerenciar isso manualmente (e, com <code>HttpOnly</code>, nenhum JavaScript sequer consegue acessar o valor).</p>
+<div class="xp-example"><strong>Resposta do servidor</strong>HTTP/1.1 200 OK
+Set-Cookie: sid=abc123; HttpOnly; Secure; SameSite=Strict; Max-Age=3600; Path=/
+
+Toda request subsequente ao mesmo domínio:
+Cookie: sid=abc123</div>` },
     },
     {
       title: '🍪 Atributos do Cookie',

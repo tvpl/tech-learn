@@ -133,10 +133,15 @@
   const steps = [
     {
       title: "O Problema",
-      text: "Sem controle, um único cliente pode fazer milhares de requisições por segundo, esgotando recursos e prejudicando todos os outros usuários.",
-      why: "Rate limiting é a primeira linha de defesa contra abuso, DoS acidental e thundering herd.",
-      balloonAnchor: { x: 640, y: 680 },
-      placement: "top",
+      balloon: { anchor: { x: 640, y: 680 }, placement: "top",
+        text: "Sem controle, um único cliente pode fazer milhares de requisições por segundo, esgotando recursos e prejudicando todos os outros usuários.",
+        why: "Rate limiting é a primeira linha de defesa contra abuso, DoS acidental e thundering herd.",
+        deep: `<p>O problema não é só um cliente mal-intencionado — bugs de retry sem backoff, loops infinitos em integrações, ou simplesmente um cliente popular demais podem gerar o mesmo efeito de sobrecarga que um ataque deliberado. Rate limiting protege contra ambos os casos igualmente.</p>
+<div class="xp-bad"><strong>Sem rate limiting</strong>Um cliente com bug de retry envia 10.000 req/s para /api/checkout
+Banco de dados satura, latência sobe para todos os outros clientes também</div>
+<div class="xp-good"><strong>Com rate limiting</strong>Cliente excede 100 req/s → recebe 429 imediatamente
+Resto do sistema continua respondendo normalmente para todos os outros</div>
+<p>É por isso que rate limiting costuma ficar na borda (API Gateway, proxy) — rejeitar cedo, antes que a requisição consuma qualquer recurso caro como conexão de banco ou processamento.</p>` },
       enter(ctx) {
         ALL_IDS.forEach(id => ctx.hide(id));
         ctx.show("title_main");
@@ -153,10 +158,14 @@
     },
     {
       title: "Token Bucket — Conceito",
-      text: "O Token Bucket mantém um balde com N tokens. Cada requisição consome 1 token. Tokens são repostos a uma taxa fixa. Sem tokens = requisição bloqueada.",
-      why: "É o algoritmo mais usado em APIs públicas por permitir bursts controlados.",
-      balloonAnchor: "bucket_label",
-      placement: "bottom",
+      balloon: { anchor: "bucket_label", placement: "bottom",
+        text: "O Token Bucket mantém um balde com N tokens. Cada requisição consome 1 token. Tokens são repostos a uma taxa fixa. Sem tokens = requisição bloqueada.",
+        why: "É o algoritmo mais usado em APIs públicas por permitir bursts controlados.",
+        deep: `<p>A elegância do Token Bucket é que ele não precisa gravar o timestamp de cada requisição individual — só o número de tokens atual e o timestamp da última reposição. Isso torna a implementação extremamente barata em memória, mesmo com milhões de clientes distintos.</p>
+<div class="xp-example"><strong>Implementação com Redis</strong>tokens = GET bucket:{userId}:tokens
+IF tokens > 0: DECR bucket:{userId}:tokens; ALLOW
+ELSE: DENY (429)</div>
+<p>Muitas implementações fazem o cálculo de reposição "preguiçosamente": em vez de um job rodando a cada segundo para todo cliente, elas calculam quantos tokens deveriam existir agora com base no tempo decorrido desde a última chamada — só quando alguém de fato faz uma requisição.</p>` },
       enter(ctx) {
         ALL_IDS.forEach(id => ctx.hide(id));
         ctx.show("title_main");
@@ -170,10 +179,13 @@
     },
     {
       title: "Tokens se Renovam",
-      text: "A cada segundo (ou fração), novos tokens são adicionados ao balde até o limite máximo (capacity). O balde nunca transborda.",
-      why: "A taxa de refill define o throughput sustentável; a capacidade define o burst máximo.",
-      balloonAnchor: "refill_note",
-      placement: "bottom",
+      balloon: { anchor: "refill_note", placement: "bottom",
+        text: "A cada segundo (ou fração), novos tokens são adicionados ao balde até o limite máximo (capacity). O balde nunca transborda.",
+        why: "A taxa de refill define o throughput sustentável; a capacidade define o burst máximo.",
+        deep: `<p>Capacity e refill rate são dois parâmetros independentes que controlam comportamentos diferentes: capacity limita o pico instantâneo (quantas requisições passam de uma vez), enquanto refill rate limita a taxa sustentada ao longo do tempo — os dois juntos moldam o "formato" do tráfego permitido.</p>
+<div class="xp-example"><strong>Dois buckets, mesmo throughput médio</strong>Bucket A: capacity=10, refill=2/s  → permite rajadas curtas de até 10
+Bucket B: capacity=100, refill=2/s → permite rajadas muito maiores, mesma taxa sustentada</div>
+<p>Um erro comum é configurar capacity muito baixa para uma API onde clientes legítimos naturalmente fazem chamadas em lote (ex.: carregar uma página que dispara 8 requisições paralelas) — isso gera 429 para tráfego normal, não abuso.</p>` },
       enter(ctx) {
         ALL_IDS.forEach(id => ctx.hide(id));
         ctx.show("title_main");
@@ -194,10 +206,14 @@
     },
     {
       title: "Requisição Chega: Consome 1 Token",
-      text: "Cada requisição aceita remove 1 token do balde. O balde vai esvaziando conforme as requisições chegam.",
-      why: "O consumo é instantâneo — o rate limiter decide em microsegundos se aceita ou rejeita.",
-      balloonAnchor: "req1_box",
-      placement: "right",
+      balloon: { anchor: "req1_box", placement: "right",
+        text: "Cada requisição aceita remove 1 token do balde. O balde vai esvaziando conforme as requisições chegam.",
+        why: "O consumo é instantâneo — o rate limiter decide em microsegundos se aceita ou rejeita.",
+        deep: `<p>Nem toda requisição precisa custar exatamente 1 token — muitas APIs cobram um "peso" diferente por endpoint, refletindo o custo real de processá-lo. Uma busca complexa pode custar 5 tokens, enquanto um GET simples custa 1.</p>
+<div class="xp-example"><strong>Custo variável por endpoint</strong>GET /users/{id}        → custa 1 token
+POST /reports/generate → custa 20 tokens (processamento pesado)
+GET /search?q=...      → custa 5 tokens</div>
+<p>Isso é comum em APIs de dados e IA (ex.: contagem por tokens de LLM em vez de por requisição) — o rate limiter reflete o custo computacional real, não apenas a contagem bruta de chamadas HTTP.</p>` },
       enter(ctx) {
         ALL_IDS.forEach(id => ctx.hide(id));
         ctx.show("title_main");
@@ -216,10 +232,18 @@
     },
     {
       title: "Bucket com Tokens: ALLOWED",
-      text: "Enquanto houver tokens, a requisição passa e recebe resposta 200 OK.",
-      why: "O custo de verificação é mínimo: uma operação atômica DECR no Redis ou um check em memória.",
-      balloonAnchor: "resp_ok1",
-      placement: "right",
+      balloon: { anchor: "resp_ok1", placement: "right",
+        text: "Enquanto houver tokens, a requisição passa e recebe resposta 200 OK.",
+        why: "O custo de verificação é mínimo: uma operação atômica DECR no Redis ou um check em memória.",
+        deep: `<p>A palavra-chave é <strong>atômica</strong>: em um sistema distribuído com múltiplas instâncias da API checando o mesmo bucket simultaneamente, um simples "ler, decidir, escrever" tem race condition — dois requests podem ler o mesmo valor de tokens antes de qualquer um decrementar, permitindo passar mais requisições do que deveria.</p>
+<div class="xp-example"><strong>Lua script atômico no Redis</strong>-- EVAL executa tudo em uma única operação atômica
+local tokens = redis.call('GET', KEYS[1])
+if tonumber(tokens) > 0 then
+  redis.call('DECR', KEYS[1])
+  return 1
+end
+return 0</div>
+<p>Bibliotecas de rate limiting (ex.: <code>rate-limiter-flexible</code>, <code>redis-cell</code>) já encapsulam essa atomicidade — raramente vale a pena implementar do zero em produção.</p>` },
       enter(ctx) {
         ALL_IDS.forEach(id => ctx.hide(id));
         ctx.show("title_main");
@@ -236,10 +260,17 @@
     },
     {
       title: "Bucket Vazio: 429 Too Many Requests",
-      text: "Quando o balde está vazio, a requisição é rejeitada imediatamente com HTTP 429. Nenhum processamento caro é feito.",
-      why: "Rejeitar cedo é eficiente: protege todos os serviços downstream sem custo computacional.",
-      balloonAnchor: "resp_429",
-      placement: "right",
+      balloon: { anchor: "resp_429", placement: "right",
+        text: "Quando o balde está vazio, a requisição é rejeitada imediatamente com HTTP 429. Nenhum processamento caro é feito.",
+        why: "Rejeitar cedo é eficiente: protege todos os serviços downstream sem custo computacional.",
+        deep: `<p>429 é o código HTTP correto (RFC 6585) especificamente para esse caso — diferente de um 503 (serviço indisponível) ou 403 (proibido), ele comunica claramente "você está indo rápido demais, tente de novo mais tarde", o que permite ao cliente implementar retry inteligente.</p>
+<div class="xp-example"><strong>Resposta 429 completa</strong>HTTP/1.1 429 Too Many Requests
+Retry-After: 15
+X-RateLimit-Limit: 100
+X-RateLimit-Remaining: 0
+
+{"error": "rate_limit_exceeded", "retry_after_seconds": 15}</div>
+<p>Sem o header <code>Retry-After</code>, clientes bem-comportados não sabem quanto esperar e tendem a tentar de novo imediatamente — o que pode piorar a sobrecarga em vez de aliviá-la.</p>` },
       enter(ctx) {
         ALL_IDS.forEach(id => ctx.hide(id));
         ctx.show("title_main");
@@ -255,10 +286,14 @@
     },
     {
       title: "Burst Capacity",
-      text: "A capacidade máxima do bucket define o burst: quantas requisições simultâneas são aceitas antes de começar a rejeitar.",
-      why: "Burst é essencial para tráfego real que nunca é perfeitamente uniforme. Ex: 1000 req/min com burst de 200.",
-      balloonAnchor: "bucket_label",
-      placement: "bottom",
+      balloon: { anchor: "bucket_label", placement: "bottom",
+        text: "A capacidade máxima do bucket define o burst: quantas requisições simultâneas são aceitas antes de começar a rejeitar.",
+        why: "Burst é essencial para tráfego real que nunca é perfeitamente uniforme. Ex: 1000 req/min com burst de 200.",
+        deep: `<p>Tráfego real de usuários raramente é uniforme: uma página que carrega e dispara vários requests paralelos, um usuário que atualiza a página várias vezes seguidas, ou uma sincronização em lote — tudo isso gera picos legítimos e curtos que um limite estritamente uniforme rejeitaria.</p>
+<div class="xp-good"><strong>Burst generoso, taxa sustentada moderada</strong>capacity: 50, refill: 10/s
+→ permite absorver picos de até 50 requests instantâneas, mas sustenta só 10/s no longo prazo</div>
+<div class="xp-bad"><strong>Sem burst</strong>capacity: 1 (equivalente a um rate limiter "estrito" sem tolerância)
+→ qualquer 2 requisições quase simultâneas de um usuário legítimo já disparam 429</div>` },
       enter(ctx) {
         ALL_IDS.forEach(id => ctx.hide(id));
         ctx.show("title_main");
@@ -272,10 +307,13 @@
     },
     {
       title: "Leaky Bucket — Alternativa",
-      text: "No Leaky Bucket, as requisições entram em qualquer taxa mas saem (drain) em taxa constante. Bursts são suavizados — não existe resposta imediata.",
-      why: "Preferido quando você quer tráfego uniforme para serviços frágeis, mas aumenta latência em bursts.",
-      balloonAnchor: { x: 1010, y: 240 },
-      placement: "left",
+      balloon: { anchor: { x: 1010, y: 240 }, placement: "left",
+        text: "No Leaky Bucket, as requisições entram em qualquer taxa mas saem (drain) em taxa constante. Bursts são suavizados — não existe resposta imediata.",
+        why: "Preferido quando você quer tráfego uniforme para serviços frágeis, mas aumenta latência em bursts.",
+        deep: `<p>A diferença fundamental entre os dois algoritmos: Token Bucket controla <strong>quantas</strong> requisições passam (rejeitando o excesso), enquanto Leaky Bucket controla a <strong>taxa</strong> na qual elas passam (enfileirando o excesso e liberando aos poucos). Um rejeita, o outro atrasa.</p>
+<div class="xp-good"><strong>Leaky Bucket: bom para</strong>Proteger um serviço downstream frágil que não tolera picos, mesmo curtos — ex: um banco de dados legado sem connection pooling robusto</div>
+<div class="xp-bad"><strong>Leaky Bucket: ruim para</strong>APIs interativas onde o usuário espera resposta rápida — a fila introduz latência mesmo para requisições dentro do limite</div>
+<p>Token Bucket é a escolha mais comum para APIs públicas justamente por não introduzir essa latência artificial: requisições dentro do limite são atendidas instantaneamente.</p>` },
       enter(ctx) {
         ALL_IDS.forEach(id => ctx.hide(id));
         ctx.show("title_main");

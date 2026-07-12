@@ -282,7 +282,13 @@ for {
       balloon: {
         anchor: { x: 325, y: 510 }, placement: "bottom",
         text: "<strong>Client Streaming</strong>: cliente envia múltiplas mensagens, servidor responde ao final (ex: upload, aggregation). <strong>Bidirectional</strong>: ambos enviam quando quiserem — full-duplex como WebSocket, mas com RPC semantics.",
-        why: "Bidirectional streaming é raro mas poderoso: telemetria em tempo real, chat de microserviços, jogos multiplayer."
+        why: "Bidirectional streaming é raro mas poderoso: telemetria em tempo real, chat de microserviços, jogos multiplayer.",
+        deep: `<p>Client streaming inverte a direção: o cliente manda vários pedidos e só recebe uma resposta no fim (útil pra upload em partes, ou agregações client-side). Bidirectional streaming não tem essa restrição — cada lado lê e escreve no seu próprio ritmo, de forma assíncrona.</p>
+<div class="xp-example"><strong>Assinatura .proto de cada tipo</strong>rpc GetUser(UserReq) returns (User);                     // unary
+rpc ListUsers(ListReq) returns (stream User);             // server stream
+rpc UploadChunks(stream Chunk) returns (UploadResult);     // client stream
+rpc Chat(stream Msg) returns (stream Msg);                 // bidirectional</div>
+<p>Bidirectional streaming é o único dos quatro tipos que realmente se parece com WebSocket — mas mantendo a tipagem forte e a estrutura de "métodos RPC" do gRPC.</p>`
       }
     },
     {
@@ -293,7 +299,15 @@ for {
       balloon: {
         anchor: "h2_bg", placement: "bottom",
         text: "<strong>Status</strong>: 16 códigos padrão (OK, NOT_FOUND, UNAVAILABLE, DEADLINE_EXCEEDED…). <strong>Metadata</strong>: key-value headers (auth token, trace-id). <strong>Deadlines</strong>: timeout propagado para toda a cadeia de chamadas.",
-        why: "Deadlines são melhores que timeouts locais: se o cliente desiste, o servidor downstream também sabe desistir, economizando recursos no sistema inteiro."
+        why: "Deadlines são melhores que timeouts locais: se o cliente desiste, o servidor downstream também sabe desistir, economizando recursos no sistema inteiro.",
+        deep: `<p>Os status codes do gRPC não são os mesmos do HTTP (200, 404...) — são um conjunto próprio de 16 códigos pensados para semântica de RPC, mapeados internamente para HTTP/2, mas expostos ao dev como um enum na linguagem escolhida.</p>
+<div class="xp-example"><strong>Códigos gRPC mais usados</strong>OK                  0   sucesso
+NOT_FOUND           5   recurso não existe
+INVALID_ARGUMENT    3   request malformado
+UNAUTHENTICATED     16  sem credencial válida
+DEADLINE_EXCEEDED   4   estourou o prazo
+UNAVAILABLE         14  servidor fora do ar/sobrecarregado</div>
+<p>O <strong>deadline</strong> propagado end-to-end é uma das features mais úteis: se o cliente definir 500ms e a chamada já consumiu 400ms num serviço intermediário, o próximo serviço na cadeia recebe só os 100ms restantes — evita trabalho inútil depois que ninguém mais espera a resposta.</p>`
       }
     },
     {
@@ -303,7 +317,16 @@ for {
       balloon: {
         anchor: "icp_bg", placement: "top",
         text: "<strong>Interceptors</strong> são executados antes/depois de cada RPC: autenticação (verificar Bearer token), logging estruturado, distributed tracing, retry com backoff exponencial.",
-        why: "Separa concerns de infraestrutura da lógica de negócio. Um interceptor de auth centralizado elimina verificações duplicadas em cada método."
+        why: "Separa concerns de infraestrutura da lógica de negócio. Um interceptor de auth centralizado elimina verificações duplicadas em cada método.",
+        deep: `<p>Interceptors formam uma cadeia: cada um pode inspecionar/modificar a requisição antes de passar adiante, e a resposta antes de devolver — o mesmo padrão de middleware de frameworks web, mas aplicado a chamadas RPC.</p>
+<div class="xp-example"><strong>Interceptor de auth (pseudocódigo)</strong>func AuthInterceptor(ctx, req, next) {
+  token := metadata.Get(ctx, "authorization")
+  if !valid(token) {
+    return status.Error(Unauthenticated, "token inválido")
+  }
+  return next(ctx, req)  // segue para o handler real
+}</div>
+<p>Como interceptors rodam antes de qualquer handler específico, uma correção de bug de autenticação no interceptor corrige <em>todos</em> os métodos RPC de uma vez — não precisa tocar em cada implementação individualmente.</p>`
       }
     },
     {
@@ -313,7 +336,10 @@ for {
       balloon: {
         anchor: { x: 305, y: 640 }, placement: "top",
         text: "<strong>gRPC</strong>: microserviços internos, alta performance, streaming. <strong>REST</strong>: APIs públicas, browser direto, simplicidade. <strong>GraphQL</strong>: clientes com necessidades diferentes de dados.",
-        why: "gRPC exige que o cliente entenda Protobuf e HTTP/2 — browsers não suportam nativamente. grpc-web é uma proxy workaround. Para APIs públicas, REST ainda vence em adoção."
+        why: "gRPC exige que o cliente entenda Protobuf e HTTP/2 — browsers não suportam nativamente. grpc-web é uma proxy workaround. Para APIs públicas, REST ainda vence em adoção.",
+        deep: `<p>A decisão raramente é "gRPC substitui REST" — é mais comum um sistema usar os três, cada um na borda certa: gRPC entre microsserviços internos (onde ambos os lados controlam o código), REST ou GraphQL na borda pública (onde o cliente pode ser um navegador ou app de terceiro).</p>
+<div class="xp-bad"><strong>gRPC direto do browser</strong>Navegadores não suportam HTTP/2 trailers nativamente do jeito que o gRPC precisa — exige um proxy (grpc-web) traduzindo para o browser, uma camada extra de complexidade.</div>
+<div class="xp-good"><strong>Padrão comum em produção</strong>Browser → REST/GraphQL (API Gateway) → gRPC entre os microsserviços internos → banco de dados</div>`
       }
     },
     {

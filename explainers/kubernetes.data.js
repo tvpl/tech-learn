@@ -353,10 +353,12 @@ spec:
     },
     {
       title: "ConfigMap e Secret",
-      text: "ConfigMap guarda configurações não-sensíveis (URLs, feature flags). Secret guarda dados sensíveis (tokens, senhas) codificados em base64 e criptografados em repouso.",
-      why: "Separa configuração do código — a mesma imagem Docker roda em dev, staging e prod com ConfigMaps diferentes.",
-      balloonAnchor: { x: 590, y: CP_Y + CP_H + 80 },
-      placement: "top",
+      balloon: { anchor: { x: 590, y: CP_Y + CP_H + 80 }, placement: "top",
+        text: "ConfigMap guarda configurações não-sensíveis (URLs, feature flags). Secret guarda dados sensíveis (tokens, senhas) codificados em base64 e criptografados em repouso.",
+        why: "Separa configuração do código — a mesma imagem Docker roda em dev, staging e prod com ConfigMaps diferentes.",
+        deep: `<p>Secret não é criptografado por padrão só por estar em base64 — base64 é apenas uma codificação, não criptografia (qualquer um pode decodificar). A segurança real vem do <strong>encryption at rest</strong> configurado no etcd e do controle de acesso via RBAC sobre quem pode ler o objeto Secret.</p>
+<div class="xp-good"><strong>Boa prática</strong>Habilitar encryption at rest no etcd + RBAC restritivo e, se possível, um secrets manager externo (Vault, AWS Secrets Manager) via CSI driver.</div>
+<div class="xp-bad"><strong>Erro comum</strong>Achar que Secret "já é seguro" só por ser base64 e versionar o manifesto no Git sem criptografia adicional (ex: sealed-secrets, SOPS).</div>` },
       enter(ctx) {
         showBase(ctx);
         ctx.show("cfg_panel"); ctx.show("cfg_t"); ctx.show("cfg_d1"); ctx.show("cfg_d2");
@@ -364,10 +366,21 @@ spec:
     },
     {
       title: "HPA: Horizontal Pod Autoscaler",
-      text: "O HPA monitora métricas (CPU, memória, custom via Prometheus) e escala automaticamente o número de réplicas entre min e max.",
-      why: "Scale horizontal é mais seguro e rápido que vertical. HPA reage em 15-30 segundos a picos de carga.",
-      balloonAnchor: { x: 240, y: CP_Y + CP_H + 80 },
-      placement: "top",
+      balloon: { anchor: { x: 240, y: CP_Y + CP_H + 80 }, placement: "top",
+        text: "O HPA monitora métricas (CPU, memória, custom via Prometheus) e escala automaticamente o número de réplicas entre min e max.",
+        why: "Scale horizontal é mais seguro e rápido que vertical. HPA reage em 15-30 segundos a picos de carga.",
+        deep: `<p>O HPA calcula o número de réplicas com uma fórmula simples: <code>réplicas_desejadas = réplicas_atuais × (métrica_atual / métrica_alvo)</code>, arredondando para cima e respeitando os limites <code>min</code>/<code>max</code> configurados.</p>
+<div class="xp-example"><strong>Manifesto de HPA</strong>apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata: {name: myapp}
+spec:
+  scaleTargetRef: {kind: Deployment, name: myapp}
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource: {name: cpu, target: {type: Utilization, averageUtilization: 70}}</div>
+<p>Métricas customizadas (fila de mensagens, requests/s) exigem um adapter, como o Prometheus Adapter, que expõe essas métricas na API de metrics do K8s para o HPA consumir.</p>` },
       enter(ctx) {
         showBase(ctx);
         ctx.show("hpa_panel"); ctx.show("hpa_t"); ctx.show("hpa_d1"); ctx.show("hpa_d2");
@@ -375,10 +388,16 @@ spec:
     },
     {
       title: "Rolling Deploy: Zero Downtime",
-      text: "RollingUpdate cria novos Pods v2 gradualmente enquanto remove os v1. maxUnavailable e maxSurge controlam a velocidade. Rollback em segundos.",
-      why: "Usuários nunca vêem downtime. Se a v2 estiver unhealthy, o deploy para e você faz rollback.",
-      balloonAnchor: { x: 480, y: CP_Y + CP_H + 100 },
-      placement: "top",
+      balloon: { anchor: { x: 480, y: CP_Y + CP_H + 100 }, placement: "top",
+        text: "RollingUpdate cria novos Pods v2 gradualmente enquanto remove os v1. maxUnavailable e maxSurge controlam a velocidade. Rollback em segundos.",
+        why: "Usuários nunca vêem downtime. Se a v2 estiver unhealthy, o deploy para e você faz rollback.",
+        deep: `<p><code>maxUnavailable</code> limita quantos Pods antigos podem estar indisponíveis durante o rollout; <code>maxSurge</code> limita quantos Pods extras (acima do <code>replicas</code> desejado) podem existir temporariamente. Juntos, controlam o ritmo do rollout entre "mais rápido, mais recursos" e "mais lento, mais conservador".</p>
+<div class="xp-example"><strong>Estratégia no manifesto</strong>strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxUnavailable: 1
+    maxSurge: 1</div>
+<p>Se um readinessProbe do Pod v2 falhar continuamente, o rollout <strong>pausa automaticamente</strong> — ele nunca remove mais Pods v1 do que <code>maxUnavailable</code> permite, evitando derrubar a versão estável antes da nova estar confirmadamente saudável.</p>` },
       enter(ctx) {
         showBase(ctx);
         ctx.show("roll_panel"); ctx.show("roll_t"); ctx.show("roll_d1"); ctx.show("roll_d2"); ctx.show("roll_d3");
@@ -401,10 +420,8 @@ spec:
     },
     {
       title: "Resumo",
-      text: "K8s = Control Plane (API, etcd, Scheduler, CM) + Worker Nodes (kubelet, kube-proxy, Pods). Tudo declarativo e auto-reconciliado.",
-      why: "",
-      balloonAnchor: { x: 640, y: 680 },
-      placement: "top",
+      balloon: { anchor: { x: 640, y: 680 }, placement: "top",
+        text: "K8s = Control Plane (API, etcd, Scheduler, CM) + Worker Nodes (kubelet, kube-proxy, Pods). Tudo declarativo e auto-reconciliado." },
       enter(ctx) {
         ALL_IDS.forEach(id => ctx.hide(id));
         ctx.show("sum_panel"); ctx.show("sum_title");
