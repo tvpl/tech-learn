@@ -92,23 +92,37 @@ Deep-link `#cena=N`, autoplay + barra, tema claro/escuro, modo apresentação,
 minimapa, **zoom/pan** (roda/pinça/teclado `+ - 0`, arrasto) e **swipe** no toque,
 **retomar** última cena (localStorage), **modo debug** (tecla `d`: grade + ids),
 **quiz** (`step.quiz`, lembra a resposta na sessão), **glossário** (`<span
-class="xp-term" data-tip="...">`), teclado (← → espaço f m d v [ ] + − 0),
-`aria-live`, `prefers-reduced-motion`, validador que avisa no console sobre ids
-inexistentes, reposicionamento do balão no `resize` da janela, e o "próximos
-explicadores" injetado por `engine/related.js` (mapa de relações por página,
-independente do motor).
+class="xp-term" data-tip="...">`), **painel "Saiba mais"** (`balloon.deep`/
+`deepTitle`, ver 3.6.1), teclado (← → espaço f m d v [ ] + − 0), `aria-live`,
+`prefers-reduced-motion`, validador que avisa no console sobre ids inexistentes,
+reposicionamento do balão no `resize` da janela, e o "próximos explicadores"
+injetado por `engine/related.js` (mapa de relações por página, independente do
+motor).
 
 Cuidado ao mexer em balões: a posição é calculada em `_placeBalloon` via
 `getBoundingClientRect`/`getScreenCTM` (reflete zoom/pan). Não recrie o balão para
 reposicionar — use `_repositionBalloon()`. O balão é **translúcido** (fundo
-`rgba` + `backdrop-filter`, alpha em `--balloon-alpha` — ajustável via botão 🎚️
-ou teclas `[`/`]`, persistido em `xp-balloon-alpha`) e **arrastável** pelo
-título (`h3`, ver `_bindBalloonDrag`) — o arraste soma um offset
-(`node._dragDx/_dragDy`) por cima da posição ancorada, e reseta sozinho a cada
-nova cena (novo `node`). Também dá pra **recolher** o balão a uma pílula
-(botão ▾ no título, `_bindBalloonCollapse`) — nasce recolhido em telas
-≤880px — e **esconder todos os balões** temporariamente com o botão 👁️/tecla
-`v` (classe `is-peeking` em `.xp-app`).
+`rgba` + `backdrop-filter`, alpha em `--balloon-alpha`, faixa 15–100% — ajustável
+via botão 🎚️ ou teclas `[`/`]`, persistido em `xp-balloon-alpha`; `_applyBalloonAlpha`
+também escreve a variável direto nos balões visíveis e força reflow, porque
+Safari/iOS às vezes não repinta `backdrop-filter` numa mudança só de custom
+property herdada) e **arrastável** pelo título (`h3`, ver `_bindBalloonDrag`) —
+o arraste soma um offset (`node._dragDx/_dragDy`) por cima da posição ancorada,
+e reseta sozinho a cada nova cena (novo `node`). Também dá pra **recolher** o
+balão a uma pílula (botão ▾ no título, `_bindBalloonCollapse`) — sempre nasce
+expandido, mesmo em telas estreitas — e **esconder todos os balões**
+temporariamente com o botão 👁️/tecla `v` (classe `is-peeking` em `.xp-app`).
+
+#### 3.6.1 Painel "Saiba mais" (aprofundamento opcional)
+Se `step.balloon.deep` (HTML) estiver presente, o balão ganha um botão
+"🔎 Saiba mais" que abre um painel modal (`_showDeep`/`_toggleDeep`, overlay
+`.xp-deep`) com esse conteúdo — título opcional em `deepTitle` (padrão:
+`step.title`). Fecha com Esc, clique fora ou botão "Fechar". Use para exemplos,
+comparações e detalhes que não cabem no balão principal (`text`/`why`), sem
+inflar o balão em si. Classes utilitárias disponíveis dentro do `deep`:
+`.xp-example` (bloco mono, `<strong>` inicial vira rótulo), `.xp-good`/`.xp-bad`
+(comparações "prefira/evite"), além de `h4`/`ul`/`code` normais. Veja
+`explainers/prompt-eng.data.js` como referência de tom e estrutura.
 
 ### 3.7 Tipos (autocomplete sem TypeScript)
 `engine/explainer.types.js` traz `@typedef`s do contrato. Comece um `.data.js` com
@@ -128,8 +142,11 @@ autocomplete/checagem no editor (ver `transformer.data.js`).
 5. `npm test` precisa passar (o smoke descobre o novo `.data.js` automaticamente).
 
 Boas práticas de conteúdo: cada balão deve responder **o quê** (`text`) e **por
-quê** (`why`); termine com um `quiz`; idioma **português**; reutilize as variáveis
-CSS de cor (`--accent`, `--good`, `--warn`, `--hot`, `--accent-2`) em vez de hex.
+quê** (`why`); nas cenas com conceito técnico substantivo, adicione também
+**aprofundamento** (`deep`, ver 3.6.1) com um exemplo concreto — não é
+necessário em cenas de transição/quiz/resumo; termine com um `quiz`; idioma
+**português**; reutilize as variáveis CSS de cor (`--accent`, `--good`,
+`--warn`, `--hot`, `--accent-2`) em vez de hex.
 
 ---
 
@@ -184,5 +201,6 @@ sobreposição visual. Ao mexer em posições, raciocine sobre as coordenadas.
 - [ ] Se adicionou diagrama: card no `index.html` + entrada no `README.md`.
 - [ ] Não editei o motor para resolver algo específico de um diagrama.
 - [ ] Detalhes exclusivos de cena via `enter(ctx)`, não via `show:`.
-- [ ] Balões em PT, com `text` + `why`; cores via variáveis CSS.
+- [ ] Balões em PT, com `text` + `why` (+ `deep` nas cenas substantivas);
+      cores via variáveis CSS.
 - [ ] Nada de `node_modules`/lockfile no commit.

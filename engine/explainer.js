@@ -166,9 +166,10 @@
       // teclado
       this._onKey = (e) => {
         if (e.target && /^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;
-        // Esc fecha a ajuda/painel de opacidade (e só eles) antes de qualquer outro atalho
+        // Esc fecha ajuda/opacidade/saiba-mais (e só eles) antes de qualquer outro atalho
         if (e.key === "Escape" && this.root.classList.contains("show-help")) { this._toggleHelp(false); return; }
         if (e.key === "Escape" && this.root.classList.contains("show-opacity")) { this._toggleOpacity(false); return; }
+        if (e.key === "Escape" && this.root.classList.contains("show-deep")) { this._toggleDeep(false); return; }
         if (e.key === "ArrowRight") this.next();
         else if (e.key === "ArrowLeft") this.prev();
         else if (e.key === " ") { e.preventDefault(); this.togglePlay(); }
@@ -560,7 +561,12 @@
       if (s.title) html += `<h3><span class="xp-badge">${this.i + 1}</span>${s.title}<button type="button" class="xp-balloon-collapse" aria-label="Recolher ou expandir balão" title="Recolher/expandir">▾</button><span class="xp-drag-grip" aria-hidden="true">⠿</span></h3>`;
       if (b.text) html += `<p>${b.text}</p>`;
       if (b.why) html += `<div class="xp-why">${b.why}</div>`;
+      if (b.deep) html += `<button type="button" class="xp-balloon-more">🔎 Saiba mais</button>`;
       node.innerHTML = html;
+      if (b.deep) node.querySelector(".xp-balloon-more").addEventListener("click", (e) => {
+        e.stopPropagation();
+        this._showDeep(s);
+      });
       if (s.quiz) this._buildQuiz(node, s.quiz, this.i);
       const place = (b.anchor && b.placement) || b.placement || "right";
       node.dataset.place = place;
@@ -638,7 +644,7 @@
     }
 
     // recolhe o balão a uma pílula (só o título) pra não tampar o diagrama;
-    // nasce recolhido em telas estreitas (mesmo ponto de corte do CSS responsivo)
+    // sempre nasce expandido — o usuário recolhe manualmente se quiser (▾)
     _bindBalloonCollapse(node) {
       const btn = node.querySelector(".xp-balloon-collapse");
       if (!btn) return;
@@ -648,9 +654,6 @@
         node.classList.toggle("is-collapsed");
         this._placeBalloon(node);
       });
-      try {
-        if (window.matchMedia("(max-width: 880px)").matches) node.classList.add("is-collapsed");
-      } catch {}
     }
 
     _buildQuiz(node, q, stepIdx) {
@@ -805,12 +808,15 @@
     _buildOpacityPanel(head) {
       this.opacityPanel = el("div", { class: "xp-opacity-pop", role: "dialog", "aria-label": "Transparência do balão" });
       const label = el("label", null, "Transparência do balão");
-      this.opacitySlider = el("input", { type: "range", min: "55", max: "100", step: "5" });
+      const row = el("div", { class: "xp-opacity-row" });
+      this.opacitySlider = el("input", { type: "range", min: "15", max: "100", step: "5" });
       this.opacitySlider.value = String(Math.round((this._balloonAlpha ?? .9) * 100));
+      this.opacityValue = el("output", { class: "xp-opacity-value" }, this.opacitySlider.value + "%");
       this.opacitySlider.addEventListener("input", () => {
         this._applyBalloonAlpha(this.opacitySlider.value / 100, true);
       });
-      label.appendChild(this.opacitySlider);
+      row.append(this.opacitySlider, this.opacityValue);
+      label.appendChild(row);
       this.opacityPanel.appendChild(label);
       head.appendChild(this.opacityPanel);
     }
@@ -821,10 +827,17 @@
       if (on) this.opacitySlider?.focus();
     }
     _applyBalloonAlpha(v, persist) {
-      v = clamp(v, .55, 1);
+      v = clamp(v, .15, 1);
       this._balloonAlpha = v;
       this.root.style.setProperty("--balloon-alpha", v);
+      // Safari/iOS às vezes não repinta o backdrop-filter numa mudança só de
+      // custom property herdada; força o repaint direto no(s) balão(ões) visível(is).
+      this.balloons?.querySelectorAll(".xp-balloon").forEach((node) => {
+        node.style.setProperty("--balloon-alpha", v);
+        void node.offsetHeight;
+      });
       if (this.opacitySlider) this.opacitySlider.value = String(Math.round(v * 100));
+      if (this.opacityValue) this.opacityValue.textContent = Math.round(v * 100) + "%";
       if (persist) store.set("xp-balloon-alpha", String(v));
     }
     _nudgeBalloonAlpha(delta) {
@@ -880,6 +893,37 @@
       overlay.addEventListener("click", (e) => { if (e.target === overlay) this._toggleHelp(false); });
       this.help = overlay;
       this.root.appendChild(overlay);
+    }
+
+    /* ---- painel "Saiba mais": aprofundamento opcional de uma cena ------ */
+    _buildDeepPanel() {
+      const overlay = el("div", { class: "xp-deep", role: "dialog", "aria-modal": "true",
+        "aria-label": "Saiba mais", "aria-hidden": "true" });
+      const card = el("div", { class: "xp-deep-card" });
+      this.deepTitleEl = el("h2");
+      this.deepBodyEl = el("div", { class: "xp-deep-body" });
+      const close = el("button", { class: "xp-btn xp-deep-close" }, "Fechar");
+      close.addEventListener("click", () => this._toggleDeep(false));
+      card.append(this.deepTitleEl, this.deepBodyEl, close);
+      overlay.appendChild(card);
+      // clique fora do cartão fecha
+      overlay.addEventListener("click", (e) => { if (e.target === overlay) this._toggleDeep(false); });
+      this.deep = overlay;
+      this.root.appendChild(overlay);
+    }
+    _showDeep(s) {
+      if (!this.deep) this._buildDeepPanel();
+      const b = s.balloon || {};
+      this.deepTitleEl.textContent = b.deepTitle || s.title || "Saiba mais";
+      this.deepBodyEl.innerHTML = b.deep || "";
+      this._toggleDeep(true);
+    }
+    _toggleDeep(force) {
+      if (!this.deep) this._buildDeepPanel();
+      const on = force != null ? force : !this.root.classList.contains("show-deep");
+      this.root.classList.toggle("show-deep", on);
+      this.deep.setAttribute("aria-hidden", on ? "false" : "true");
+      if (on) this.deep.querySelector(".xp-deep-close")?.focus();
     }
 
     /* ---- autoplay + barra de tempo da cena ----------------------------- */

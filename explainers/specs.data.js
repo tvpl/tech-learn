@@ -88,7 +88,11 @@
       highlight: ["doc_border"],
       balloon: { anchor: "doc_title", placement: "right",
         text: "Uma <strong>Spec de agente</strong> é um documento estruturado que define completamente como o agente deve se comportar: objetivo, restrições, tools disponíveis, contratos de I/O e exemplos. É mais rica e durável que um system prompt.",
-        why: "Specs vivem no repositório, são versionadas com o código e se tornam a fonte de verdade para gerar system prompts, testes e até o agente em si. São documentação que não fica obsoleta." },
+        why: "Specs vivem no repositório, são versionadas com o código e se tornam a fonte de verdade para gerar system prompts, testes e até o agente em si. São documentação que não fica obsoleta.",
+        deep: `<p>Um system prompt sozinho tende a virar um bloco de texto crescente e difícil de revisar: cada ajuste de comportamento vira uma frase nova emendada nas anteriores, sem estrutura. A spec resolve isso separando o documento em seções com responsabilidades claras.</p>
+<div class="xp-bad"><strong>System prompt "monolítico"</strong>"Você é um assistente de vendas. Não fale de preços de concorrentes. Pode buscar pedidos. Retorne sempre em JSON. Aqui um exemplo: ..." — tudo misturado, difícil revisar em PR.</div>
+<div class="xp-good"><strong>Spec estruturada</strong>Seções separadas para Contexto, Restrições, Tools, Contratos de I/O e Exemplos — cada uma revisável, versionável e testável isoladamente.</div>
+<p>Na prática, a spec é compilada (gerada) para o system prompt real enviado ao modelo — o documento de origem fica mais rico e organizado do que o texto final precisa ser.</p>` },
       enter: (ctx) => {
         ["s_ctx","s_res","s_tools","s_io","s_ex","s_gr","s_ver","s_val"].forEach((id, i) => setTimeout(() => ctx.show(id), i * 80));
       },
@@ -99,7 +103,11 @@
       highlight: ["s_ctx"],
       balloon: { anchor: "s_ctx", placement: "right",
         text: "O <strong>Contexto</strong> responde três perguntas: <em>Quem é o agente?</em> (nome, domínio), <em>O que ele faz?</em> (objetivo principal) e <em>Para quem?</em> (usuário-alvo e canal de comunicação).",
-        why: "Contexto mal definido leva a um agente que tenta fazer tudo e não faz nada bem. Quanto mais específico o contexto, melhor o modelo entende os limites e o tom adequado." },
+        why: "Contexto mal definido leva a um agente que tenta fazer tudo e não faz nada bem. Quanto mais específico o contexto, melhor o modelo entende os limites e o tom adequado.",
+        deep: `<p>O objetivo funciona como um filtro para toda decisão futura do agente: quando uma pergunta ambígua chega, é o contexto que decide se o agente tenta responder ou escala.</p>
+<div class="xp-bad"><strong>Contexto vago</strong>"Você ajuda os clientes." — não diz com o quê, nem para quem, nem por qual canal; o agente vai tentar responder de tudo, inclusive coisas fora do escopo real.</div>
+<div class="xp-good"><strong>Contexto específico</strong>"Você é o agente-suporte-vendas. Objetivo: responder clientes sobre produtos e status de pedidos, via chat do site. Não é um agente de RH nem de suporte técnico de produto."</div>
+<p>Definir explicitamente o que o agente <em>não</em> é também ajuda — reduz a chance de ele tentar ser prestativo demais fora do seu domínio real.</p>` },
       enter: (ctx) => {
         ["d_ctx_1","d_ctx_2","d_ctx_3"].forEach((id, i) => setTimeout(() => ctx.show(id), i * 120));
       },
@@ -110,7 +118,12 @@
       highlight: ["s_res"],
       balloon: { anchor: "s_res", placement: "right",
         text: "Restrições definem os <strong>limites de atuação</strong> do agente: o que nunca pode fazer (❌), o que requer cautela (⚠️) e quando escalar para humanos. Devem ser explícitas, não implícitas.",
-        why: "LLMs sem restrições tentam ser úteis de formas inesperadas. Restrições claras na spec tornam-se parte do system prompt e são muito mais confiáveis do que esperar que o modelo inferira os limites." },
+        why: "LLMs sem restrições tentam ser úteis de formas inesperadas. Restrições claras na spec tornam-se parte do system prompt e são muito mais confiáveis do que esperar que o modelo inferira os limites.",
+        deep: `<p>Restrições ficam mais confiáveis quando descrevem a <strong>ação proibida</strong> e não apenas o resultado indesejado — "nunca prometer prazo sem consultar o sistema" é mais acionável que "seja preciso".</p>
+<div class="xp-example"><strong>Níveis de restrição na spec</strong>❌ Nunca prometer prazos sem consultar o sistema de pedidos
+❌ Não discutir preços de concorrentes
+⚠️ Escalar para humano em casos de cancelamento</div>
+<p>Vale notar que restrições em texto no system prompt não são uma barreira de segurança absoluta — um LLM pode ser induzido a ignorá-las por um prompt adversarial. Para ações realmente críticas (ex.: processar reembolso), a garantia real vem de <em>não dar a tool ao agente</em>, ou de exigir aprovação humana antes de executar — a spec documenta a intenção, mas o controle técnico é o que a torna confiável.</p>` },
       enter: (ctx) => {
         ["d_res_1","d_res_2","d_res_3"].forEach((id, i) => setTimeout(() => ctx.show(id), i * 120));
       },
@@ -121,7 +134,12 @@
       highlight: ["s_tools"],
       balloon: { anchor: "s_tools", placement: "right",
         text: "A seção de <strong>Tools</strong> lista todas as capacidades do agente com assinaturas completas: nome da tool, parâmetros (com tipos) e formato de retorno. O LLM usa isso para decidir qual tool chamar.",
-        why: "Documentar tools na spec cria um contrato: o desenvolvedor sabe o que o agente pode fazer, o LLM sabe como usar cada tool, e os testes validam que cada tool funciona conforme o esperado." },
+        why: "Documentar tools na spec cria um contrato: o desenvolvedor sabe o que o agente pode fazer, o LLM sabe como usar cada tool, e os testes validam que cada tool funciona conforme o esperado.",
+        deep: `<p>O nome e a descrição da tool pesam tanto quanto o código por trás dela: é o texto que o LLM lê para decidir <em>quando</em> chamar aquela função, então descrições vagas geram chamadas na hora errada (ou nenhuma chamada).</p>
+<div class="xp-example"><strong>Assinatura de tool bem documentada</strong>buscar_pedido(order_id: string) → { status: string, items: array, eta: date }
+Descrição: "Use quando o cliente perguntar sobre um pedido específico pelo número."</div>
+<div class="xp-bad"><strong>Tool mal descrita</strong>"buscar(id)" sem dizer o que retorna nem quando usar — o modelo pode confundir com listar_produtos() ou nunca chamá-la.</div>
+<p>Um efeito colateral valioso: como a spec já documenta entrada e saída de cada tool, é trivial gerar um mock delas para testar o agente sem depender do sistema real.</p>` },
       enter: (ctx) => {
         ["d_t1","d_t2","d_t3"].forEach((id, i) => setTimeout(() => ctx.show(id), i * 120));
       },
@@ -132,7 +150,14 @@
       highlight: ["s_io"],
       balloon: { anchor: "s_io", placement: "right",
         text: "Os <strong>Contratos de I/O</strong> definem o formato exato das entradas e saídas do agente, com tipos e campos opcionais. Isso permite criar <strong>testes automatizados</strong> e validar o comportamento do agente programaticamente.",
-        why: "Contratos transformam o agente em um componente de software com interface bem definida — como uma API. Isso permite integrá-lo, testá-lo e monitorá-lo como qualquer outro serviço." },
+        why: "Contratos transformam o agente em um componente de software com interface bem definida — como uma API. Isso permite integrá-lo, testá-lo e monitorá-lo como qualquer outro serviço.",
+        deep: `<p>Sem um contrato explícito, a saída de um agente conversacional é texto livre — difícil de validar automaticamente ou de conectar a outro sistema. O contrato fecha esse espaço.</p>
+<div class="xp-example"><strong>Contrato de saída</strong>{
+  "reply": "Consultei seu pedido, chega amanhã.",
+  "actions_taken": ["buscar_pedido"],
+  "escalate": false
+}</div>
+<p>O campo <code>escalate</code> é um exemplo de como o contrato pode expor decisões internas do agente para o sistema que o chama — o front-end do chat lê esse campo e decide se transfere a conversa para um humano, sem precisar interpretar o texto livre da resposta.</p>` },
     },
     {
       title: "Seção 5: Exemplos (few-shot na spec)",
@@ -140,7 +165,14 @@
       highlight: ["s_ex"],
       balloon: { anchor: "s_ex", placement: "right",
         text: "Exemplos concretos de interação mostram o comportamento esperado em situações reais. São usados como <strong>few-shot</strong> no system prompt gerado, calibrando o tom, formato e tomada de decisão do agente.",
-        why: "Exemplos são mais eficazes que regras abstratas: 'responda de forma empática' é vago; um exemplo de resposta empática é preciso. O modelo aprende o padrão pelo exemplo." },
+        why: "Exemplos são mais eficazes que regras abstratas: 'responda de forma empática' é vago; um exemplo de resposta empática é preciso. O modelo aprende o padrão pelo exemplo.",
+        deep: `<p>Bons exemplos na spec cobrem os casos que mais precisam de calibração — não só o caminho feliz, mas também o momento de escalar ou recusar, que é justamente onde regras em texto costumam ser ambíguas.</p>
+<div class="xp-example"><strong>Par de exemplos complementares</strong>User: "Onde está meu pedido #12345?"
+Agente: "Consultei o pedido #12345. Status: em trânsito, chegada prevista amanhã."
+
+User: "Quero cancelar."
+Agente: [escalate: true] "Vou transferir para nossa equipe especializada."</div>
+<p>O segundo exemplo ensina, na prática, uma restrição inteira ("escalar em casos de cancelamento") de forma muito mais concreta do que a frase da seção de Restrições sozinha — os dois se reforçam.</p>` },
       enter: (ctx) => {
         ["d_ex_1u"].forEach(id => ctx.show(id));
         setTimeout(() => ctx.show("d_ex_1a"), 200);
@@ -154,7 +186,10 @@
       highlight: ["agent_box"],
       balloon: { anchor: "agent_box", placement: "right",
         text: "O agente instanciado <strong>recebe a spec</strong> (ou o system prompt derivado dela) e está pronto para operar dentro dos limites definidos: sabe o que pode fazer, o que não pode, quais tools tem e como responder.",
-        why: "A spec é a 'carta de trabalho' do agente. Mudou a spec → rebuild do system prompt → comportamento atualizado. Sem a spec, qualquer mudança exige edição manual do system prompt." },
+        why: "A spec é a 'carta de trabalho' do agente. Mudou a spec → rebuild do system prompt → comportamento atualizado. Sem a spec, qualquer mudança exige edição manual do system prompt.",
+        deep: `<p>Esse passo de "compilar" a spec num system prompt pode ser tão simples quanto concatenar as seções em texto, ou envolver lógica — por exemplo, incluir só as tools relevantes para o canal daquela conversa.</p>
+<div class="xp-example"><strong>Compilação simples</strong>build_prompt(spec) → concatena Contexto + Restrições + lista de Tools + Exemplos, na ordem, separados por cabeçalhos</div>
+<p>Ao versionar a spec (não o system prompt final) no repositório, uma mudança de comportamento vira um diff legível em code review — revisar "adicionamos a restrição de não falar de concorrentes" é muito mais claro do que revisar um parágrafo de texto solto reescrito.</p>` },
       enter: (ctx) => { ctx.drawArrow("a_doc_agent"); },
     },
     {
@@ -163,7 +198,12 @@
       highlight: ["cmp_sp2"],
       balloon: { anchor: "cmp_sp2", placement: "left",
         text: "<strong>System Prompt</strong>: texto enviado a cada chamada — gerado a partir da spec. <strong>CLAUDE.md</strong>: contexto do repositório para agentes de código. <strong>Spec</strong>: documento versionado completo, fonte de verdade de onde tudo é derivado.",
-        why: "Confundir os três leva a duplicação: equipes gerenciam system prompts manualmente, perdem track de quem mudou o quê. A Spec no repositório resolve isso — é o único lugar para editar o comportamento." },
+        why: "Confundir os três leva a duplicação: equipes gerenciam system prompts manualmente, perdem track de quem mudou o quê. A Spec no repositório resolve isso — é o único lugar para editar o comportamento.",
+        deep: `<p>Os três resolvem problemas diferentes, mas é comum confundi-los porque todos "instruem" um modelo. A diferença chave é o escopo: um vale para uma chamada, outro para um repositório, o terceiro é a fonte de tudo.</p>
+<div class="xp-example"><strong>Escopo de cada um</strong>System Prompt: instruções válidas para <em>esta</em> chamada à API do LLM
+CLAUDE.md: contexto do repositório para o agente de código (comandos, arquitetura)
+Spec: define o comportamento completo do agente de produto, versionada e testável</div>
+<p>Um erro comum é editar o system prompt diretamente em produção "para testar rápido" — isso cria drift: a spec no repositório diz uma coisa, o comportamento real é outro. A regra é sempre editar a spec e regenerar, nunca o inverso.</p>` },
       enter: (ctx) => {
         ["cmp_sp","cmp_cl","cmp_sp2"].forEach((id, i) => setTimeout(() => ctx.show(id), i * 150));
       },
@@ -173,7 +213,12 @@
       highlight: ["s_ver", "s_val"],
       balloon: { anchor: "s_val", placement: "right",
         text: "Specs são arquivos de texto (YAML, Markdown) no repositório — <strong>versionadas com Git</strong> como qualquer código. Validação automatizada verifica se a spec tem todos os campos obrigatórios e se os contratos de I/O são consistentes.",
-        why: "Versionamento permite: comparar duas versões do agente, fazer rollback, criar branches de spec para A/B testing de comportamento. A spec é código, não documentação separada." },
+        why: "Versionamento permite: comparar duas versões do agente, fazer rollback, criar branches de spec para A/B testing de comportamento. A spec é código, não documentação separada.",
+        deep: `<p>Tratar a spec como código — com PR, revisão e CI — é o que separa um agente confiável de um "brincar de prompt engineering em produção". Um linter de spec pega erros antes de eles virarem comportamento ruim no ar.</p>
+<div class="xp-example"><strong>Validação automatizada na CI</strong>✗ Seção "Tools" referencia buscar_pedido(), mas a tool não está registrada no código
+✗ Contrato de saída exige campo "escalate", exemplo #2 não o inclui
+✓ Todas as seções obrigatórias presentes, contratos consistentes</div>
+<p>Isso também viabiliza testar mudanças de comportamento como um experimento controlado: criar uma branch da spec com uma restrição diferente, rodar contra o mesmo conjunto de exemplos e comparar as respostas antes de promover para produção.</p>` },
     },
     {
       title: "Quiz rápido",

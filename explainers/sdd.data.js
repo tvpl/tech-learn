@@ -92,7 +92,14 @@
       highlight: ["n_spec"],
       balloon: { anchor: "n_spec", placement: "left",
         text: "<strong>SDD</strong> é uma metodologia onde a <strong>Spec</strong> (especificação de comportamento) é a única fonte de verdade. A IA gera o código a partir da spec, testes automatizados validam, e o feedback refina a spec — iterativamente.",
-        why: "SDD inverte o processo tradicional: em vez de escrever código e depois documentar, você descreve o comportamento primeiro e deixa a IA implementar. O humano se concentra no 'o quê', não no 'como'." },
+        why: "SDD inverte o processo tradicional: em vez de escrever código e depois documentar, você descreve o comportamento primeiro e deixa a IA implementar. O humano se concentra no 'o quê', não no 'como'.",
+        deep: `<p>O ciclo se parece com programação em par, só que o "par" é um agente de código: você escreve a intenção, ele produz uma implementação candidata, e um verificador objetivo (os testes) decide se ela está certa — sem depender de você reler cada linha gerada.</p>
+<div class="xp-example"><strong>Um giro do ciclo</strong>1. Spec: "usuário com senha errada recebe 401"
+2. IA gera: função login() sem checar a senha corretamente
+3. Teste roda: espera 401, recebeu 200 → falha
+4. Feedback: "cenário SENHA_ERRADA falhou: esperado 401, obteve 200"
+5. IA corrige a implementação, teste passa</div>
+<p>O que torna isso viável em escala é justamente a precisão do passo 4 — sem um teste automatizado, "não funcionou" vira um vaivém manual e lento entre humano e IA.</p>` },
       enter: (ctx) => {
         ["a_sg","a_gt","a_tf","a_fs"].forEach((id, i) => setTimeout(() => ctx.drawArrow(id), i * 200));
       },
@@ -103,7 +110,11 @@
       highlight: ["n_spec", "spec_l4", "spec_l5"],
       balloon: { anchor: "spec_box", placement: "left",
         text: "A spec descreve <strong>o que o sistema deve fazer</strong>, não como implementar. Usa linguagem Given/When/Then (BDD) para ser legível por humanos e processável pela IA.",
-        why: "Uma spec de comportamento é agnóstica à tecnologia: você pode mudar de Python para Go sem reescrever a spec. Ela também serve como documentação viva — sempre sincronizada com o código gerado." },
+        why: "Uma spec de comportamento é agnóstica à tecnologia: você pode mudar de Python para Go sem reescrever a spec. Ela também serve como documentação viva — sempre sincronizada com o código gerado.",
+        deep: `<p>O truque de escrever comportamento em vez de implementação é perguntar "o que um observador externo veria?" em vez de "como o código faz isso por dentro". Isso mantém a spec estável mesmo quando a implementação muda completamente.</p>
+<div class="xp-bad"><strong>Spec vazando implementação</strong>"WHEN a função valida a senha usando bcrypt.compare()..." — acopla a spec a uma biblioteca específica.</div>
+<div class="xp-good"><strong>Spec de comportamento</strong>"WHEN envia senha correta THEN retorna JWT + status 200" — não importa como a senha é verificada por dentro.</div>
+<p>Cada linha GIVEN/WHEN/THEN vira, quase diretamente, um caso de teste: GIVEN monta o estado inicial, WHEN dispara a ação, THEN é a asserção. É por isso que specs bem escritas geram suítes de teste quase automaticamente.</p>` },
       enter: (ctx) => {
         ["spec_l1","spec_l2","spec_l3","spec_l4","spec_l5"].forEach((id, i) => setTimeout(() => ctx.show(id), i * 120));
       },
@@ -114,7 +125,12 @@
       highlight: ["n_gen", "gen_l1"],
       balloon: { anchor: "n_gen", placement: "right",
         text: "A IA (Claude, GPT, etc.) lê a spec e gera o código de implementação. O agente de código sabe: (1) o comportamento esperado, (2) o stack tecnológico, (3) os padrões do projeto — e entrega uma implementação inicial.",
-        why: "A IA gera rapidamente, mas pode errar. Por isso os testes automatizados são a verificação objetiva. A IA não decide se está certa — os testes decidem." },
+        why: "A IA gera rapidamente, mas pode errar. Por isso os testes automatizados são a verificação objetiva. A IA não decide se está certa — os testes decidem.",
+        deep: `<p>Quanto mais contexto a spec fornece além do "o quê" — convenções do projeto, bibliotecas já usadas, padrões de nomenclatura — menos retrabalho o ciclo de feedback vai precisar. A primeira geração raramente é perfeita, e não precisa ser.</p>
+<div class="xp-example"><strong>Spec com contexto suficiente</strong>Comportamento: "login retorna JWT em caso de sucesso"
+Stack: Python + FastAPI + biblioteca PyJWT já usada no projeto
+Padrão: seguir a estrutura de routers/auth.py existente</div>
+<p>Sem esse contexto, a IA pode gerar uma implementação funcionalmente correta mas estilisticamente inconsistente — outra lib de JWT, outro padrão de erro. A spec não precisa prescrever a implementação, mas ancorar as decisões técnicas relevantes acelera bastante a convergência.</p>` },
       enter: (ctx) => {
         ["gen_l1","gen_l2","gen_l3"].forEach((id, i) => setTimeout(() => ctx.show(id), i * 120));
       },
@@ -124,14 +140,28 @@
       highlight: ["n_test"],
       balloon: { anchor: "n_test", placement: "right",
         text: "Os testes (que a IA também pode gerar a partir da spec) são executados contra o código gerado. Cada teste verifica um cenário da spec: <strong>se passou, o comportamento está correto</strong>. Se falhou, sabe-se exatamente qual cenário quebrou.",
-        why: "Testes como fonte de verdade: não é o julgamento humano que diz se o código está certo, são os testes. Isso torna a avaliação objetiva e reproduzível." },
+        why: "Testes como fonte de verdade: não é o julgamento humano que diz se o código está certo, são os testes. Isso torna a avaliação objetiva e reproduzível.",
+        deep: `<p>Um detalhe importante: os testes devem nascer da spec, não do código gerado. Se a IA escreve a implementação e também escreve os testes olhando para ela, o teste corre o risco de só confirmar o que o código já faz — mesmo que esteja errado.</p>
+<div class="xp-bad"><strong>Teste que só confirma o bug</strong>Código sempre retorna 200; teste gerado depois do código também espera 200 mesmo no caso de senha errada.</div>
+<div class="xp-good"><strong>Teste derivado da spec</strong>A spec diz "WHEN senha errada THEN 401" — o teste é escrito a partir dessa linha, independente do que o código faz hoje.</div>
+<p>Por isso muitas equipes que praticam SDD geram spec → testes primeiro, e só depois pedem a implementação: o teste vira o "juiz" imparcial que a IA (e o humano) não pode reescrever para forçar um verde.</p>` },
     },
     {
       title: "Feedback: o que falhou e por quê",
       highlight: ["n_feed"],
       balloon: { anchor: "n_feed", placement: "left",
         text: "Quando testes falham, o <strong>feedback</strong> é preciso: qual teste, qual asserção, qual valor esperado vs. recebido. Esse feedback é passado de volta à IA (ou ao humano) para refinar a implementação ou a spec.",
-        why: "Feedback estruturado é o que torna o ciclo SDD eficiente: a IA recebe 'o teste LOGIN_WRONG_PASSWORD falhou esperando 401 mas recebeu 200' — não 'algo está errado'. Precisão acelera a correção." },
+        why: "Feedback estruturado é o que torna o ciclo SDD eficiente: a IA recebe 'o teste LOGIN_WRONG_PASSWORD falhou esperando 401 mas recebeu 200' — não 'algo está errado'. Precisão acelera a correção.",
+        deep: `<p>Existem dois destinos possíveis para uma falha de teste: às vezes o código está errado e precisa de correção; outras vezes é a <strong>spec</strong> que estava incompleta e o teste revelou um caso de borda que ninguém tinha pensado.</p>
+<div class="xp-example"><strong>Feedback estruturado</strong>Teste: LOGIN_SENHA_ERRADA
+Esperado: status 401, body {"error": "unauthorized"}
+Recebido: status 200, body {"token": "..."}
+Hipótese: validação de senha não está sendo chamada antes de gerar o token</div>
+<h4>Dois caminhos a partir da falha</h4>
+<ul>
+<li><strong>Bug de implementação</strong> — a spec estava certa, o código não seguiu; corrige o código</li>
+<li><strong>Gap de spec</strong> — o teste revelou um cenário não especificado (ex.: "e se a conta estiver bloqueada?"); a spec cresce</li>
+</ul>` },
     },
     {
       title: "Iteração: spec evolui com o aprendizado",
@@ -139,7 +169,12 @@
       highlight: ["n_spec", "success"],
       balloon: { anchor: "success", placement: "left",
         text: "Cada ciclo refina o sistema: testes que falharam revelam casos de borda não especificados → a spec cresce → a IA reimplementa → mais testes passam. Quando <strong>todos os testes passam</strong>, o ciclo termina com uma entrega.",
-        why: "Specs incompletas são normais no início. O ciclo SDD torna as lacunas visíveis rapidamente através dos testes, ao invés de descobrir em produção." },
+        why: "Specs incompletas são normais no início. O ciclo SDD torna as lacunas visíveis rapidamente através dos testes, ao invés de descobrir em produção.",
+        deep: `<p>Uma spec quase nunca sai completa da primeira vez — e tentar antecipar todo caso de borda antes de começar costuma ser tempo perdido. O ciclo SDD assume isso: a spec cresce <em>orientada por falhas reais</em>, não por adivinhação.</p>
+<div class="xp-example"><strong>Spec crescendo por iteração</strong>v1: "WHEN senha correta THEN 200 + JWT"
+Teste de borda revela: e se a conta estiver desativada?
+v2: adiciona "WHEN conta desativada THEN 403, mesmo com senha correta"</div>
+<p>O ponto de parada natural não é "a spec está perfeita", mas "todos os testes que representam os requisitos conhecidos passam". Novos requisitos, quando aparecem, simplesmente iniciam um novo giro do ciclo.</p>` },
       enter: (ctx) => { ctx.drawArrow("a_success"); },
     },
     {
@@ -147,7 +182,11 @@
       highlight: ["n_spec", "spec_box"],
       balloon: { anchor: "n_spec", placement: "right",
         text: "A <strong>Spec é a fonte de verdade única</strong>: código e testes são derivados dela. Se o produto muda, você atualiza a spec → a IA re-gera → os testes confirmam. Nenhuma documentação fica desatualizada.",
-        why: "Em projetos tradicionais, o código é o que 'manda' e a documentação fica obsoleta. Em SDD, a spec manda — e o código é apenas sua expressão em linguagem de máquina." },
+        why: "Em projetos tradicionais, o código é o que 'manda' e a documentação fica obsoleta. Em SDD, a spec manda — e o código é apenas sua expressão em linguagem de máquina.",
+        deep: `<p>Ter uma única fonte de verdade resolve um problema clássico: em muitos times, o README diz uma coisa, o código faz outra e ninguém sabe qual está certo. Em SDD, essa pergunta tem resposta única — sempre a spec.</p>
+<div class="xp-bad"><strong>Sem fonte única</strong>Documentação: "reembolso em até 5 dias úteis". Código: implementa 7 dias. Ninguém sabe qual mudou por último.</div>
+<div class="xp-good"><strong>Com spec como fonte única</strong>Regra de negócio muda → a spec é editada primeiro → a IA regenera o código e os testes → discrepância nunca existe, porque código é sempre derivado.</div>
+<p>Isso não elimina revisão humana — alguém ainda decide o que a spec deve dizer — mas elimina a categoria de bug "documentação desatualizada", porque não existe mais documentação separada do artefato que gera o comportamento.</p>` },
     },
     {
       title: "Rastreabilidade: spec ↔ código ↔ test",
@@ -155,7 +194,12 @@
       highlight: ["trace_1","trace_2","trace_3"],
       balloon: { anchor: "trace_box", placement: "right",
         text: "Cada item da spec tem um ID (ex.: #AUTH-01) que aparece no código (comentários gerados) e nos testes. Isso permite rastrear: 'qual código implementa esta spec?' e 'quais testes cobrem este requisito?'",
-        why: "Rastreabilidade é essencial para compliance, auditorias e debugging. Saber que test_auth.py testa o requisito #AUTH-01 da spec torna a revisão de conformidade trivial." },
+        why: "Rastreabilidade é essencial para compliance, auditorias e debugging. Saber que test_auth.py testa o requisito #AUTH-01 da spec torna a revisão de conformidade trivial.",
+        deep: `<p>O ID funciona como uma chave estrangeira entre três artefatos que, de outra forma, ficariam soltos: a intenção (spec), a implementação (código) e a verificação (teste). Sem ele, essa ligação existe só na cabeça de quem escreveu o código.</p>
+<div class="xp-example"><strong>Rastro completo de um requisito</strong>spec.md: "#AUTH-01 — senha errada deve retornar 401"
+auth.py: "# implementa #AUTH-01" acima da função login()
+test_auth.py: "def test_AUTH_01_senha_errada(): ..."</div>
+<p>Numa auditoria, a pergunta "onde está implementado o requisito de segurança X?" vira uma busca por texto em vez de uma investigação manual. E ao remover uma spec, o mesmo ID aponta exatamente o código e os testes que podem ser removidos junto — sem deixar órfãos no repositório.</p>` },
       enter: (ctx) => {
         ["trace_1"].forEach(id => ctx.show(id));
         setTimeout(() => { ctx.drawArrow("a_t1"); ctx.show("trace_2"); }, 200);
@@ -168,7 +212,12 @@
       highlight: ["cmp_sdd"],
       balloon: { anchor: "cmp_sdd", placement: "right",
         text: "<strong>TDD</strong>: humano escreve teste → humano escreve código. <strong>BDD</strong>: spec em Gherkin → humano implementa. <strong>SDD</strong>: spec em linguagem natural → IA gera código E testes → humano valida e refina.",
-        why: "SDD não substitui TDD ou BDD — ele os amplifica com IA. O humano ainda define o comportamento (spec) e valida o resultado, mas a IA faz o trabalho de implementação e teste inicial." },
+        why: "SDD não substitui TDD ou BDD — ele os amplifica com IA. O humano ainda define o comportamento (spec) e valida o resultado, mas a IA faz o trabalho de implementação e teste inicial.",
+        deep: `<p>As três metodologias compartilham a mesma ideia central — definir o comportamento antes (ou junto) da implementação — e diferem principalmente em <strong>quem</strong> faz cada etapa e em que formato.</p>
+<div class="xp-example"><strong>Mesma regra, três fluxos</strong>TDD: dev escreve test_login_falha() manualmente, depois escreve login() até passar
+BDD: analista escreve "GIVEN senha errada WHEN login THEN 401" em Gherkin; dev implementa
+SDD: alguém descreve "senha errada deve dar 401" em linguagem natural; a IA gera login() e o teste, o humano revisa o diff</div>
+<p>Na prática, boa parte dos times de SDD ainda usa Gherkin (BDD) como o formato da spec — a diferença central é que quem transforma a spec em código funcional deixa de ser exclusivamente humano.</p>` },
       enter: (ctx) => {
         ["cmp_tdd","cmp_bdd","cmp_sdd"].forEach((id, i) => setTimeout(() => ctx.show(id), i * 150));
       },

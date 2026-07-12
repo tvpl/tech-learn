@@ -127,7 +127,17 @@
       highlight: ["llm_box"],
       balloon: { anchor: "llm_box", placement: "bottom",
         text: "O mesmo modelo pode dar respostas radicalmente diferentes dependendo de como o prompt é escrito. <strong>Engenharia de Prompt</strong> é a disciplina de estruturar instruções para extrair o máximo de um LLM.",
-        why: "Um prompt bem escrito não muda o modelo — muda o que o modelo <em>ativa</em>. É como dar contexto e instrução a um especialista: quanto mais claro, melhor o resultado." },
+        why: "Um prompt bem escrito não muda o modelo — muda o que o modelo <em>ativa</em>. É como dar contexto e instrução a um especialista: quanto mais claro, melhor o resultado.",
+        deep: `<p>Dois prompts para a mesma tarefa podem gerar qualidade bem diferente — não porque o modelo "sabe mais" num caso, mas porque o prompt ativa caminhos diferentes do que foi aprendido no treino.</p>
+<div class="xp-example"><strong>Prompt vago</strong>"Fale sobre marketing digital."</div>
+<div class="xp-example"><strong>Prompt estruturado</strong>"Liste 5 táticas de marketing digital para uma padaria de bairro com orçamento de R$500/mês, em bullet points, com o custo estimado de cada uma."</div>
+<p>O segundo não deixa espaço para o modelo "adivinhar" o que você quer — audiência, formato, restrição de orçamento e estrutura de saída já estão todos definidos.</p>
+<h4>O que muda o resultado</h4>
+<ul>
+<li><strong>Contexto</strong> — quem é o público, qual o objetivo</li>
+<li><strong>Instrução clara</strong> — o verbo de ação (liste, compare, resuma, classifique)</li>
+<li><strong>Restrições</strong> — formato, tamanho, tom</li>
+</ul>` },
     },
     {
       title: "Zero-shot: sem exemplos",
@@ -135,7 +145,11 @@
       highlight: ["p_zero"],
       balloon: { anchor: "p_zero", placement: "right",
         text: "<strong>Zero-shot</strong>: você instrui o modelo sem dar exemplos. Funciona bem para tarefas simples que o modelo já conhece do treinamento (tradução, resumo, classificação básica).",
-        why: "Use zero-shot como ponto de partida. Se a qualidade não for suficiente, adicione exemplos (few-shot). Não complique o que já funciona simples." },
+        why: "Use zero-shot como ponto de partida. Se a qualidade não for suficiente, adicione exemplos (few-shot). Não complique o que já funciona simples.",
+        deep: `<p>Zero-shot funciona bem quando a tarefa é comum o bastante para já estar "no treino" do modelo — tradução, resumo, correção gramatical, classificação de sentimento simples.</p>
+<div class="xp-good"><strong>Bom uso de zero-shot</strong>"Traduza para espanhol: 'A reunião foi adiada para sexta.'"</div>
+<div class="xp-bad"><strong>Zero-shot mal aplicado</strong> — pedir pro modelo seguir um formato de relatório interno específico da sua empresa sem mostrar nenhum exemplo: ele vai inventar uma estrutura plausível, mas provavelmente errada.</div>
+<p>Regra prática: comece sempre por zero-shot. Só adicione exemplos (few-shot) se a saída não vier no formato ou qualidade que você precisa.</p>` },
     },
     {
       title: "Few-shot: exemplos guiam o modelo",
@@ -143,7 +157,19 @@
       highlight: ["p_few"],
       balloon: { anchor: "p_few", placement: "right",
         text: "<strong>Few-shot</strong>: você inclui 2-5 exemplos de input→output antes da sua tarefa real. O modelo aprende o padrão desejado pelo contexto, sem treinar nada.",
-        why: "Few-shot é especialmente eficaz para: formatos específicos, classificações com categorias incomuns e tarefas onde o modelo precisa imitar um estilo particular." },
+        why: "Few-shot é especialmente eficaz para: formatos específicos, classificações com categorias incomuns e tarefas onde o modelo precisa imitar um estilo particular.",
+        deep: `<p>O número de exemplos importa menos que a <strong>consistência</strong> entre eles: se todos seguem o mesmo padrão de formato, o modelo aprende a regra; se variam, ele fica confuso sobre o que replicar.</p>
+<div class="xp-example"><strong>3 exemplos consistentes</strong>"Amo este produto!" → positivo
+"Horrível experiência." → negativo
+"Chegou no prazo, sem mais." → neutro
+
+Classifique: "Superou minhas expectativas!"</div>
+<h4>Quando usar few-shot em vez de zero-shot</h4>
+<ul>
+<li>Categorias específicas do seu domínio (ex.: níveis de severidade de bug internos)</li>
+<li>Formato de saída pouco comum, que o modelo dificilmente veria no treino</li>
+<li>Estilo ou tom muito particular que é mais fácil mostrar do que descrever</li>
+</ul>` },
     },
     {
       title: "Chain-of-Thought: pensar passo a passo",
@@ -151,7 +177,19 @@
       highlight: ["p_cot", "o_cot"],
       balloon: { anchor: "p_cot", placement: "right",
         text: "<strong>Chain-of-Thought (CoT)</strong>: instruir o modelo a mostrar o raciocínio antes da resposta. Simples como adicionar \"Pense passo a passo\" ou mostrar um exemplo com etapas de raciocínio.",
-        why: "CoT melhora dramaticamente a acurácia em matemática, lógica e multi-step reasoning. O modelo que 'pensa em voz alta' comete menos erros que o que pula direto à conclusão." },
+        why: "CoT melhora dramaticamente a acurácia em matemática, lógica e multi-step reasoning. O modelo que 'pensa em voz alta' comete menos erros que o que pula direto à conclusão.",
+        deep: `<p>Sem instrução de raciocínio, um modelo pode tentar resolver um problema de várias etapas "de cabeça" e errar uma delas. Pedir para mostrar o raciocínio antes da resposta funciona como um checklist que o próprio modelo segue.</p>
+<div class="xp-bad"><strong>Sem CoT</strong>Pergunta: "Roger tem 5 bolas. Ganha 2 mais. Cada nova caixa tem 3 bolas. Recebeu 2 caixas novas. Quantas bolas ele tem?"
+Resposta direta do modelo: "12" ❌ (somou 5+2+3+2, ignorando que são 2 caixas de 3 bolas)</div>
+<div class="xp-good"><strong>Com CoT ("pense passo a passo")</strong>1. Bolas que já tinha + ganhou: 5 + 2 = 7
+2. Bolas das caixas novas: 2 caixas × 3 = 6
+3. Total: 7 + 6 = <strong>13</strong> ✓</div>
+<h4>Duas formas de ativar CoT</h4>
+<ul>
+<li><strong>Zero-shot CoT</strong> — só adicionar "pense passo a passo" ou "explique seu raciocínio antes de responder"</li>
+<li><strong>Few-shot CoT</strong> — mostrar 1-2 exemplos já resolvidos com o raciocínio escrito por extenso, e deixar o modelo imitar o padrão na pergunta real</li>
+</ul>
+<p>Trade-off: CoT gera mais tokens (mais latência e custo). Vale a pena em tarefas de lógica, matemática e multi-step; é desperdício em tarefas triviais como "traduza esta frase".</p>` },
     },
     {
       title: "Role prompting: definir um papel",
@@ -159,7 +197,11 @@
       highlight: ["p_role"],
       balloon: { anchor: "p_role", placement: "right",
         text: "<strong>Role Prompting</strong>: atribuir uma persona ou papel ao modelo. \"Você é um sênior de segurança\" ativa conhecimento e estilo de raciocínio específico do domínio.",
-        why: "Personas eficazes são específicas: 'sênior de segurança Python com foco em OWASP' é melhor que 'especialista'. A especificidade afunila o espaço de respostas." },
+        why: "Personas eficazes são específicas: 'sênior de segurança Python com foco em OWASP' é melhor que 'especialista'. A especificidade afunila o espaço de respostas.",
+        deep: `<p>A persona funciona melhor quando é específica o bastante para restringir o "espaço" de conhecimento e vocabulário que o modelo usa — genérico demais não muda quase nada.</p>
+<div class="xp-bad"><strong>Persona genérica</strong>"Você é um especialista." — não direciona quase nada; o modelo responde como responderia sem persona alguma.</div>
+<div class="xp-good"><strong>Persona específica</strong>"Você é um engenheiro de segurança sênior, especialista em OWASP Top 10, revisando código Python de produção." — define domínio, nível de senioridade e o critério de avaliação (OWASP).</div>
+<p>Role prompting não faz o modelo "saber mais" do que já sabia — ele reordena a probabilidade das respostas para o estilo, vocabulário e rigor daquele papel.</p>` },
     },
     {
       title: "Especificar o formato de saída",
@@ -167,7 +209,16 @@
       highlight: ["p_fmt", "o_fmt"],
       balloon: { anchor: "p_fmt", placement: "right",
         text: "Dizer exatamente <strong>qual formato você quer</strong> (JSON, markdown, lista numerada, XML) evita pós-processamento. Use JSON Schema ou mostre um exemplo do formato esperado no próprio prompt.",
-        why: "LLMs são otimizados para ser úteis, mas 'útil' é vago. Especificar o formato fecha o espaço de respostas válidas e torna a saída programaticamente processável." },
+        why: "LLMs são otimizados para ser úteis, mas 'útil' é vago. Especificar o formato fecha o espaço de respostas válidas e torna a saída programaticamente processável.",
+        deep: `<p>Sem especificar o formato, o modelo escolhe um razoável — mas raramente é exatamente o que seu código espera para fazer parsing.</p>
+<div class="xp-example"><strong>Prompt com formato explícito</strong>"Extraia nome, email e cidade e retorne apenas um JSON válido, sem texto antes ou depois, no formato:
+{"nome": "", "email": "", "cidade": ""}"</div>
+<h4>Técnicas para fechar o formato</h4>
+<ul>
+<li>Mostrar o schema ou exemplo exato da estrutura esperada</li>
+<li>Pedir explicitamente "sem texto antes ou depois" quando for consumir a saída via código</li>
+<li>Para JSON estruturado, muitas APIs de LLM têm um modo de "saída estruturada" nativo — mais confiável do que só pedir no prompt</li>
+</ul>` },
     },
     {
       title: "ReAct: Raciocinar + Agir",
@@ -175,7 +226,14 @@
       highlight: ["o_react"],
       balloon: { anchor: "o_react", placement: "left",
         text: "<strong>ReAct (Reason + Act)</strong>: o modelo alterna entre <em>Thought</em> (raciocínio), <em>Action</em> (chamada de ferramenta) e <em>Observation</em> (resultado). É a base dos agentes que usam tools.",
-        why: "ReAct é mais confiável que agentes que agem sem raciocinar: o Thought explica a lógica da Action, permitindo detectar erros antes de executar e auditar o processo depois." },
+        why: "ReAct é mais confiável que agentes que agem sem raciocinar: o Thought explica a lógica da Action, permitindo detectar erros antes de executar e auditar o processo depois.",
+        deep: `<p>ReAct evita que um agente execute uma ação desnecessária ou errada — o passo de <em>Thought</em> obriga o modelo a justificar por que vai chamar aquela ferramenta antes de chamar.</p>
+<div class="xp-example"><strong>Ciclo ReAct</strong>Thought: "Preciso do preço atual, não sei de cabeça."
+Action: search("preço iPhone 15")
+Observation: "R$ 4.799"
+Thought: "Já tenho o dado, posso responder."
+Answer: "O iPhone 15 custa R$ 4.799."</div>
+<p>É o padrão por trás da maioria dos agentes com tools (inclusive assistentes de código): raciocinar, agir, observar o resultado e só então decidir o próximo passo — em vez de tentar prever tudo de uma vez.</p>` },
     },
     {
       title: "XML tags para estrutura e delimitação",
@@ -183,7 +241,14 @@
       highlight: ["p_xml"],
       balloon: { anchor: "p_xml", placement: "right",
         text: "<strong>XML Tags</strong> como <code>&lt;task&gt;</code>, <code>&lt;context&gt;</code>, <code>&lt;format&gt;</code> delimitam cada parte do prompt, evitando que o modelo confunda instrução com dado de entrada.",
-        why: "Claude e outros modelos são treinados para entender e respeitar XML tags. Elas tornam o prompt modular: é fácil trocar só o contexto sem reescrever as instruções." },
+        why: "Claude e outros modelos são treinados para entender e respeitar XML tags. Elas tornam o prompt modular: é fácil trocar só o contexto sem reescrever as instruções.",
+        deep: `<p>Tags XML são especialmente úteis quando o prompt mistura <strong>instrução</strong> (o que fazer) com <strong>dado</strong> (o conteúdo a processar) — sem delimitação, o modelo pode confundir uma frase do dado com um comando.</p>
+<div class="xp-example"><strong>Prompt modular com tags</strong>&lt;task&gt;Resuma o texto abaixo em 3 bullet points&lt;/task&gt;
+&lt;context&gt;
+  {texto do artigo, pode conter qualquer coisa}
+&lt;/context&gt;
+&lt;format&gt;3 bullet points, português&lt;/format&gt;</div>
+<p>Como o conteúdo de <code>&lt;context&gt;</code> está claramente delimitado, mesmo que o texto do artigo contenha algo como "ignore as instruções anteriores", o modelo trata isso como dado, não como comando — uma defesa básica contra prompt injection.</p>` },
     },
     {
       title: "Anti-padrões: o que evitar",
@@ -194,7 +259,11 @@
       highlight: ["a1_g", "a2_g", "a3_g"],
       balloon: { anchor: "anti_lbl", placement: "bottom",
         text: "Os três anti-padrões mais comuns: <strong>ambiguidade</strong> (tarefa vaga), <strong>excesso de restrições negativas</strong> (dizer o que não quer em vez do que quer) e <strong>prompt monolítico</strong> sem estrutura.",
-        why: "Prompts negativos (\"não faça X\") são menos eficazes que positivos (\"faça Y\"). O modelo precisa imaginar X para evitá-lo — e às vezes acaba fazendo mesmo." },
+        why: "Prompts negativos (\"não faça X\") são menos eficazes que positivos (\"faça Y\"). O modelo precisa imaginar X para evitá-lo — e às vezes acaba fazendo mesmo.",
+        deep: `<p>Os três padrões abaixo costumam aparecer juntos — um prompt ambíguo tende a crescer com restrições negativas empilhadas na tentativa de "consertar" a saída, em vez de reescrever a instrução com clareza.</p>
+<div class="xp-bad"><strong>Empilhando restrições negativas</strong>"Não seja muito longo, não use jargão, não invente dados, não seja repetitivo, não esqueça de citar a fonte..."</div>
+<div class="xp-good"><strong>Reescrito como instrução positiva</strong>"Responda em até 3 parágrafos, linguagem acessível, citando a fonte de cada dado."</div>
+<p>Prompts negativos custam mais "esforço" ao modelo: ele precisa gerar mentalmente o que evitar antes de evitá-lo — o que aumenta a chance de fazer exatamente aquilo por engano.</p>` },
       enter: (ctx) => {
         ["a1_b","a2_b","a3_b"].forEach((id, i) => setTimeout(() => ctx.show(id), i * 100));
         setTimeout(() => {

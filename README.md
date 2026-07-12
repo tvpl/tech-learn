@@ -5,8 +5,8 @@ passo a passo, com animação, realces e **balões** que aparecem em cada etapa.
 Tudo em **HTML + CSS + JavaScript puro** — sem build, sem dependências. É só
 abrir no navegador.
 
-39 explicadores disponíveis, agrupados por área (descrições completas, busca e
-trilhas sugeridas em [`index.html`](index.html)):
+39 explicadores disponíveis, agrupados por área (descrições completas, busca
+por texto, filtro por nível e trilhas sugeridas em [`index.html`](index.html)):
 
 - 🤖 **IA & Agentes** (10) — Rede Transformer, RAG, Model Context Protocol,
   SubAgentes, Engenharia de Contexto, Engenharia de Prompt, Guardrails, Skills,
@@ -41,14 +41,18 @@ dados. Isso é a prova de que a estrutura se reaproveita.
 - ⌨️ **Ajuda de atalhos** (tecla `?` ou `h`) em overlay, para descobrir o teclado.
 - ❓ **Quiz** opcional ao fim de cada explicador (lembra a resposta na sessão).
 - 💬 **Glossário**: termos com definição em tooltip dentro dos balões.
+- 🔎 **"Saiba mais"**: nas cenas com conteúdo mais denso, um botão no balão abre
+  um painel com exemplos, comparações e detalhes extras — para quem quer se
+  aprofundar sem poluir o balão principal.
 - 🫥 **Balões translúcidos e arrastáveis**: o fundo do balão é semitransparente
   (efeito vidro fosco) para não esconder o diagrama atrás dele, e dá para
   arrastá-lo pelo título (segure e mova) quando ele ainda assim atrapalhar a
   vista — duplo-clique no título volta ao lugar original.
-- 🎚️ **Opacidade ajustável** (botão no cabeçalho ou teclas `[`/`]`), persiste
-  entre sessões · 👁️ **espiar diagrama** (tecla `v`): esconde todos os balões
-  na hora, sem sair da cena · 🔽 **balão recolhível** (clique no título): vira
-  uma pílula compacta — nasce recolhido em telas estreitas.
+- 🎚️ **Opacidade ajustável** (15–100%, botão no cabeçalho ou teclas `[`/`]`),
+  persiste entre sessões · 👁️ **espiar diagrama** (tecla `v`): esconde todos os
+  balões na hora, sem sair da cena · 🔽 **balão recolhível** (clique no
+  título): vira uma pílula compacta — sempre nasce expandido, mesmo em telas
+  estreitas.
 - 🧩 **Reposiciona sozinho** ao redimensionar a janela.
 - 🧭 **Links "Próximos →"**: barra com explicadores relacionados perto do fim
   de cada leitura (`engine/related.js`).
@@ -207,6 +211,8 @@ quando `fill`/`stroke`/`size` não cobrirem o caso.
     placement: "right",            // top | right | bottom | left
     text: "Texto com <strong>HTML</strong>.",
     why:  "Explica POR QUE essa etapa existe (opcional).",
+    deep: "HTML de aprofundamento — abre um botão \"🔎 Saiba mais\" (opcional).",
+    deepTitle: "Título do painel de aprofundamento (opcional, padrão = title da cena).",
   },
   show:      ["id1", "id2"],        // revela elementos (acumula entre cenas)
   hide:      ["id3"],               // esconde elementos
@@ -222,6 +228,19 @@ quando `fill`/`stroke`/`size` não cobrirem o caso.
 seguintes (bom para um diagrama que "cresce"). Elementos que você quer
 exclusivos de uma cena (zoom/detalhe) **não** entram em `show`/`hide` — revele-os
 dentro de `enter(ctx)` e o motor os esconde sozinho ao trocar de cena.
+
+### "Saiba mais" — aprofundamento opcional
+
+Quando `balloon.deep` está presente, o balão ganha um botão "🔎 Saiba mais" que
+abre um painel modal com esse HTML — útil para exemplos, comparações e
+detalhes que deixariam o balão principal grande demais. Dentro de `deep`, use
+livremente `<h4>`, `<ul>/<li>`, `<code>` e as classes prontas:
+
+```html
+<div class="xp-example"><strong>Rótulo</strong>conteúdo estilo terminal/exemplo</div>
+<div class="xp-good">Prefira isto…</div>
+<div class="xp-bad">Evite isto…</div>
+```
 
 Qualquer lista (`show`, `hide`, `highlight`…) aceita `"@nome"` para expandir um
 **grupo** de elementos de uma vez — ex.: `show: ["@tokens"]`.
