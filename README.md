@@ -5,30 +5,30 @@ passo a passo, com animação, realces e **balões** que aparecem em cada etapa.
 Tudo em **HTML + CSS + JavaScript puro** — sem build, sem dependências. É só
 abrir no navegador.
 
-Explicadores disponíveis:
+39 explicadores disponíveis, agrupados por área (descrições completas, busca e
+trilhas sugeridas em [`index.html`](index.html)):
 
-- 🧠 **Rede Transformer** — do texto cru à próxima palavra (tokenização, embeddings,
-  positional encoding, self-attention Q/K/V, multi-head, residual, feed-forward, saída).
-- 🌐 **Requisição HTTP** — DNS → TCP → TLS → request → resposta → render (sequência).
-- 🔌 **TCP/IP** — three-way handshake, segmentos/ACKs, janela, perda+retransmissão, FIN.
-- 🌿 **Git** — as quatro áreas e o caminho de `add` → `commit` → `push` → `pull`.
-- #️⃣ **Hash Map** — chave → hash → índice → bucket, colisões, encadeamento e resize.
-- 🔎 **Busca Binária** — array ordenado, ponteiros lo/hi/mid, descartar metade a cada sonda e O(log n).
-- 🔁 **Recursão** — `fact(4)`: empilhar as chamadas, atingir o caso base, desempilhar os retornos e o stack overflow.
+- 🤖 **IA & Agentes** (10) — Rede Transformer, RAG, Model Context Protocol,
+  SubAgentes, Engenharia de Contexto, Engenharia de Prompt, Guardrails, Skills,
+  Spec-Driven Development, Specs para Agentes.
+- 🌐 **Web & Protocolos** (6) — Requisição HTTP, TCP/IP, ISO 8583, WebSocket,
+  gRPC, TLS/mTLS.
+- 🔐 **Segurança & Autenticação** (7) — OAuth 2.0/OIDC, JWT, SSO, Sessions &
+  Cookies, API Keys, MFA/2FA, Criptografia.
+- ⛓️ **Sistemas Distribuídos** (2) — Consistent Hashing, Blockchain.
+- ☁️ **Infraestrutura & Cloud** (7) — Kubernetes, Amazon EKS, Amazon RDS,
+  Ingress, Circuit Breaker, Rate Limiting, Load Balancer.
+- ⚡ **Mensageria & Processamento Async** (2) — Sync → Async (Redis/Kafka),
+  Kafka Serialization + Schema Registry.
+- ☕ **Runtime & Linguagens** (1) — Virtual Threads (Java).
+- 🔢 **Algoritmos & Estruturas de Dados** (3) — Hash Map, Busca Binária, Recursão.
+- 🛠️ **Ferramentas** (1) — Git: do `add` ao `push`.
 
 Todos compartilham o **mesmo motor** (`engine/`): cada um é apenas um arquivo de
 dados. Isso é a prova de que a estrutura se reaproveita.
 
 > 🤖 Vai trabalhar no código (humano ou IA)? Comece pelo **[`AGENTS.md`](AGENTS.md)**:
 > arquitetura, o modelo de visibilidade das cenas e os principais cuidados.
-
-## ✨ v2 (beta)
-
-Há uma segunda geração da plataforma em [`v2/`](v2/): Next.js, motor dirigido
-por tempo (mesma cena roda no player web e vira MP4/GIF/carrossel para
-redes sociais), vocabulário rico (código com highlight, fórmulas, câmera
-animada, partículas). Detalhes em [`v2/README.md`](v2/README.md) e
-[`v2/AGENTS.md`](v2/AGENTS.md). A v1 abaixo continua no ar sem mudanças.
 
 ### Recursos do motor
 
@@ -41,6 +41,17 @@ animada, partículas). Detalhes em [`v2/README.md`](v2/README.md) e
 - ⌨️ **Ajuda de atalhos** (tecla `?` ou `h`) em overlay, para descobrir o teclado.
 - ❓ **Quiz** opcional ao fim de cada explicador (lembra a resposta na sessão).
 - 💬 **Glossário**: termos com definição em tooltip dentro dos balões.
+- 🫥 **Balões translúcidos e arrastáveis**: o fundo do balão é semitransparente
+  (efeito vidro fosco) para não esconder o diagrama atrás dele, e dá para
+  arrastá-lo pelo título (segure e mova) quando ele ainda assim atrapalhar a
+  vista — duplo-clique no título volta ao lugar original.
+- 🎚️ **Opacidade ajustável** (botão no cabeçalho ou teclas `[`/`]`), persiste
+  entre sessões · 👁️ **espiar diagrama** (tecla `v`): esconde todos os balões
+  na hora, sem sair da cena · 🔽 **balão recolhível** (clique no título): vira
+  uma pílula compacta — nasce recolhido em telas estreitas.
+- 🧩 **Reposiciona sozinho** ao redimensionar a janela.
+- 🧭 **Links "Próximos →"**: barra com explicadores relacionados perto do fim
+  de cada leitura (`engine/related.js`).
 - ♿ **Acessível**: navegação por teclado, foco visível, `aria-live` e
   `prefers-reduced-motion`.
 - ✅ **Testado**: `npm test` percorre todas as cenas de todos os diagramas (jsdom).
@@ -66,12 +77,17 @@ o índice lateral de etapas, ou o teclado:
 | **m** | mostra/oculta o minimapa |
 | **+ / − / 0** | zoom: aproxima / afasta / reseta |
 | **d** | modo debug (grade de coordenadas + ids) — ajuda a posicionar elementos |
+| **v** | espiar diagrama (esconde os balões sem sair da cena) |
+| **[ / ]** | diminui / aumenta a transparência do balão |
 | **? / h** | mostra os atalhos de teclado (Esc fecha) |
 
 Com **mouse**: roda do mouse dá zoom, arrastar (com zoom) faz *pan*, duplo-clique
-reseta. No **toque**: *swipe* horizontal troca de cena, pinça dá zoom e arrastar faz
-*pan*. No cabeçalho há botões para **tema** (🌓), **minimapa** (🗺️), **copiar link
-da cena** (🔗), **apresentação** (⛶) e **atalhos** (⌨️). A última cena vista é
+reseta; segure o **título do balão** para arrastá-lo (duplo-clique nele recoloca no
+lugar) e clique no ▾ pra recolher/expandir. No **toque**: *swipe* horizontal troca
+de cena, pinça dá zoom e arrastar faz *pan*. No cabeçalho há botões para **tema**
+(🌓), **minimapa** (🗺️), **copiar link da cena** (🔗), **apresentação** (⛶),
+**espiar diagrama** (👁️), **opacidade do balão** (🎚️) e **atalhos** (⌨️). A última
+cena vista é
 **retomada** ao reabrir.
 
 ## 🧪 Testes

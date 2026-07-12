@@ -7,7 +7,7 @@ on:
 
 jobs:
   smoke:
-    name: Smoke test dos explicadores (v1)
+    name: Smoke test dos explicadores
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -18,32 +18,3 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Rodar smoke test (jsdom)
         run: npm test
-
-  v2:
-    name: Testes e build da v2 (Next.js)
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: v2
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: v2/package-lock.json
-      - run: npm ci
-      - run: npm run typecheck
-      - run: npm test
-      - run: npm run build
-      - name: Instalar browser do Playwright
-        run: npx playwright install --with-deps chromium
-      - name: Testes e2e (smoke por explainer + regressão visual)
-        run: npm run test:e2e
-      - name: Upload relatório do Playwright (em caso de falha)
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-report
-          path: v2/playwright-report/
-          retention-days: 14

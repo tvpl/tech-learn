@@ -49,6 +49,13 @@
     .card .tag.tools { color: var(--muted); }
     .card .tag.auth  { color: var(--hot); }
     .card .tag.dist  { color: var(--accent-2); }
+    .card .lvl {
+      font-size: 9px; text-transform: uppercase; letter-spacing: .6px; font-weight: 700;
+      padding: 2px 7px; border-radius: 999px; vertical-align: middle;
+    }
+    .card .lvl-intro    { color: var(--good); background: rgba(81,224,163,.14); border: 1px solid var(--good); }
+    .card .lvl-medio    { color: var(--warn); background: rgba(255,209,102,.14); border: 1px solid var(--warn); }
+    .card .lvl-avancado { color: var(--hot);  background: rgba(255,122,144,.14); border: 1px solid var(--hot); }
     .card h3 { margin: 7px 0 5px; font-size: 18px; }
     .card p { margin: 0; color: var(--ink-soft); font-size: 13px; line-height: 1.5; }
     .card.soon { opacity: .45; pointer-events: none; }
@@ -93,18 +100,25 @@
     /* no-results message */
     #no-results { display: none; text-align: center; color: var(--muted); padding: 48px 0; font-size: 15px; }
 
-    /* Banner v2 */
-    .v2-banner {
-      display: flex; align-items: center; justify-content: space-between; gap: 16px;
-      text-decoration: none; color: inherit; margin-bottom: 40px;
-      background: linear-gradient(135deg, rgba(91,157,255,.14), rgba(179,137,255,.14));
-      border: 1px solid var(--accent); border-radius: var(--radius);
-      padding: 16px 22px; transition: all var(--t-fast) var(--ease);
+    /* Trilhas sugeridas */
+    .tracks-section { margin-bottom: 52px; }
+    .tracks { display: grid; gap: 12px; }
+    .track {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+      background: var(--panel-2); border: 1px solid var(--line); border-radius: var(--radius-sm);
+      padding: 12px 16px;
     }
-    .v2-banner:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
-    .v2-banner strong { font-size: 15px; }
-    .v2-banner p { margin: 3px 0 0; color: var(--ink-soft); font-size: 13px; }
-    .v2-banner span.arrow { font-size: 20px; color: var(--accent); flex-shrink: 0; }
+    .track-name {
+      flex: none; font-size: 13px; font-weight: 600; color: var(--ink);
+      margin-right: 4px; min-width: 180px;
+    }
+    .track a {
+      font-size: 13px; color: var(--ink-soft); text-decoration: none;
+      border-bottom: 1px dashed var(--line); transition: color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease);
+    }
+    .track a:hover { color: var(--accent); border-color: var(--accent); }
+    .track-arrow { color: var(--muted); font-size: 12px; }
+    @media (max-width: 620px) { .track-name { min-width: 100%; margin-bottom: 4px; } }
   </style>
 </head>
 <body>
@@ -118,80 +132,127 @@
       <p class="lead">Diagramas interativos que explicam conceitos de tecnologia passo a passo, com animação e balões — construídos sobre um motor reutilizável.</p>
     </header>
 
-    <a class="v2-banner" href="v2/">
-      <span>
-        <strong>✨ Conheça a v2 (beta)</strong>
-        <p>Motor novo em Next.js: código com syntax highlight, fórmulas, câmera animada — e export para Reels, feed e carrossel.</p>
-      </span>
-      <span class="arrow">→</span>
-    </a>
-
     <div class="search-wrap">
       <input id="search" type="search" placeholder="🔍  Buscar explicador..." autocomplete="off" aria-label="Buscar explicador" />
     </div>
 
     <p id="no-results">Nenhum explicador encontrado para "<span id="no-results-q"></span>".</p>
 
+    <!-- ═══════════════════════ TRILHAS SUGERIDAS ═══════════════════════ -->
+    <section class="tracks-section">
+      <h2 class="cat-head"><span class="cat-emoji">🧭</span> Trilhas sugeridas</h2>
+      <div class="tracks">
+        <div class="track">
+          <span class="track-name">Backend do zero</span>
+          <a href="explainers/tcp.html">TCP/IP</a><span class="track-arrow">→</span>
+          <a href="explainers/http.html">HTTP</a><span class="track-arrow">→</span>
+          <a href="explainers/tls.html">TLS/mTLS</a><span class="track-arrow">→</span>
+          <a href="explainers/oauth.html">OAuth 2.0</a><span class="track-arrow">→</span>
+          <a href="explainers/jwt.html">JWT</a>
+        </div>
+        <div class="track">
+          <span class="track-name">IA &amp; Agentes</span>
+          <a href="explainers/transformer.html">Transformer</a><span class="track-arrow">→</span>
+          <a href="explainers/prompt-eng.html">Prompt Engineering</a><span class="track-arrow">→</span>
+          <a href="explainers/rag.html">RAG</a><span class="track-arrow">→</span>
+          <a href="explainers/mcp.html">MCP</a><span class="track-arrow">→</span>
+          <a href="explainers/subagents.html">SubAgentes</a>
+        </div>
+        <div class="track">
+          <span class="track-name">Segurança de ponta a ponta</span>
+          <a href="explainers/crypto.html">Criptografia</a><span class="track-arrow">→</span>
+          <a href="explainers/jwt.html">JWT</a><span class="track-arrow">→</span>
+          <a href="explainers/oauth.html">OAuth 2.0</a><span class="track-arrow">→</span>
+          <a href="explainers/sso.html">SSO</a><span class="track-arrow">→</span>
+          <a href="explainers/mfa.html">MFA/2FA</a>
+        </div>
+        <div class="track">
+          <span class="track-name">Infra &amp; Cloud na prática</span>
+          <a href="explainers/load-balancer.html">Load Balancer</a><span class="track-arrow">→</span>
+          <a href="explainers/kubernetes.html">Kubernetes</a><span class="track-arrow">→</span>
+          <a href="explainers/eks.html">Amazon EKS</a><span class="track-arrow">→</span>
+          <a href="explainers/ingress.html">Ingress</a>
+        </div>
+        <div class="track">
+          <span class="track-name">Resiliência distribuída</span>
+          <a href="explainers/circuit-breaker.html">Circuit Breaker</a><span class="track-arrow">→</span>
+          <a href="explainers/rate-limit.html">Rate Limiting</a><span class="track-arrow">→</span>
+          <a href="explainers/consistent-hashing.html">Consistent Hashing</a>
+        </div>
+        <div class="track">
+          <span class="track-name">Mensageria assíncrona</span>
+          <a href="explainers/async-redis-kafka.html">Sync → Async (Redis/Kafka)</a><span class="track-arrow">→</span>
+          <a href="explainers/kafka-schema.html">Kafka Schema Registry</a>
+        </div>
+        <div class="track">
+          <span class="track-name">Fundamentos de algoritmos</span>
+          <a href="explainers/recursao.html">Recursão</a><span class="track-arrow">→</span>
+          <a href="explainers/busca-binaria.html">Busca Binária</a><span class="track-arrow">→</span>
+          <a href="explainers/hashmap.html">Hash Map</a>
+        </div>
+      </div>
+    </section>
+
     <!-- ═══════════════════════ IA & AGENTES ═══════════════════════ -->
     <section class="cat-section">
       <h2 class="cat-head"><span class="cat-emoji">🤖</span> IA &amp; Agentes</h2>
       <div class="cards">
         <a class="card" href="explainers/transformer.html">
-          <span class="tag ai">IA · LLMs</span>
+          <span class="tag ai">IA · LLMs</span> <span class="lvl lvl-avancado">Avançado</span>
           <h3>Rede Transformer →</h3>
           <p>Do texto cru à próxima palavra: tokenização, embeddings, positional encoding, self-attention (Q/K/V), multi-head, residual, feed-forward e cabeça de saída.</p>
         </a>
 
         <a class="card" href="explainers/rag.html">
-          <span class="tag ai">IA · RAG</span>
+          <span class="tag ai">IA · RAG</span> <span class="lvl lvl-medio">Intermediário</span>
           <h3>RAG →</h3>
           <p>Retrieval-Augmented Generation: chunking, embeddings, busca vetorial, recuperação de contexto e como fundamentar as respostas de um LLM em dados reais.</p>
         </a>
 
         <a class="card" href="explainers/mcp.html">
-          <span class="tag ai">IA · Protocolos</span>
+          <span class="tag ai">IA · Protocolos</span> <span class="lvl lvl-medio">Intermediário</span>
           <h3>Model Context Protocol →</h3>
           <p>Como o MCP conecta LLMs a ferramentas e dados externos: Host, Client, Server, Tools, Resources, Prompts e o fluxo JSON-RPC de ida e volta.</p>
         </a>
 
         <a class="card" href="explainers/subagents.html">
-          <span class="tag ai">IA · Agentes</span>
+          <span class="tag ai">IA · Agentes</span> <span class="lvl lvl-medio">Intermediário</span>
           <h3>SubAgentes →</h3>
           <p>Orquestrador que spawna subagentes especializados, executa em paralelo, agrega resultados e lida com falhas — o padrão multi-agente explicado.</p>
         </a>
 
         <a class="card" href="explainers/context-eng.html">
-          <span class="tag ai">IA · Engenharia</span>
+          <span class="tag ai">IA · Engenharia</span> <span class="lvl lvl-medio">Intermediário</span>
           <h3>Engenharia de Contexto →</h3>
           <p>Janela de contexto, hierarquia de mensagens, estratégias de compressão, caching de prompt e como aproveitar cada token da forma mais eficiente.</p>
         </a>
 
         <a class="card" href="explainers/prompt-eng.html">
-          <span class="tag ai">IA · Prompts</span>
+          <span class="tag ai">IA · Prompts</span> <span class="lvl lvl-intro">Iniciante</span>
           <h3>Engenharia de Prompt →</h3>
           <p>Zero-shot, few-shot, chain-of-thought, role prompting, ReAct, XML tags e os anti-padrões que fazem modelos perderem precisão.</p>
         </a>
 
         <a class="card" href="explainers/guardrails.html">
-          <span class="tag ai">IA · Segurança</span>
+          <span class="tag ai">IA · Segurança</span> <span class="lvl lvl-medio">Intermediário</span>
           <h3>Guardrails →</h3>
           <p>Camadas de proteção para sistemas de IA: validação de entrada, detecção de injeção de prompt, filtros de saída, fallback e auditoria.</p>
         </a>
 
         <a class="card" href="explainers/skills.html">
-          <span class="tag ai">IA · Agentes</span>
+          <span class="tag ai">IA · Agentes</span> <span class="lvl lvl-medio">Intermediário</span>
           <h3>Skills →</h3>
           <p>O que são Skills no contexto de agentes, como o LLM decide qual invocar, o contrato input/output e como compor skills em fluxos mais complexos.</p>
         </a>
 
         <a class="card" href="explainers/sdd.html">
-          <span class="tag ai">IA · Metodologia</span>
+          <span class="tag ai">IA · Metodologia</span> <span class="lvl lvl-medio">Intermediário</span>
           <h3>Spec-Driven Development →</h3>
           <p>O ciclo SDD: escrever a spec, gerar código com IA, validar com testes automatizados, iterar — e por que a spec é a fonte de verdade.</p>
         </a>
 
         <a class="card" href="explainers/specs.html">
-          <span class="tag ai">IA · Especificações</span>
+          <span class="tag ai">IA · Especificações</span> <span class="lvl lvl-medio">Intermediário</span>
           <h3>Specs para Agentes →</h3>
           <p>Estrutura de uma spec de agente: contexto, objetivo, restrições, tools, contratos de I/O, exemplos e como diferenciar de system prompt e CLAUDE.md.</p>
         </a>
@@ -203,37 +264,37 @@
       <h2 class="cat-head"><span class="cat-emoji">🌐</span> Web &amp; Protocolos</h2>
       <div class="cards">
         <a class="card" href="explainers/http.html">
-          <span class="tag web">Web · Redes</span>
+          <span class="tag web">Web · Redes</span> <span class="lvl lvl-intro">Iniciante</span>
           <h3>Requisição HTTP →</h3>
           <p>Da URL digitada à página renderizada: DNS, conexão TCP, handshake TLS, request, resposta (200 OK) e cache — em diagrama de sequência.</p>
         </a>
 
         <a class="card" href="explainers/tcp.html">
-          <span class="tag web">Redes</span>
+          <span class="tag web">Redes</span> <span class="lvl lvl-intro">Iniciante</span>
           <h3>TCP/IP →</h3>
           <p>Three-way handshake (SYN/SYN-ACK/ACK), segmentos numerados, ACKs, janela deslizante, perda + retransmissão e encerramento.</p>
         </a>
 
         <a class="card" href="explainers/iso8583.html">
-          <span class="tag web">Protocolos · Pagamentos</span>
+          <span class="tag web">Protocolos · Pagamentos</span> <span class="lvl lvl-avancado">Avançado</span>
           <h3>ISO 8583 →</h3>
           <p>O padrão de mensagens de cartão: MTI, bitmap primário/secundário, data elements e o fluxo POS → Adquirente → Bandeira → Emissor.</p>
         </a>
 
         <a class="card" href="explainers/websocket.html">
-          <span class="tag web">Web · Real-time</span>
+          <span class="tag web">Web · Real-time</span> <span class="lvl lvl-medio">Intermediário</span>
           <h3>WebSocket →</h3>
           <p>Full-duplex sobre TCP: handshake HTTP 101 Upgrade, estrutura de frame (FIN, opcode, MASK), opcodes text/binary/ping/pong e comparativo com SSE.</p>
         </a>
 
         <a class="card" href="explainers/grpc.html">
-          <span class="tag web">Web · APIs</span>
+          <span class="tag web">Web · APIs</span> <span class="lvl lvl-medio">Intermediário</span>
           <h3>gRPC →</h3>
           <p>Schema-first com Protocol Buffers, HTTP/2 multiplexing, quatro tipos de RPC (Unary, Server Stream, Client Stream, Bidirectional) e Interceptors.</p>
         </a>
 
         <a class="card" href="explainers/tls.html">
-          <span class="tag web">Web · Segurança</span>
+          <span class="tag web">Web · Segurança</span> <span class="lvl lvl-avancado">Avançado</span>
           <h3>TLS / mTLS →</h3>
           <p>Handshake ClientHello/ServerHello, X.509 e chain of trust, ECDHE key exchange, derivação de session keys e mTLS para autenticação mútua.</p>
         </a>
@@ -245,43 +306,43 @@
       <h2 class="cat-head"><span class="cat-emoji">🔐</span> Segurança &amp; Autenticação</h2>
       <div class="cards">
         <a class="card" href="explainers/oauth.html">
-          <span class="tag auth">Auth · OAuth</span>
+          <span class="tag auth">Auth · OAuth</span> <span class="lvl lvl-avancado">Avançado</span>
           <h3>OAuth 2.0 / OIDC →</h3>
           <p>Authorization Code Flow com 4 atores, PKCE para apps públicas, os três tokens (access, refresh, id_token) e OIDC como camada de identidade.</p>
         </a>
 
         <a class="card" href="explainers/jwt.html">
-          <span class="tag auth">Auth · Tokens</span>
+          <span class="tag auth">Auth · Tokens</span> <span class="lvl lvl-medio">Intermediário</span>
           <h3>JWT →</h3>
           <p>Header.Payload.Signature: claims padrão (sub, exp, iss, aud), HS256 vs RS256, verificação stateless sem banco e estratégia de revogação com refresh token.</p>
         </a>
 
         <a class="card" href="explainers/sso.html">
-          <span class="tag auth">Auth · SSO</span>
+          <span class="tag auth">Auth · SSO</span> <span class="lvl lvl-avancado">Avançado</span>
           <h3>SSO — Single Sign-On →</h3>
           <p>1 login no IdP, acesso a N apps: SP-initiated flow, SSO session cookie, assertions SAML vs OIDC, e Single Logout (SLO).</p>
         </a>
 
         <a class="card" href="explainers/sessions.html">
-          <span class="tag auth">Auth · Sessions</span>
+          <span class="tag auth">Auth · Sessions</span> <span class="lvl lvl-intro">Iniciante</span>
           <h3>Sessions &amp; Cookies →</h3>
           <p>State server-side com session_id no Redis, atributos HttpOnly/Secure/SameSite, proteção contra CSRF e session hijacking.</p>
         </a>
 
         <a class="card" href="explainers/api-keys.html">
-          <span class="tag auth">Auth · M2M</span>
+          <span class="tag auth">Auth · M2M</span> <span class="lvl lvl-intro">Iniciante</span>
           <h3>API Keys →</h3>
           <p>Geração com crypto.randomBytes, armazenar apenas SHA-256, rate limiting por chave no Redis, escopos e rotação sem downtime.</p>
         </a>
 
         <a class="card" href="explainers/mfa.html">
-          <span class="tag auth">Auth · MFA</span>
+          <span class="tag auth">Auth · MFA</span> <span class="lvl lvl-medio">Intermediário</span>
           <h3>MFA / 2FA →</h3>
           <p>Os 3 fatores (saber, ter, ser): TOTP com HMAC-SHA1 e janela de 30s, FIDO2/WebAuthn phishing-resistant e por que SMS OTP é inseguro.</p>
         </a>
 
         <a class="card" href="explainers/crypto.html">
-          <span class="tag auth">Segurança · Crypto</span>
+          <span class="tag auth">Segurança · Crypto</span> <span class="lvl lvl-avancado">Avançado</span>
           <h3>Criptografia →</h3>
           <p>Simétrica (AES, ChaCha20) vs assimétrica (RSA, ECC), hybrid encryption, assinaturas digitais, funções hash e KDFs (bcrypt, Argon2).</p>
         </a>
@@ -293,13 +354,13 @@
       <h2 class="cat-head"><span class="cat-emoji">⛓️</span> Sistemas Distribuídos</h2>
       <div class="cards">
         <a class="card" href="explainers/consistent-hashing.html">
-          <span class="tag dist">Distribuídos · Particionamento</span>
+          <span class="tag dist">Distribuídos · Particionamento</span> <span class="lvl lvl-avancado">Avançado</span>
           <h3>Consistent Hashing →</h3>
           <p>Hash ring 0..2³², lookup clockwise O(log N), virtual nodes para distribuição uniforme, add/remove nó remapeia apenas ~1/N chaves. Base de Cassandra, DynamoDB e Redis Cluster.</p>
         </a>
 
         <a class="card" href="explainers/blockchain.html">
-          <span class="tag dist">Distribuídos · Consensus</span>
+          <span class="tag dist">Distribuídos · Consensus</span> <span class="lvl lvl-avancado">Avançado</span>
           <h3>Blockchain →</h3>
           <p>Cadeia de blocos encadeados por prev_hash, Proof of Work (brute-force de nonce), longest chain wins, ciclo de vida de uma transação e Smart Contracts.</p>
         </a>
@@ -311,43 +372,43 @@
       <h2 class="cat-head"><span class="cat-emoji">☁️</span> Infraestrutura &amp; Cloud</h2>
       <div class="cards">
         <a class="card" href="explainers/kubernetes.html">
-          <span class="tag infra">Kubernetes</span>
+          <span class="tag infra">Kubernetes</span> <span class="lvl lvl-avancado">Avançado</span>
           <h3>Kubernetes →</h3>
           <p>Control Plane (API Server, etcd, Scheduler), Worker Nodes, Pods, Deployments, Services, HPA e rolling deploy sem downtime.</p>
         </a>
 
         <a class="card" href="explainers/eks.html">
-          <span class="tag infra">AWS · EKS</span>
+          <span class="tag infra">AWS · EKS</span> <span class="lvl lvl-avancado">Avançado</span>
           <h3>Amazon EKS →</h3>
           <p>Kubernetes gerenciado na AWS: Control Plane mantido pela AWS, Node Groups, Fargate, VPC, IRSA, Add-ons e integração com ECR e ALB.</p>
         </a>
 
         <a class="card" href="explainers/rds.html">
-          <span class="tag infra">AWS · RDS</span>
+          <span class="tag infra">AWS · RDS</span> <span class="lvl lvl-medio">Intermediário</span>
           <h3>Amazon RDS →</h3>
           <p>Banco relacional gerenciado: Multi-AZ com failover automático, Read Replicas, backups automáticos, restore point-in-time e encryption.</p>
         </a>
 
         <a class="card" href="explainers/ingress.html">
-          <span class="tag infra">Kubernetes · Redes</span>
+          <span class="tag infra">Kubernetes · Redes</span> <span class="lvl lvl-medio">Intermediário</span>
           <h3>Ingress →</h3>
           <p>Como expor serviços Kubernetes externamente: Ingress Controller, host/path routing, TLS termination e por que supera NodePort e LoadBalancer.</p>
         </a>
 
         <a class="card" href="explainers/circuit-breaker.html">
-          <span class="tag infra">Resiliência</span>
+          <span class="tag infra">Resiliência</span> <span class="lvl lvl-medio">Intermediário</span>
           <h3>Circuit Breaker →</h3>
           <p>O padrão que evita cascata de falhas: estados CLOSED → OPEN → HALF-OPEN, contador de erros, timer e probe request explicados passo a passo.</p>
         </a>
 
         <a class="card" href="explainers/rate-limit.html">
-          <span class="tag infra">Resiliência</span>
+          <span class="tag infra">Resiliência</span> <span class="lvl lvl-medio">Intermediário</span>
           <h3>Rate Limiting →</h3>
           <p>Token Bucket, Leaky Bucket e Sliding Window: como proteger APIs de abuso, tokens se reabastecendo, burst capacity e os headers X-RateLimit-*.</p>
         </a>
 
         <a class="card" href="explainers/load-balancer.html">
-          <span class="tag infra">Infra · Redes</span>
+          <span class="tag infra">Infra · Redes</span> <span class="lvl lvl-intro">Iniciante</span>
           <h3>Load Balancer →</h3>
           <p>L4 vs L7, Round Robin, Weighted, Least Connections, IP Hash, health checks, SSL termination e Global Load Balancing.</p>
         </a>
@@ -359,13 +420,13 @@
       <h2 class="cat-head"><span class="cat-emoji">⚡</span> Mensageria &amp; Processamento Async</h2>
       <div class="cards">
         <a class="card" href="explainers/async-redis-kafka.html">
-          <span class="tag async">Mensageria</span>
+          <span class="tag async">Mensageria</span> <span class="lvl lvl-medio">Intermediário</span>
           <h3>Sync → Async com Redis / Kafka →</h3>
           <p>Transformar uma requisição síncrona em processamento assíncrono: enfileirar, 202 Accepted, worker, result store, polling, webhook e Dead Letter Queue.</p>
         </a>
 
         <a class="card" href="explainers/kafka-schema.html">
-          <span class="tag async">Kafka · Serialização</span>
+          <span class="tag async">Kafka · Serialização</span> <span class="lvl lvl-avancado">Avançado</span>
           <h3>Kafka Serialization + Schema Registry →</h3>
           <p>JSON vs Avro vs Protobuf: payload size, schema enforcement. Schema Registry: magic byte + schema_id, producer/consumer flow e compatibility modes.</p>
         </a>
@@ -377,7 +438,7 @@
       <h2 class="cat-head"><span class="cat-emoji">☕</span> Runtime &amp; Linguagens</h2>
       <div class="cards">
         <a class="card" href="explainers/virtual-threads.html">
-          <span class="tag runtime">Java · Concorrência</span>
+          <span class="tag runtime">Java · Concorrência</span> <span class="lvl lvl-avancado">Avançado</span>
           <h3>Virtual Threads Java →</h3>
           <p>Project Loom no Java 21: Platform Threads vs Virtual Threads, carrier threads, desmontagem em I/O bloqueante e Structured Concurrency.</p>
         </a>
@@ -389,19 +450,19 @@
       <h2 class="cat-head"><span class="cat-emoji">🔢</span> Algoritmos &amp; Estruturas de Dados</h2>
       <div class="cards">
         <a class="card" href="explainers/hashmap.html">
-          <span class="tag algo">Estruturas de dados</span>
+          <span class="tag algo">Estruturas de dados</span> <span class="lvl lvl-intro">Iniciante</span>
           <h3>Hash Map por dentro →</h3>
           <p>Chave → hash → índice → bucket. Colisões, encadeamento, busca O(1) médio e resize/rehash.</p>
         </a>
 
         <a class="card" href="explainers/busca-binaria.html">
-          <span class="tag algo">Algoritmos</span>
+          <span class="tag algo">Algoritmos</span> <span class="lvl lvl-intro">Iniciante</span>
           <h3>Busca Binária →</h3>
           <p>Dividir para conquistar num array ordenado: ponteiros lo/hi/mid, descartar metade a cada sonda e por que o custo é O(log n).</p>
         </a>
 
         <a class="card" href="explainers/recursao.html">
-          <span class="tag algo">Programação</span>
+          <span class="tag algo">Programação</span> <span class="lvl lvl-intro">Iniciante</span>
           <h3>Recursão e a pilha →</h3>
           <p>fact(4) passo a passo: empilhar as chamadas, atingir o caso base e desempilhar os retornos — e por que existe o stack overflow.</p>
         </a>
@@ -413,7 +474,7 @@
       <h2 class="cat-head"><span class="cat-emoji">🛠️</span> Ferramentas</h2>
       <div class="cards">
         <a class="card" href="explainers/git.html">
-          <span class="tag tools">Ferramentas</span>
+          <span class="tag tools">Ferramentas</span> <span class="lvl lvl-intro">Iniciante</span>
           <h3>Git: do add ao push →</h3>
           <p>As quatro áreas (working, staging, repo local, remoto) e o caminho de uma mudança: add, commit, push e pull.</p>
         </a>
