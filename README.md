@@ -5,7 +5,7 @@ passo a passo, com animação, realces e **balões** que aparecem em cada etapa.
 Tudo em **HTML + CSS + JavaScript puro** — sem build, sem dependências. É só
 abrir no navegador.
 
-48 explicadores disponíveis, agrupados por área (descrições completas, busca
+55 explicadores disponíveis, agrupados por área (descrições completas, busca
 por texto, filtro por nível e trilhas sugeridas em [`index.html`](index.html)):
 
 - 🤖 **IA & Agentes** (10) — Rede Transformer, RAG, Model Context Protocol,
@@ -23,11 +23,13 @@ por texto, filtro por nível e trilhas sugeridas em [`index.html`](index.html)):
 - ☕ **Runtime & Linguagens** (1) — Virtual Threads (Java).
 - 🔢 **Algoritmos & Estruturas de Dados** (3) — Hash Map, Busca Binária, Recursão.
 - 🛠️ **Ferramentas** (1) — Git: do `add` ao `push`.
-- 🇬🇧 **Inglês** (9) — Como Aprender Inglês Rápido, Estrutura da Frase (SVO),
+- 🇬🇧 **Inglês** (16) — Como Aprender Inglês Rápido, Estrutura da Frase (SVO),
   Simple Present vs Present Continuous, Simple Past vs Past Continuous, Will
   vs Going to vs Present Continuous, Perguntas Naturais, Negativas e
   Contrações Faladas, Verbos Modais como Chunks, Como os Americanos Falam de
-  Verdade.
+  Verdade, Present Perfect, Artigos (A/An/The), Preposições de Tempo e Lugar,
+  Contáveis e Incontáveis, Condicionais (If Clauses), Phrasal Verbs
+  Essenciais, Small Talk / Chunks Sociais.
 
 Todos compartilham o **mesmo motor** (`engine/`): cada um é apenas um arquivo de
 dados. Isso é a prova de que a estrutura se reaproveita.
