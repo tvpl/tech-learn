@@ -91,9 +91,11 @@ Um elemento com `group:"nome"` entra no grupo `nome`. Em listas de cena use
 Deep-link `#cena=N`, autoplay + barra, tema claro/escuro, modo apresentação,
 minimapa, **zoom/pan** (roda/pinça/teclado `+ - 0`, arrasto) e **swipe** no toque,
 **retomar** última cena (localStorage), **modo debug** (tecla `d`: grade + ids),
-**quiz** (`step.quiz`, lembra a resposta na sessão), **glossário** (`<span
-class="xp-term" data-tip="...">`), **painel "Saiba mais"** (`balloon.deep`/
-`deepTitle`, ver 3.6.1), **modo leitura** (tecla `r`, ver 3.6.2), teclado
+**quiz** (`step.quiz`, lembra a resposta na sessão), **exercícios interativos**
+(`step.exercises[]`, ver 3.6.3), **materiais/anexos** (`diagram.materials[]`, botão
+📎, ver 3.6.4), **glossário** (`<span class="xp-term" data-tip="...">`), **painel
+"Saiba mais"** (`balloon.deep`/`deepTitle`, ver 3.6.1), **modo leitura** (tecla `r`,
+ver 3.6.2), teclado
 (← → espaço f m d v r [ ] + − 0), `aria-live`,
 `prefers-reduced-motion`, validador que avisa no console sobre ids inexistentes,
 reposicionamento do balão no `resize` da janela, e o "próximos explicadores"
@@ -124,6 +126,33 @@ inflar o balão em si. Classes utilitárias disponíveis dentro do `deep`:
 `.xp-example` (bloco mono, `<strong>` inicial vira rótulo), `.xp-good`/`.xp-bad`
 (comparações "prefira/evite"), além de `h4`/`ul`/`code`/`img` normais. Veja
 `explainers/prompt-eng.data.js` como referência de tom e estrutura.
+
+#### 3.6.3 Exercícios interativos (`step.exercises[]`)
+Além do `step.quiz` (múltipla escolha única, mantido), uma cena pode ter um array
+`exercises` com **vários** exercícios de tipos diferentes (mini-bateria de treino).
+Cada item tem um `kind` e é renderizado dentro do balão por `_buildActivity`
+(`explainer.js`), com estado por cena em `this.exState`. Tipos:
+- `"choice"` — múltipla escolha: `{ kind, question, options:[...], answer:<idx>, explain }`.
+- `"fill"` — completar lacuna: `{ kind, sentence:"I ___ home.", answer:"go", accept?:[...],
+  options?:[...], explain }`. Com `options` vira chips; sem, vira `<input>`. Normaliza
+  (trim/minúsculas) e aceita alternativas em `accept`.
+- `"match"` — ligar pares: `{ kind, pairs:[["figure out","resolver"],...], explain }`.
+  Clica um da esquerda, depois o par na direita (sem linhas — robusto no toque/jsdom).
+- `"order"` — ordenar frase: `{ kind, answer:["where","do","you","live"], words?:[...],
+  explain }`. Clica as palavras na ordem; `words` (embaralhado) é opcional.
+- `"flashcards"` — cartões: `{ kind, cards:[{front, back}, ...] }` (HTML na frente/verso).
+O autoplay pausa numa cena com atividade pendente e retoma sozinho quando **todas**
+são respondidas (`_stepAnswered`). Exercícios malformados são pegos no `_validate` /
+`tools/smoke.mjs` (via `_validateExercise`). Prefira `enter(ctx)` para animações; os
+exercícios não precisam de nada no diagrama além do próprio array.
+
+#### 3.6.4 Materiais / anexos (`diagram.materials[]`)
+Referências sempre à mão (verbos irregulares, top phrasal verbs, frases prontas). O
+diagrama declara `materials: [ { id, label, icon, html } ]` e o motor mostra um botão
+📎 no cabeçalho que abre um menu; cada item abre o mesmo painel modal do "Saiba mais"
+(`.xp-deep`) com o `html`. Use as mesmas classes utilitárias do `deep`
+(`.xp-example`, `.xp-good`/`.xp-bad`, tabelas `<table>`, listas). É genérico: qualquer
+explicador pode declarar `materials`.
 
 #### 3.6.2 Modo leitura (recap / ler tudo / imprimir)
 `_buildReadingPanel` (chamado sob demanda, não no `mount()`) monta um artigo

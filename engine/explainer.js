@@ -53,6 +53,7 @@
       this.view = { k: 1, tx: 0, ty: 0 };   // zoom/pan do palco
       this.debug = false;
       this.quizState = new Map();            // idx da cena -> opção escolhida
+      this.exState = new Map();              // "cena:i" -> resultado do exercício
     }
 
     /* ---- montagem do esqueleto da UI ----------------------------------- */
@@ -87,9 +88,16 @@
       this.btnRead.addEventListener("click", () => this._toggleReading());
       this.btnHelp.addEventListener("click", () => this._toggleHelp());
       tools.append(this.btnTheme, this.btnMap, this.btnLink, this.btnFull, this.btnPeek, this.btnOpacity, this.btnRead, this.btnHelp, home);
+      // botão de materiais/anexos (só quando o diagrama declara diagram.materials)
+      if (Array.isArray(this.d.materials) && this.d.materials.length) {
+        this.btnMaterials = el("button", { class: "xp-icon", title: "Materiais e anexos", "aria-label": "Abrir materiais e anexos de apoio", "aria-expanded": "false" }, "📎");
+        this.btnMaterials.addEventListener("click", () => this._toggleMaterials());
+        tools.insertBefore(this.btnMaterials, home);
+      }
       head.appendChild(tools);
       this.root.appendChild(head);
       this._buildOpacityPanel(head);
+      if (this.btnMaterials) this._buildMaterialsPanel(head);
 
       // índice lateral (acessível por teclado)
       const side = el("aside", { class: "xp-side" });
@@ -171,6 +179,7 @@
         // Esc fecha ajuda/opacidade/saiba-mais (e só eles) antes de qualquer outro atalho
         if (e.key === "Escape" && this.root.classList.contains("show-help")) { this._toggleHelp(false); return; }
         if (e.key === "Escape" && this.root.classList.contains("show-opacity")) { this._toggleOpacity(false); return; }
+        if (e.key === "Escape" && this.root.classList.contains("show-materials")) { this._toggleMaterials(false); return; }
         if (e.key === "Escape" && this.root.classList.contains("show-deep")) { this._toggleDeep(false); return; }
         if (e.key === "Escape" && this.root.classList.contains("show-reading")) { this._toggleReading(false); return; }
         if (e.key === "ArrowRight") this.next();
@@ -353,9 +362,41 @@
           this._ids(s[k]).forEach((id) => { if (!ids.has(id)) warn.push(`cena ${i + 1}: ${k} → "${id}" não existe`); }));
         if (s.quiz && (!Array.isArray(s.quiz.options) || s.quiz.answer == null))
           warn.push(`cena ${i + 1}: quiz precisa de options[] e answer`);
+        if (Array.isArray(s.exercises)) s.exercises.forEach((ex, j) => {
+          const w = this._validateExercise(ex);
+          if (w) warn.push(`cena ${i + 1}: exercício ${j + 1} (${ex && ex.kind || "?"}) — ${w}`);
+        });
       });
       if (warn.length) console.warn(`[Explainer] "${this.d.title || ""}" tem ${warn.length} aviso(s):\n  - ` + warn.join("\n  - "));
       return warn;
+    }
+
+    // valida um exercício por kind; devolve string de erro ou null
+    _validateExercise(ex) {
+      if (!ex || typeof ex !== "object") return "não é um objeto";
+      switch (ex.kind || "choice") {
+        case "choice":
+          if (!Array.isArray(ex.options) || ex.options.length < 2) return "precisa de options[] (≥2)";
+          if (ex.answer == null || ex.answer < 0 || ex.answer >= ex.options.length) return "answer inválido";
+          return null;
+        case "fill":
+          if (!ex.sentence || !ex.sentence.includes("___")) return "sentence precisa conter '___'";
+          if (ex.answer == null) return "precisa de answer";
+          return null;
+        case "match":
+          if (!Array.isArray(ex.pairs) || ex.pairs.length < 2) return "precisa de pairs[] (≥2)";
+          if (!ex.pairs.every((p) => Array.isArray(p) && p.length === 2)) return "cada par precisa ser [a, b]";
+          return null;
+        case "order":
+          if (!Array.isArray(ex.answer) || ex.answer.length < 2) return "precisa de answer[] (≥2)";
+          return null;
+        case "flashcards":
+          if (!Array.isArray(ex.cards) || !ex.cards.length) return "precisa de cards[]";
+          if (!ex.cards.every((c) => c && c.front != null && c.back != null)) return "cada card precisa de front/back";
+          return null;
+        default:
+          return `kind desconhecido: "${ex.kind}"`;
+      }
     }
 
     /* ---- renderização declarativa de cada elemento --------------------- */
@@ -558,9 +599,10 @@
         old.classList.remove("is-visible");
         setTimeout(() => old.remove(), 280);
       });
-      if (!s.balloon && !s.quiz) return;
+      const hasEx = Array.isArray(s.exercises) && s.exercises.length > 0;
+      if (!s.balloon && !s.quiz && !hasEx) return;
       const b = s.balloon || {};
-      const node = el("div", { class: "xp-balloon" + (s.quiz ? " is-quiz" : "") });
+      const node = el("div", { class: "xp-balloon" + (s.quiz || hasEx ? " is-quiz" : "") });
       let html = "";
       if (s.title) html += `<h3><span class="xp-badge">${this.i + 1}</span>${s.title}<button type="button" class="xp-balloon-collapse" aria-label="Recolher ou expandir balão" title="Recolher/expandir">▾</button><span class="xp-drag-grip" aria-hidden="true">⠿</span></h3>`;
       if (b.text) html += `<p>${b.text}</p>`;
@@ -572,6 +614,7 @@
         this._showDeep(s);
       });
       if (s.quiz) this._buildQuiz(node, s.quiz, this.i);
+      if (hasEx) s.exercises.forEach((act, i) => this._buildActivity(node, act, this.i, i));
       const place = (b.anchor && b.placement) || b.placement || "right";
       node.dataset.place = place;
       node._anchor = b.anchor;
@@ -698,6 +741,258 @@
       if (this.quizState.has(stepIdx)) settle(this.quizState.get(stepIdx));
     }
 
+    /* ---- exercícios interativos genéricos (step.exercises[]) ------------ *
+     * kinds: "choice" | "fill" | "match" | "order" | "flashcards".
+     * Cada exercício é autocontido e idempotente (rebuild ao navegar). O
+     * resultado fica em this.exState (chave "cena:i") para retomar o autoplay
+     * e re-mostrar o gabarito ao voltar para a cena.                        */
+    _buildActivity(node, act, stepIdx, i) {
+      const kind = act.kind || "choice";
+      const key = stepIdx + ":" + i;
+      const solved = this.exState.has(key);
+      const wrap = el("div", { class: "xp-ex xp-ex--" + kind });
+      const prompt = act.prompt || act.question;
+      if (prompt) wrap.appendChild(el("div", { class: "xp-ex-q" }, prompt));
+      const bodyEl = el("div", { class: "xp-ex-body" });
+      wrap.appendChild(bodyEl);
+      node.appendChild(wrap);
+
+      const finish = (correct) => {
+        if (wrap.dataset.done) return;
+        wrap.dataset.done = "1";
+        wrap.classList.add(correct ? "is-ok" : "is-bad");
+        if (act.explain) {
+          const ex = el("div", { class: "xp-ex-explain" }, (correct ? "✅ " : "❌ ") + act.explain);
+          wrap.appendChild(ex);
+          requestAnimationFrame(() => ex.classList.add("is-visible"));
+        }
+        this.exState.set(key, { correct: !!correct });
+        this._resumeIfAnswered(stepIdx);
+      };
+
+      const builders = {
+        choice: () => this._exChoiceBody(bodyEl, act, finish, solved),
+        fill: () => this._exFillBody(bodyEl, act, finish, solved),
+        match: () => this._exMatchBody(bodyEl, act, finish, solved),
+        order: () => this._exOrderBody(bodyEl, act, finish, solved),
+        flashcards: () => this._exFlashBody(bodyEl, act, finish, solved),
+      };
+      (builders[kind] || builders.choice)();
+
+      // ao voltar para a cena já resolvida, mostra o gabarito + explicação
+      if (solved && kind !== "flashcards") {
+        wrap.dataset.done = "1";
+        wrap.classList.add(this.exState.get(key).correct ? "is-ok" : "is-bad");
+        if (act.explain) wrap.appendChild(el("div", { class: "xp-ex-explain is-visible" }, act.explain));
+      }
+    }
+
+    _exChoiceBody(body, act, finish, solved) {
+      const opts = el("div", { class: "xp-ex-opts" });
+      (act.options || []).forEach((opt, oi) => {
+        const btn = el("button", { class: "xp-ex-opt", type: "button" }, opt);
+        if (solved) {
+          btn.disabled = true;
+          if (oi === act.answer) btn.classList.add("is-correct");
+        } else {
+          btn.addEventListener("click", () => {
+            if (body.dataset.done) return;
+            body.dataset.done = "1";
+            [...opts.children].forEach((b, bi) => {
+              b.disabled = true;
+              if (bi === act.answer) b.classList.add("is-correct");
+              else if (bi === oi) b.classList.add("is-wrong");
+              else b.classList.add("is-mute");
+            });
+            finish(oi === act.answer);
+          });
+        }
+        opts.appendChild(btn);
+      });
+      body.appendChild(opts);
+    }
+
+    _fillAnswer(act) { return Array.isArray(act.answer) ? act.answer[0] : act.answer; }
+    _fillMatch(act, val) {
+      const norm = (s) => String(s).trim().toLowerCase().replace(/\s+/g, " ");
+      const accept = [].concat(act.answer || [], act.accept || []).map(norm);
+      return accept.includes(norm(val));
+    }
+    _exFillBody(body, act, finish, solved) {
+      const parts = String(act.sentence || "___").split("___");
+      const line = el("div", { class: "xp-ex-fill-line" });
+      line.appendChild(document.createTextNode(parts[0] || ""));
+      const slot = el("span", { class: "xp-ex-slot" }, solved ? this._fillAnswer(act) : "____");
+      if (solved) slot.classList.add("is-correct");
+      line.appendChild(slot);
+      line.appendChild(document.createTextNode(parts.slice(1).join("___") || ""));
+      body.appendChild(line);
+      if (solved) return;
+      const check = (val) => {
+        const ok = this._fillMatch(act, val);
+        slot.textContent = val || "____";
+        slot.classList.add(ok ? "is-correct" : "is-wrong");
+        if (!ok) line.appendChild(el("span", { class: "xp-ex-correct" }, " → " + this._fillAnswer(act)));
+        finish(ok);
+      };
+      if (Array.isArray(act.options) && act.options.length) {
+        const chips = el("div", { class: "xp-ex-chips" });
+        act.options.forEach((opt) => {
+          const b = el("button", { class: "xp-ex-chip", type: "button" }, opt);
+          b.addEventListener("click", () => {
+            if (body.dataset.done) return;
+            body.dataset.done = "1";
+            [...chips.children].forEach((x) => (x.disabled = true));
+            check(opt);
+          });
+          chips.appendChild(b);
+        });
+        body.appendChild(chips);
+      } else {
+        const form = el("form", { class: "xp-ex-inputrow" });
+        const input = el("input", { class: "xp-ex-input", type: "text", placeholder: "digite aqui…", "aria-label": "Sua resposta" });
+        const send = el("button", { class: "xp-ex-send", type: "submit" }, "Conferir");
+        form.append(input, send);
+        form.addEventListener("submit", (e) => {
+          e.preventDefault();
+          if (body.dataset.done || !input.value.trim()) return;
+          body.dataset.done = "1";
+          input.disabled = true; send.disabled = true;
+          check(input.value.trim());
+        });
+        body.appendChild(form);
+      }
+    }
+
+    _exMatchBody(body, act, finish, solved) {
+      const pairs = act.pairs || [];
+      const grid = el("div", { class: "xp-ex-match" });
+      const left = el("div", { class: "xp-ex-col" });
+      const right = el("div", { class: "xp-ex-col" });
+      const order = solved ? pairs.map((_, i) => i) : this._shuffle(pairs.map((_, i) => i));
+      const leftBtns = [], rightBtns = [];
+      pairs.forEach(([l], li) => {
+        const b = el("button", { class: "xp-ex-cell", type: "button" }, l);
+        b.dataset.li = String(li); leftBtns.push(b); left.appendChild(b);
+      });
+      order.forEach((ri) => {
+        const b = el("button", { class: "xp-ex-cell", type: "button" }, pairs[ri][1]);
+        b.dataset.ri = String(ri); rightBtns.push(b); right.appendChild(b);
+      });
+      grid.append(left, right);
+      body.appendChild(grid);
+      if (solved) {
+        [...leftBtns, ...rightBtns].forEach((b) => { b.disabled = true; b.classList.add("is-correct"); });
+        return;
+      }
+      const state = { sel: null, matched: 0, wrong: false };
+      const pick = (btn, side) => {
+        if (btn.classList.contains("is-done") || body.dataset.done) return;
+        if (!state.sel) { state.sel = { btn, side }; btn.classList.add("is-sel"); return; }
+        if (state.sel.side === side) { state.sel.btn.classList.remove("is-sel"); state.sel = { btn, side }; btn.classList.add("is-sel"); return; }
+        const a = side === "left" ? btn : state.sel.btn;   // botão da esquerda
+        const bb = side === "left" ? state.sel.btn : btn;  // botão da direita
+        a.classList.remove("is-sel"); bb.classList.remove("is-sel");
+        if (a.dataset.li === bb.dataset.ri) {
+          a.classList.add("is-done", "is-correct"); bb.classList.add("is-done", "is-correct");
+          a.disabled = true; bb.disabled = true; state.matched++;
+          if (state.matched === pairs.length) { body.dataset.done = "1"; finish(!state.wrong); }
+        } else {
+          state.wrong = true;
+          a.classList.add("is-wrong"); bb.classList.add("is-wrong");
+          setTimeout(() => { a.classList.remove("is-wrong"); bb.classList.remove("is-wrong"); }, 520);
+        }
+        state.sel = null;
+      };
+      leftBtns.forEach((b) => b.addEventListener("click", () => pick(b, "left")));
+      rightBtns.forEach((b) => b.addEventListener("click", () => pick(b, "right")));
+    }
+
+    _normWord(s) { return String(s).trim().toLowerCase().replace(/[.,!?;:]/g, ""); }
+    _exOrderBody(body, act, finish, solved) {
+      const answer = act.answer || [];
+      const answerRow = el("div", { class: "xp-ex-order-answer" });
+      body.appendChild(answerRow);
+      if (solved) {
+        answer.forEach((w) => answerRow.appendChild(el("span", { class: "xp-ex-word is-correct" }, w)));
+        return;
+      }
+      const pool = (act.words && act.words.length ? act.words.slice() : this._shuffle(answer.slice()));
+      const poolRow = el("div", { class: "xp-ex-order-pool" });
+      const chosen = [];
+      pool.forEach((w) => {
+        const b = el("button", { class: "xp-ex-word", type: "button" }, w);
+        b.addEventListener("click", () => {
+          if (b.disabled || body.dataset.done) return;
+          b.disabled = true; b.classList.add("is-used");
+          chosen.push(w);
+          answerRow.appendChild(el("span", { class: "xp-ex-word" }, w));
+          if (chosen.length === answer.length) {
+            body.dataset.done = "1";
+            const ok = chosen.every((c, i) => this._normWord(c) === this._normWord(answer[i]));
+            [...answerRow.children].forEach((c) => c.classList.add(ok ? "is-correct" : "is-wrong"));
+            if (!ok) body.appendChild(el("div", { class: "xp-ex-correct" }, "✔ " + answer.join(" ")));
+            finish(ok);
+          }
+        });
+        poolRow.appendChild(b);
+      });
+      const reset = el("button", { class: "xp-ex-reset", type: "button" }, "↺ limpar");
+      reset.addEventListener("click", () => {
+        if (body.dataset.done) return;
+        chosen.length = 0; answerRow.innerHTML = "";
+        poolRow.querySelectorAll("button").forEach((b) => { b.disabled = false; b.classList.remove("is-used"); });
+      });
+      body.append(poolRow, reset);
+    }
+
+    _exFlashBody(body, act, finish) {
+      const cards = act.cards || [];
+      let idx = 0;
+      const card = el("button", { class: "xp-ex-flash", type: "button", "aria-label": "Toque para virar o cartão" });
+      const front = el("div", { class: "xp-ex-flash-face xp-ex-flash-front" });
+      const back = el("div", { class: "xp-ex-flash-face xp-ex-flash-back" });
+      card.append(front, back);
+      const counter = el("div", { class: "xp-ex-flash-count" });
+      const nav = el("div", { class: "xp-ex-flash-nav" });
+      const prev = el("button", { class: "xp-ex-flash-btn", type: "button" }, "← anterior");
+      const next = el("button", { class: "xp-ex-flash-btn", type: "button" }, "próximo →");
+      nav.append(prev, next);
+      const render = () => {
+        const c = cards[idx] || { front: "", back: "" };
+        front.innerHTML = c.front; back.innerHTML = c.back;
+        card.classList.remove("is-flipped");
+        counter.textContent = `${idx + 1} / ${cards.length}`;
+        prev.disabled = idx === 0;
+      };
+      card.addEventListener("click", () => card.classList.toggle("is-flipped"));
+      prev.addEventListener("click", () => { if (idx > 0) { idx--; render(); } });
+      next.addEventListener("click", () => {
+        if (idx < cards.length - 1) { idx++; render(); }
+        else { next.textContent = "✓ revisado"; finish(true); }
+      });
+      body.append(card, counter, nav);
+      render();
+    }
+
+    _shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+    // true se a cena não tem atividade pendente (quiz + todos os exercises)
+    _stepAnswered(idx) {
+      const st = this.steps[idx];
+      if (!st) return true;
+      if (st.quiz && !this.quizState.has(idx)) return false;
+      if (Array.isArray(st.exercises))
+        for (let i = 0; i < st.exercises.length; i++) if (!this.exState.has(idx + ":" + i)) return false;
+      return true;
+    }
+    _resumeIfAnswered(stepIdx) {
+      if (this._pausedForQuiz && stepIdx === this.i && this._stepAnswered(stepIdx)) {
+        this._pausedForQuiz = false;
+        setTimeout(() => { if (!this.playing) this.play(); }, 1400);
+      }
+    }
+
     _anchorPoint(anchor) {
       const rect = this.stage.getBoundingClientRect();
       // âncora por id: mede o elemento real na tela (reflete viewBox, zoom e pan)
@@ -741,8 +1036,9 @@
       // título da aba reflete a cena (útil ao compartilhar um deep-link)
       const st = this.steps[idx];
       try { document.title = (st.title ? st.title + " · " : "") + (this.d.title || this._baseTitle || "Explicador"); } catch {}
-      // autoplay para numa cena de quiz ainda não respondida; retoma ao responder
-      if (this.playing && st.quiz && !this.quizState.has(idx)) { this._pausedForQuiz = true; this.pause(); }
+      // autoplay para numa cena com atividade pendente (quiz/exercícios); retoma ao responder
+      const hasActivity = st.quiz || (Array.isArray(st.exercises) && st.exercises.length);
+      if (this.playing && hasActivity && !this._stepAnswered(idx)) { this._pausedForQuiz = true; this.pause(); }
       else if (this.playing) this._runAutobar();
       if (!fromHash) {
         const h = "#cena=" + (idx + 1);
@@ -931,6 +1227,35 @@
       if (on) this.deep.querySelector(".xp-deep-close")?.focus();
     }
 
+    /* ---- materiais/anexos: refs sempre à mão (diagram.materials[]) ------- */
+    _buildMaterialsPanel(head) {
+      const pop = el("div", { class: "xp-materials-pop", role: "menu", "aria-label": "Materiais de apoio" });
+      pop.appendChild(el("div", { class: "xp-materials-title" }, "📎 Materiais de apoio"));
+      const listWrap = el("div", { class: "xp-materials-list" });
+      (this.d.materials || []).forEach((m) => {
+        const b = el("button", { class: "xp-materials-item", role: "menuitem", type: "button" },
+          `${m.icon || "📄"} ${m.label || "Material"}`);
+        b.addEventListener("click", () => this._showMaterial(m));
+        listWrap.appendChild(b);
+      });
+      pop.appendChild(listWrap);
+      this.materialsPanel = pop;
+      head.appendChild(pop);
+    }
+    _toggleMaterials(force) {
+      const on = force != null ? force : !this.root.classList.contains("show-materials");
+      this.root.classList.toggle("show-materials", on);
+      this.btnMaterials?.setAttribute("aria-expanded", String(on));
+      if (on) this.materialsPanel?.querySelector(".xp-materials-item")?.focus();
+    }
+    _showMaterial(m) {
+      if (!this.deep) this._buildDeepPanel();
+      this.deepTitleEl.textContent = `${m.icon ? m.icon + " " : ""}${m.label || "Material"}`;
+      this.deepBodyEl.innerHTML = m.html || "";
+      this._toggleMaterials(false);
+      this._toggleDeep(true);
+    }
+
     /* ---- modo leitura: recap de todas as cenas, base p/ imprimir/exportar */
     _buildReadingPanel() {
       const overlay = el("div", { class: "xp-reading", role: "dialog", "aria-modal": "true",
@@ -965,6 +1290,10 @@
           if (q.explain) qw.appendChild(el("p", { class: "xp-reading-quiz-explain" }, q.explain));
           sec.appendChild(qw);
         }
+        if (Array.isArray(s.exercises)) s.exercises.forEach((ex) => {
+          const rw = this._readingExercise(ex);
+          if (rw) sec.appendChild(rw);
+        });
         body.appendChild(sec);
       });
       card.append(head, body);
@@ -973,6 +1302,34 @@
       overlay.addEventListener("click", (e) => { if (e.target === overlay) this._toggleReading(false); });
       this.reading = overlay;
       this.root.appendChild(overlay);
+    }
+    // representação textual de um exercício no modo leitura/impressão
+    _readingExercise(ex) {
+      if (!ex) return null;
+      const kind = ex.kind || "choice";
+      const rw = el("div", { class: "xp-reading-quiz" });
+      const head = ({ choice: "Exercício", fill: "Complete", match: "Ligue os pares", order: "Ordene a frase", flashcards: "Flashcards" })[kind] || "Exercício";
+      rw.appendChild(el("p", { class: "xp-reading-quiz-q" }, `📝 ${head}${(ex.prompt || ex.question) ? ": " + (ex.prompt || ex.question) : ""}`));
+      if (kind === "choice") {
+        const ol = el("ol");
+        (ex.options || []).forEach((o, oi) => ol.appendChild(el("li", { class: oi === ex.answer ? "is-correct" : "" }, o)));
+        rw.appendChild(ol);
+      } else if (kind === "fill") {
+        rw.appendChild(el("p", null, ex.sentence || ""));
+        rw.appendChild(el("p", { class: "xp-reading-quiz-explain" }, "Resposta: " + (Array.isArray(ex.answer) ? ex.answer.join(" / ") : ex.answer)));
+      } else if (kind === "match") {
+        const ol = el("ul");
+        (ex.pairs || []).forEach(([a, b]) => ol.appendChild(el("li", { class: "is-correct" }, `${a} → ${b}`)));
+        rw.appendChild(ol);
+      } else if (kind === "order") {
+        rw.appendChild(el("p", { class: "is-correct" }, (ex.answer || []).join(" ")));
+      } else if (kind === "flashcards") {
+        const ol = el("ul");
+        (ex.cards || []).forEach((c) => ol.appendChild(el("li", null, `${stripHtml(c.front)} — ${stripHtml(c.back)}`)));
+        rw.appendChild(ol);
+      }
+      if (ex.explain) rw.appendChild(el("p", { class: "xp-reading-quiz-explain" }, ex.explain));
+      return rw;
     }
     _toggleReading(force) {
       if (!this.reading) this._buildReadingPanel();
