@@ -537,6 +537,12 @@ body {
   padding: 8px 12px; margin: 0 0 10px; background: rgba(81, 224, 163, .08);
 }
 .xp-deep-body .xp-bad { border-left-color: var(--hot); background: rgba(255, 122, 144, .08); }
+.xp-deep-body .xp-tbl { width: 100%; border-collapse: collapse; margin: 6px 0 14px; font-size: 13px; }
+.xp-deep-body .xp-tbl th, .xp-deep-body .xp-tbl td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.xp-deep-body .xp-tbl th { font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); }
+.xp-deep-body .xp-tbl td strong { color: var(--accent); }
+.xp-deep-body .xp-tbl tr:hover td { background: var(--bg-soft); }
+.xp-deep-body .xp-tip { font-size: 13px; color: var(--ink-soft); background: var(--bg-soft); border-radius: 8px; padding: 9px 12px; margin: 10px 0 0; }
 .xp-deep-body img, .xp-reading-deep img {
   max-width: 100%; display: block; margin: 10px 0;
   border-radius: 8px; border: 1px solid var(--line);
