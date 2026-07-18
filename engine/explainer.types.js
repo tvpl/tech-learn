@@ -61,6 +61,32 @@
  */
 
 /**
+ * @typedef {Object} Exercise  Atividade interativa em step.exercises[].
+ * @property {"choice"|"fill"|"match"|"order"|"flashcards"} kind  Tipo do exercício.
+ * @property {string} [prompt]   Enunciado (ou use "question" no kind "choice").
+ * @property {string} [question] Enunciado do kind "choice".
+ * @property {string} [explain]  Feedback mostrado ao concluir (não em flashcards).
+ * -- choice: múltipla escolha
+ * @property {string[]} [options]  choice: alternativas; fill: chips opcionais.
+ * @property {number} [answer]     choice: índice correto.  (Em "fill"/"order" é outra coisa, ver abaixo.)
+ * -- fill: complete a lacuna. `sentence` deve conter "___".
+ * @property {string} [sentence]   fill: frase com "___" na lacuna.
+ * @property {string|string[]} [accept]  fill: respostas alternativas aceitas.
+ * -- match: ligar pares.  order: ordenar palavras.  flashcards: cartões.
+ * @property {[string,string][]} [pairs]  match: pares [esquerda, direita].
+ * @property {string[]} [words]    order: banco de palavras embaralhado (opcional; padrão = shuffle de answer).
+ * @property {{front:string,back:string}[]} [cards]  flashcards: frente/verso (HTML).
+ */
+
+/**
+ * @typedef {Object} Material  Anexo de referência (diagram.materials[]).
+ * @property {string} id
+ * @property {string} label   Rótulo no botão/menu.
+ * @property {string} [icon]  Emoji (padrão 📄).
+ * @property {string} html    HTML do conteúdo (abre no painel "Saiba mais").
+ */
+
+/**
  * @typedef {Object} Ctx  Helpers passados para enter(ctx).
  * @property {(id:string)=>void} show
  * @property {(id:string)=>void} hide
@@ -79,6 +105,7 @@
  * @property {string} [title]
  * @property {Balloon} [balloon]
  * @property {Quiz} [quiz]
+ * @property {Exercise[]} [exercises]  Atividades interativas (choice/fill/match/order/flashcards).
  * @property {string[]} [show]      Aceita "@grupo".
  * @property {string[]} [hide]
  * @property {string[]} [highlight]
@@ -93,6 +120,7 @@
  * @property {string} [subtitle]
  * @property {number} [width] @property {number} [height]
  * @property {number} [autoplayMs]
+ * @property {Material[]} [materials]  Anexos de referência (botão 📎 no cabeçalho).
  * @property {Element[]} elements
  * @property {Step[]} steps
  */

@@ -51,13 +51,17 @@
     "ingles-modais.html":     [["ingles-negativas.html","Negativas"],["ingles-fala-real.html","Fala Real"],["ingles-perguntas.html","Perguntas"],["ingles-tecnicas.html","Como Aprender Rápido"]],
     "ingles-fala-real.html":  [["ingles-modais.html","Modais"],["ingles-tecnicas.html","Como Aprender Rápido"],["ingles-estrutura.html","Estrutura da Frase"],["ingles-negativas.html","Negativas"]],
 
-    "ingles-present-perfect.html": [["ingles-passado.html","Simple Past"],["ingles-condicionais.html","Condicionais"],["ingles-modais.html","Modais"],["ingles-artigos.html","Artigos"]],
+    "ingles-present-perfect.html": [["ingles-passado.html","Simple Past"],["ingles-verbos-irregulares.html","Verbos Irregulares"],["ingles-condicionais.html","Condicionais"],["ingles-modais.html","Modais"]],
     "ingles-artigos.html":         [["ingles-present-perfect.html","Present Perfect"],["ingles-preposicoes.html","Preposições"],["ingles-contaveis.html","Contáveis"],["ingles-estrutura.html","Estrutura da Frase"]],
     "ingles-preposicoes.html":     [["ingles-artigos.html","Artigos"],["ingles-contaveis.html","Contáveis"],["ingles-condicionais.html","Condicionais"],["ingles-estrutura.html","Estrutura da Frase"]],
     "ingles-contaveis.html":       [["ingles-preposicoes.html","Preposições"],["ingles-artigos.html","Artigos"],["ingles-condicionais.html","Condicionais"],["ingles-perguntas.html","Perguntas"]],
     "ingles-condicionais.html":    [["ingles-modais.html","Modais"],["ingles-present-perfect.html","Present Perfect"],["ingles-phrasal-verbs.html","Phrasal Verbs"],["ingles-negativas.html","Negativas"]],
     "ingles-phrasal-verbs.html":   [["ingles-condicionais.html","Condicionais"],["ingles-small-talk.html","Small Talk"],["ingles-fala-real.html","Fala Real"],["ingles-modais.html","Modais"]],
-    "ingles-small-talk.html":      [["ingles-fala-real.html","Fala Real"],["ingles-tecnicas.html","Como Aprender Rápido"],["ingles-phrasal-verbs.html","Phrasal Verbs"],["ingles-modais.html","Modais"]],
+    "ingles-small-talk.html":      [["ingles-fala-real.html","Fala Real"],["ingles-trabalho.html","Inglês no Trabalho"],["ingles-phrasal-verbs.html","Phrasal Verbs"],["ingles-tecnicas.html","Como Aprender Rápido"]],
+
+    "ingles-trabalho.html":            [["ingles-small-talk.html","Small Talk"],["ingles-phrasal-verbs.html","Phrasal Verbs"],["ingles-modais.html","Modais"],["ingles-nivel-b1.html","Teste de Nível B1"]],
+    "ingles-verbos-irregulares.html":  [["ingles-passado.html","Simple Past"],["ingles-present-perfect.html","Present Perfect"],["ingles-condicionais.html","Condicionais"],["ingles-nivel-b1.html","Teste de Nível B1"]],
+    "ingles-nivel-b1.html":            [["ingles-verbos-irregulares.html","Verbos Irregulares"],["ingles-present-perfect.html","Present Perfect"],["ingles-condicionais.html","Condicionais"],["ingles-trabalho.html","Inglês no Trabalho"]],
   };
 
   const page = location.pathname.split('/').pop();

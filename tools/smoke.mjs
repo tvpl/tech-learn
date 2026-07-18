@@ -81,7 +81,7 @@ for (const file of files) {
   // valida referências
   const ids = new Set([...xp.nodes.keys()]);
   const expand = (list) => xp._ids(list);
-  let badAnchor = 0, badRef = 0, badQuiz = 0, quizSteps = 0;
+  let badAnchor = 0, badRef = 0, badQuiz = 0, quizSteps = 0, exSteps = 0, badEx = 0;
   for (const s of xp.steps) {
     const a = s.balloon && s.balloon.anchor;
     if (typeof a === "string" && !ids.has(a)) { badAnchor++; errors.push("âncora inexistente: " + a); }
@@ -93,6 +93,11 @@ for (const file of files) {
       if (!Array.isArray(q.options) || q.options.length < 2 || q.answer == null || q.answer < 0 || q.answer >= q.options.length)
         { badQuiz++; errors.push("quiz malformado"); }
     }
+    if (Array.isArray(s.exercises)) s.exercises.forEach((ex, j) => {
+      exSteps++;
+      const w = xp._validateExercise(ex);
+      if (w) { badEx++; errors.push(`exercício ${j + 1} (${ex && ex.kind || "?"}) malformado: ${w}`); }
+    });
   }
 
   // confere que pelo menos um quiz realmente renderiza UI
@@ -102,10 +107,17 @@ for (const file of files) {
     if (!xp.balloons.querySelector(".xp-quiz-opt")) { badQuiz++; errors.push("quiz não renderizou opções"); }
   }
 
-  const ok = errors.length === 0 && badAnchor === 0 && badRef === 0 && badQuiz === 0 && badLabel === 0;
+  // confere que pelo menos um exercício realmente renderiza UI
+  const exIdx = xp.steps.findIndex((s) => Array.isArray(s.exercises) && s.exercises.length);
+  if (exIdx >= 0) {
+    xp.go(exIdx);
+    if (!xp.balloons.querySelector(".xp-ex")) { badEx++; errors.push("exercício não renderizou UI"); }
+  }
+
+  const ok = errors.length === 0 && badAnchor === 0 && badRef === 0 && badQuiz === 0 && badEx === 0 && badLabel === 0;
   console.log(
     `${ok ? "✅" : "❌"} ${gname.padEnd(20)} cenas:${String(xp.steps.length).padStart(2)} ` +
-    `elems:${String(xp.nodes.size).padStart(3)} quizzes:${quizSteps} ` +
+    `elems:${String(xp.nodes.size).padStart(3)} quizzes:${quizSteps} exercicios:${exSteps} ` +
     `ancoras_bad:${badAnchor} refs_bad:${badRef} erros:${errors.length}`
   );
   if (!ok) { errors.slice(0, 10).forEach((e) => console.log("    ·", e)); totalFail++; }

@@ -66,6 +66,59 @@
     ...chunkCard("pp_cont2", 660, 910, 520, 100, "I've been meaning to call you.", "Tenho pensado em te ligar (chunk fixo)", "var(--accent-2)"),
   ];
 
+  // ---- MATERIAIS ANEXOS ----
+  const participlesTable = `
+<p>Particípios irregulares mais usados (base → passado → <strong>particípio</strong>). No Present Perfect usa-se sempre o <strong>particípio</strong>.</p>
+<table class="xp-tbl">
+<thead><tr><th>Base</th><th>Passado</th><th>Particípio</th><th>Tradução</th></tr></thead>
+<tbody>
+<tr><td>be</td><td>was/were</td><td><strong>been</strong></td><td>ser/estar</td></tr>
+<tr><td>have</td><td>had</td><td><strong>had</strong></td><td>ter</td></tr>
+<tr><td>do</td><td>did</td><td><strong>done</strong></td><td>fazer</td></tr>
+<tr><td>go</td><td>went</td><td><strong>gone / been</strong></td><td>ir</td></tr>
+<tr><td>see</td><td>saw</td><td><strong>seen</strong></td><td>ver</td></tr>
+<tr><td>make</td><td>made</td><td><strong>made</strong></td><td>fazer/criar</td></tr>
+<tr><td>take</td><td>took</td><td><strong>taken</strong></td><td>pegar/levar</td></tr>
+<tr><td>eat</td><td>ate</td><td><strong>eaten</strong></td><td>comer</td></tr>
+<tr><td>write</td><td>wrote</td><td><strong>written</strong></td><td>escrever</td></tr>
+<tr><td>speak</td><td>spoke</td><td><strong>spoken</strong></td><td>falar</td></tr>
+<tr><td>break</td><td>broke</td><td><strong>broken</strong></td><td>quebrar</td></tr>
+<tr><td>give</td><td>gave</td><td><strong>given</strong></td><td>dar</td></tr>
+<tr><td>get</td><td>got</td><td><strong>gotten / got</strong></td><td>conseguir/ficar</td></tr>
+<tr><td>know</td><td>knew</td><td><strong>known</strong></td><td>saber/conhecer</td></tr>
+<tr><td>lose</td><td>lost</td><td><strong>lost</strong></td><td>perder</td></tr>
+<tr><td>meet</td><td>met</td><td><strong>met</strong></td><td>encontrar</td></tr>
+<tr><td>read</td><td>read</td><td><strong>read</strong></td><td>ler</td></tr>
+<tr><td>come</td><td>came</td><td><strong>come</strong></td><td>vir</td></tr>
+</tbody></table>
+<p class="xp-tip">💡 A diferença que trava PT-BR: gone (foi e não voltou) × been (foi e voltou). “He's gone to work” (ainda lá) × “He's been to work” (já voltou).</p>`;
+
+  const markersMaterial = `
+<p>Marcadores de tempo — e qual tempo verbal cada um pede.</p>
+<h4>✅ Combinam com Present Perfect</h4>
+<div class="xp-good">ever, never, already, yet, just, so far, recently, for + duração, since + ponto, this week/month/year (ainda em curso)</div>
+<div class="xp-example"><strong>I've just finished.</strong>Acabei de terminar.</div>
+<div class="xp-example"><strong>Have you eaten yet?</strong>Você já comeu?</div>
+<h4>❌ Forçam Simple Past (tempo terminado)</h4>
+<div class="xp-bad">yesterday, last week/year, ago, in 2020, when I was young, this morning (já passou)</div>
+<div class="xp-example"><strong>I saw him yesterday.</strong>Vi ele ontem. (nunca “have seen … yesterday”)</div>`;
+
+  const decideMaterial = `
+<h4>Fluxograma: Present Perfect ou Simple Past?</h4>
+<ol>
+<li>Tem <strong>marcador de tempo terminado</strong> (yesterday, ago, in 2020)? → <strong>Simple Past</strong>.</li>
+<li>É <strong>experiência de vida</strong> sem “quando” (ever/never)? → <strong>Present Perfect</strong>.</li>
+<li>Começou no passado e <strong>continua agora</strong> (for/since)? → <strong>Present Perfect</strong>.</li>
+<li>Ação passada com <strong>resultado que importa agora</strong> (“I've lost my keys”)? → <strong>Present Perfect</strong>.</li>
+</ol>
+<div class="xp-good"><strong>Regra rápida:</strong> tem “quando exatamente”? Simple Past. Não tem? Present Perfect é candidato.</div>`;
+
+  const materials = [
+    { id: "part", icon: "📋", label: "Tabela de particípios irregulares", html: participlesTable },
+    { id: "mark", icon: "⏱️", label: "Marcadores de tempo (qual tempo usar)", html: markersMaterial },
+    { id: "dec", icon: "🧭", label: "Fluxograma: Perfect ou Past?", html: decideMaterial },
+  ];
+
   const steps = [
     {
       title: "A ponte sem tradução direta",
@@ -84,6 +137,12 @@
         deep: `<p>Particípios irregulares de altíssima frequência:</p>
 <div class="xp-example"><strong>go → gone / be → been / do → done</strong>"I haven't gone yet." / "I've been there." / "I've done it already."</div>
 <div class="xp-example"><strong>see → seen / make → made</strong>"Have you seen this?" / "She's made a decision."</div>` },
+      exercises: [
+        { kind: "fill", prompt: "Complete com o particípio:", sentence: "I have ___ my homework. (do)",
+          answer: "done", explain: "particípio de “do” é “done”: I have done my homework." },
+        { kind: "fill", prompt: "E agora (3ª pessoa):", sentence: "She ___ left already. (have)",
+          answer: "has", explain: "3ª pessoa usa “has”: She has left already." },
+      ],
     },
     {
       title: "Uso 1: experiência de vida",
@@ -93,6 +152,10 @@
         why: "Você está perguntando \"isso já aconteceu na sua vida, alguma vez?\" — não \"quando isso aconteceu\", que seria Simple Past.",
         deep: `<p>"Ever" e "never" ficam entre o auxiliar e o particípio:</p>
 <div class="xp-example"><strong>"Has she ever tried Brazilian food?"</strong>Ela já experimentou comida brasileira alguma vez?</div>` },
+      exercises: [
+        { kind: "order", prompt: "Monte a pergunta:", answer: ["have", "you", "ever", "been", "to", "Japan"],
+          explain: "Ever fica entre o sujeito e o particípio: Have you ever been to Japan?" },
+      ],
     },
     {
       title: "Uso 2: começou no passado, continua agora",
@@ -103,6 +166,12 @@
         deep: `<p>Mais exemplos do mesmo padrão:</p>
 <div class="xp-example"><strong>"I've known her for ten years."</strong>Conheço ela há dez anos (e ainda conheço).</div>
 <div class="xp-example"><strong>"We've been together since college."</strong>Estamos juntos desde a faculdade.</div>` },
+      exercises: [
+        { kind: "fill", prompt: "for ou since?", sentence: "I've lived here ___ 2015.", answer: "since",
+          options: ["for", "since"], explain: "2015 é um ponto de partida → since. Duração usaria for (for 9 years)." },
+        { kind: "fill", prompt: "for ou since?", sentence: "She's worked here ___ five years.", answer: "for",
+          options: ["for", "since"], explain: "“five years” é duração → for. Ponto no tempo usaria since." },
+      ],
     },
     {
       title: "Uso 3: resultado presente de ação passada",
@@ -124,6 +193,11 @@
         deep: `<p>Mais pares errado/certo:</p>
 <div class="xp-bad"><strong>Errado</strong> "I have finished it last night."</div>
 <div class="xp-good"><strong>Certo</strong> "I finished it last night." (tempo específico → Simple Past)</div>` },
+      exercises: [
+        { kind: "choice", question: "Qual está correto?",
+          options: ["I have seen him yesterday.", "I saw him yesterday.", "I have saw him yesterday."], answer: 1,
+          explain: "“yesterday” é tempo terminado → Simple Past: I saw him yesterday." },
+      ],
     },
     {
       title: "Contração falada e Present Perfect Continuous",
@@ -135,29 +209,60 @@
 <div class="xp-example"><strong>"She's tired." (is)</strong>vs. <strong>"She's finished." (has)</strong></div>` },
     },
     {
-      title: "Prática: identifique o uso",
+      title: "Treino: particípios irregulares (flashcards)",
       dim: ["pp_form1_box", "pp_form2_box"],
-      highlight: ["pp_result_box", "pp_crucial_rbox"],
-      balloon: { anchor: "pp_result_box", placement: "bottom",
-        text: `Antes do quiz, identifique o uso (recall ativo): <em>"Have you ever eaten insects?"</em> (experiência), <em>"I've broken my phone."</em> (resultado presente), <em>"I've been studying since 8am."</em> (começou e continua).`,
-        why: "Reconhecer qual dos três usos está em jogo é o que te ajuda a escolher Present Perfect (em vez de Simple Past) na hora de falar." },
+      balloon: { anchor: "pp_form1_box", placement: "bottom",
+        text: "O que mais trava o Present Perfect é o particípio irregular. Vire os cartões e teste antes de olhar — abra 📎 <strong>Materiais</strong> para a tabela completa." },
+      exercises: [
+        { kind: "flashcards", prompt: "Base → particípio:", cards: [
+          { front: "go", back: "<strong>gone / been</strong><br>“I've gone / I've been there.”" },
+          { front: "see", back: "<strong>seen</strong><br>“Have you seen it?”" },
+          { front: "eat", back: "<strong>eaten</strong><br>“I've eaten already.”" },
+          { front: "write", back: "<strong>written</strong><br>“She's written a book.”" },
+          { front: "break", back: "<strong>broken</strong><br>“I've broken my phone.”" },
+          { front: "take", back: "<strong>taken</strong><br>“He's taken the day off.”" },
+        ] },
+      ],
     },
     {
-      title: "Teste rápido",
+      title: "Treino: identifique o uso",
+      dim: ["pp_form1_box", "pp_form2_box"],
+      highlight: ["pp_result_box", "pp_exp1_box"],
+      balloon: { anchor: "pp_result_box", placement: "bottom",
+        text: "Reconhecer qual dos três usos está em jogo é o que te faz escolher Present Perfect na hora de falar. Ligue os pares 👇" },
+      exercises: [
+        { kind: "match", prompt: "Ligue a frase ao uso:", pairs: [
+          ["Have you ever flown?", "experiência de vida"],
+          ["I've lost my wallet.", "resultado presente"],
+          ["I've lived here since 2020.", "começou e continua"],
+        ], explain: "Ever → experiência; resultado que importa agora → resultado presente; since/for → continua." },
+      ],
+    },
+    {
+      title: "Teste final: bateria completa",
       balloon: { anchor: "pp_crucial_rbox", placement: "top",
-        text: "Você conheceu seu chefe atual há 3 anos e ainda trabalha com ele. Qual frase soa natural? 👇" },
+        text: "Prova de fogo em vários formatos. Você conheceu seu chefe há 3 anos e ainda trabalha com ele — comece por aqui 👇" },
       quiz: {
         question: "Você conheceu seu chefe atual há 3 anos e ainda trabalha com ele hoje. Qual frase é natural?",
         options: ["I knew him 3 years ago.", "I've known him for 3 years.", "I know him since 3 years.", "I have known him 3 years ago."],
         answer: 1,
-        explain: "A relação começou no passado e continua até agora — Present Perfect com \"for\" (duração): \"I've known him for 3 years.\"",
+        explain: "Começou no passado e continua — Present Perfect com \"for\" (duração): \"I've known him for 3 years.\"",
       },
+      exercises: [
+        { kind: "fill", prompt: "1) Complete:", sentence: "Have you ___ your keys? I can't find mine. (lose)",
+          answer: "lost", explain: "particípio de lose = lost: “Have you lost your keys?”" },
+        { kind: "order", prompt: "2) Ordene:", answer: ["I", "have", "never", "been", "there"],
+          explain: "never entre auxiliar e particípio: I have never been there." },
+        { kind: "choice", question: "3) “She ___ to Italy last summer.”",
+          options: ["has gone", "went", "has been"], answer: 1,
+          explain: "“last summer” é tempo terminado → Simple Past: She went to Italy last summer." },
+      ],
     },
   ];
 
   window.INGLES_PRESENT_PERFECT_DIAGRAM = {
     title: "Present Perfect: Have/Has + Particípio",
     subtitle: "A ponte sem tradução direta: experiência de vida, resultado presente e ação que continua",
-    width: W, height: H, autoplayMs: 9000, elements, steps,
+    width: W, height: H, autoplayMs: 9000, materials, elements, steps,
   };
 })();
