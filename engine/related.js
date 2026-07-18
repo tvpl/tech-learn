@@ -40,6 +40,24 @@
     "busca-binaria.html":     [["hashmap.html","Hash Map"],["recursao.html","Recursão"],["transformer.html","Transformer"],["rag.html","RAG"]],
     "recursao.html":          [["busca-binaria.html","Busca Binária"],["hashmap.html","Hash Map"],["virtual-threads.html","Virtual Threads"],["async-redis-kafka.html","Async Redis/Kafka"]],
     "git.html":               [["sdd.html","SDD"],["specs.html","Specs"],["http.html","HTTP"],["kubernetes.html","Kubernetes"]],
+
+    "ingles-tecnicas.html":   [["ingles-estrutura.html","Estrutura da Frase"],["ingles-presente.html","Presente"],["ingles-fala-real.html","Fala Real"],["ingles-modais.html","Modais"]],
+    "ingles-estrutura.html":  [["ingles-tecnicas.html","Como Aprender Rápido"],["ingles-presente.html","Presente"],["ingles-perguntas.html","Perguntas"],["ingles-negativas.html","Negativas"]],
+    "ingles-presente.html":   [["ingles-estrutura.html","Estrutura da Frase"],["ingles-passado.html","Passado"],["ingles-perguntas.html","Perguntas"],["ingles-tecnicas.html","Como Aprender Rápido"]],
+    "ingles-passado.html":    [["ingles-presente.html","Presente"],["ingles-futuro.html","Futuro"],["ingles-modais.html","Modais"],["ingles-tecnicas.html","Como Aprender Rápido"]],
+    "ingles-futuro.html":     [["ingles-passado.html","Passado"],["ingles-perguntas.html","Perguntas"],["ingles-fala-real.html","Fala Real"],["ingles-tecnicas.html","Como Aprender Rápido"]],
+    "ingles-perguntas.html":  [["ingles-futuro.html","Futuro"],["ingles-negativas.html","Negativas"],["ingles-modais.html","Modais"],["ingles-tecnicas.html","Como Aprender Rápido"]],
+    "ingles-negativas.html":  [["ingles-perguntas.html","Perguntas"],["ingles-modais.html","Modais"],["ingles-fala-real.html","Fala Real"],["ingles-tecnicas.html","Como Aprender Rápido"]],
+    "ingles-modais.html":     [["ingles-negativas.html","Negativas"],["ingles-fala-real.html","Fala Real"],["ingles-perguntas.html","Perguntas"],["ingles-tecnicas.html","Como Aprender Rápido"]],
+    "ingles-fala-real.html":  [["ingles-modais.html","Modais"],["ingles-tecnicas.html","Como Aprender Rápido"],["ingles-estrutura.html","Estrutura da Frase"],["ingles-negativas.html","Negativas"]],
+
+    "ingles-present-perfect.html": [["ingles-passado.html","Simple Past"],["ingles-condicionais.html","Condicionais"],["ingles-modais.html","Modais"],["ingles-artigos.html","Artigos"]],
+    "ingles-artigos.html":         [["ingles-present-perfect.html","Present Perfect"],["ingles-preposicoes.html","Preposições"],["ingles-contaveis.html","Contáveis"],["ingles-estrutura.html","Estrutura da Frase"]],
+    "ingles-preposicoes.html":     [["ingles-artigos.html","Artigos"],["ingles-contaveis.html","Contáveis"],["ingles-condicionais.html","Condicionais"],["ingles-estrutura.html","Estrutura da Frase"]],
+    "ingles-contaveis.html":       [["ingles-preposicoes.html","Preposições"],["ingles-artigos.html","Artigos"],["ingles-condicionais.html","Condicionais"],["ingles-perguntas.html","Perguntas"]],
+    "ingles-condicionais.html":    [["ingles-modais.html","Modais"],["ingles-present-perfect.html","Present Perfect"],["ingles-phrasal-verbs.html","Phrasal Verbs"],["ingles-negativas.html","Negativas"]],
+    "ingles-phrasal-verbs.html":   [["ingles-condicionais.html","Condicionais"],["ingles-small-talk.html","Small Talk"],["ingles-fala-real.html","Fala Real"],["ingles-modais.html","Modais"]],
+    "ingles-small-talk.html":      [["ingles-fala-real.html","Fala Real"],["ingles-tecnicas.html","Como Aprender Rápido"],["ingles-phrasal-verbs.html","Phrasal Verbs"],["ingles-modais.html","Modais"]],
   };
 
   const page = location.pathname.split('/').pop();
